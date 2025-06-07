@@ -4,7 +4,7 @@ session_start();
 require_once '../config/database.php';
 
 // Simple admin check - in production, implement proper admin authentication
-if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] != 1) {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] != 3) {
     die('Access denied. This is a demo admin interface (user_id = 1 only).');
 }
 
