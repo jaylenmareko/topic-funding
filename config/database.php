@@ -1,6 +1,6 @@
 <?php
 // config/database.php
-// Database configuration and connection
+// Database configuration and connection with enhanced funding logic
 
 // Database credentials
 define('DB_HOST', 'localhost');
@@ -15,6 +15,7 @@ class Database {
     private $dbname = DB_NAME;
     private $dbh;
     private $error;
+    private $stmt;
 
     public function __construct() {
         // Set DSN
@@ -103,7 +104,7 @@ class Database {
     }
 }
 
-// Helper functions for common database operations
+// Helper functions for common database operations with enhanced funding logic
 class DatabaseHelper {
     private $db;
 
@@ -157,50 +158,10 @@ class DatabaseHelper {
         return $this->db->resultSet();
     }
 
-    // Add new contribution
+    // Original add contribution method (kept for backward compatibility)
     public function addContribution($topic_id, $user_id, $amount) {
-        try {
-            $this->db->beginTransaction();
-            
-            // Insert contribution
-            $this->db->query('
-                INSERT INTO contributions (topic_id, user_id, amount, payment_status) 
-                VALUES (:topic_id, :user_id, :amount, "completed")
-            ');
-            $this->db->bind(':topic_id', $topic_id);
-            $this->db->bind(':user_id', $user_id);
-            $this->db->bind(':amount', $amount);
-            $this->db->execute();
-            
-            // Update topic funding
-            $this->db->query('
-                UPDATE topics 
-                SET current_funding = current_funding + :amount 
-                WHERE id = :topic_id
-            ');
-            $this->db->bind(':amount', $amount);
-            $this->db->bind(':topic_id', $topic_id);
-            $this->db->execute();
-            
-            // Check if funding threshold reached
-            $topic = $this->getTopicById($topic_id);
-            if ($topic->current_funding >= $topic->funding_threshold) {
-                $this->db->query('
-                    UPDATE topics 
-                    SET status = "funded", funded_at = NOW(), content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR)
-                    WHERE id = :topic_id
-                ');
-                $this->db->bind(':topic_id', $topic_id);
-                $this->db->execute();
-            }
-            
-            $this->db->endTransaction();
-            return true;
-            
-        } catch (Exception $e) {
-            $this->db->cancelTransaction();
-            return false;
-        }
+        $result = $this->addContributionWithTracking($topic_id, $user_id, $amount);
+        return $result['success'];
     }
 
     // Create new topic
@@ -260,5 +221,386 @@ class DatabaseHelper {
         $this->db->single();
         return $this->db->rowCount() > 0;
     }
+
+    // ============================================================================
+    // ENHANCED FUNDING LOGIC METHODS
+    // ============================================================================
+
+    // Get funding analytics for a topic
+    public function getTopicFundingAnalytics($topic_id) {
+        $this->db->query('
+            SELECT 
+                COUNT(*) as total_contributors,
+                AVG(amount) as average_contribution,
+                MIN(amount) as smallest_contribution,
+                MAX(amount) as largest_contribution,
+                SUM(CASE WHEN amount >= 50 THEN 1 ELSE 0 END) as major_contributors,
+                DATE(MIN(contributed_at)) as first_contribution_date,
+                DATE(MAX(contributed_at)) as latest_contribution_date
+            FROM contributions 
+            WHERE topic_id = :topic_id AND payment_status = "completed"
+        ');
+        $this->db->bind(':topic_id', $topic_id);
+        return $this->db->single();
+    }
+
+    // Get funding momentum (contributions per day)
+    public function getFundingMomentum($topic_id, $days = 7) {
+        $this->db->query('
+            SELECT 
+                DATE(contributed_at) as contribution_date,
+                COUNT(*) as contributions_count,
+                SUM(amount) as daily_total
+            FROM contributions 
+            WHERE topic_id = :topic_id 
+            AND payment_status = "completed"
+            AND contributed_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+            GROUP BY DATE(contributed_at)
+            ORDER BY contribution_date DESC
+        ');
+        $this->db->bind(':topic_id', $topic_id);
+        $this->db->bind(':days', $days);
+        return $this->db->resultSet();
+    }
+
+    // Get user's funding impact
+    public function getUserFundingImpact($user_id) {
+        $this->db->query('
+            SELECT 
+                COUNT(DISTINCT t.id) as topics_helped_fund,
+                COUNT(DISTINCT CASE WHEN t.status = "funded" THEN t.id END) as topics_successfully_funded,
+                COUNT(DISTINCT CASE WHEN t.status = "completed" THEN t.id END) as topics_completed,
+                SUM(c.amount) as total_contributed,
+                COUNT(DISTINCT t.creator_id) as creators_supported,
+                AVG(c.amount) as average_contribution
+            FROM contributions c
+            JOIN topics t ON c.topic_id = t.id
+            WHERE c.user_id = :user_id AND c.payment_status = "completed"
+        ');
+        $this->db->bind(':user_id', $user_id);
+        return $this->db->single();
+    }
+
+    // Check if topic needs notification (milestones reached)
+    public function checkFundingMilestones($topic_id) {
+        $topic = $this->getTopicById($topic_id);
+        if (!$topic) return [];
+        
+        $milestones = [];
+        $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
+        
+        // Check various milestone percentages
+        $milestone_checks = [25, 50, 75, 90, 95];
+        
+        foreach ($milestone_checks as $milestone) {
+            if ($progress_percent >= $milestone) {
+                // Check if we've already notified for this milestone
+                $this->db->query('
+                    SELECT id FROM funding_milestones 
+                    WHERE topic_id = :topic_id AND milestone_percent = :milestone
+                ');
+                $this->db->bind(':topic_id', $topic_id);
+                $this->db->bind(':milestone', $milestone);
+                $this->db->execute();
+                
+                if ($this->db->rowCount() == 0) {
+                    $milestones[] = $milestone;
+                    
+                    // Record that we've hit this milestone
+                    $this->db->query('
+                        INSERT INTO funding_milestones (topic_id, milestone_percent, reached_at)
+                        VALUES (:topic_id, :milestone, NOW())
+                    ');
+                    $this->db->bind(':topic_id', $topic_id);
+                    $this->db->bind(':milestone', $milestone);
+                    $this->db->execute();
+                }
+            }
+        }
+        
+        return $milestones;
+    }
+
+    // Enhanced contribution adding with milestone tracking
+    public function addContributionWithTracking($topic_id, $user_id, $amount) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get topic info before contribution
+            $topic_before = $this->getTopicById($topic_id);
+            $old_progress = ($topic_before->current_funding / $topic_before->funding_threshold) * 100;
+            
+            // Insert contribution
+            $this->db->query('
+                INSERT INTO contributions (topic_id, user_id, amount, payment_status) 
+                VALUES (:topic_id, :user_id, :amount, "completed")
+            ');
+            $this->db->bind(':topic_id', $topic_id);
+            $this->db->bind(':user_id', $user_id);
+            $this->db->bind(':amount', $amount);
+            $this->db->execute();
+            $contribution_id = $this->db->lastInsertId();
+            
+            // Update topic funding
+            $this->db->query('
+                UPDATE topics 
+                SET current_funding = current_funding + :amount 
+                WHERE id = :topic_id
+            ');
+            $this->db->bind(':amount', $amount);
+            $this->db->bind(':topic_id', $topic_id);
+            $this->db->execute();
+            
+            // Get updated topic info
+            $topic_after = $this->getTopicById($topic_id);
+            $new_progress = ($topic_after->current_funding / $topic_after->funding_threshold) * 100;
+            
+            // Check if funding threshold reached
+            if ($topic_after->current_funding >= $topic_after->funding_threshold) {
+                $this->db->query('
+                    UPDATE topics 
+                    SET status = "funded", funded_at = NOW(), content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR)
+                    WHERE id = :topic_id
+                ');
+                $this->db->bind(':topic_id', $topic_id);
+                $this->db->execute();
+            }
+            
+            // Check for milestone achievements
+            $milestones = $this->checkFundingMilestones($topic_id);
+            
+            // Log contribution impact (only if tables exist)
+            try {
+                $this->db->query('
+                    INSERT INTO contribution_impact (contribution_id, old_progress, new_progress, milestones_triggered)
+                    VALUES (:contribution_id, :old_progress, :new_progress, :milestones)
+                ');
+                $this->db->bind(':contribution_id', $contribution_id);
+                $this->db->bind(':old_progress', $old_progress);
+                $this->db->bind(':new_progress', $new_progress);
+                $this->db->bind(':milestones', json_encode($milestones));
+                $this->db->execute();
+            } catch (Exception $e) {
+                // Table doesn't exist yet, skip logging
+            }
+            
+            $this->db->endTransaction();
+            
+            return [
+                'success' => true,
+                'contribution_id' => $contribution_id,
+                'old_progress' => $old_progress,
+                'new_progress' => $new_progress,
+                'milestones' => $milestones,
+                'fully_funded' => $topic_after->current_funding >= $topic_after->funding_threshold
+            ];
+            
+        } catch (Exception $e) {
+            $this->db->cancelTransaction();
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Get trending topics (high funding velocity)
+    public function getTrendingTopics($limit = 5) {
+        $this->db->query('
+            SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image,
+                   COUNT(cont.id) as recent_contributions,
+                   SUM(cont.amount) as recent_funding
+            FROM topics t
+            JOIN creators c ON t.creator_id = c.id
+            LEFT JOIN contributions cont ON t.id = cont.topic_id 
+                AND cont.contributed_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                AND cont.payment_status = "completed"
+            WHERE t.status = "active"
+            GROUP BY t.id
+            HAVING recent_contributions > 0
+            ORDER BY recent_contributions DESC, recent_funding DESC
+            LIMIT :limit
+        ');
+        $this->db->bind(':limit', $limit);
+        return $this->db->resultSet();
+    }
+
+    // Get topics close to funding (90%+)
+    public function getAlmostFundedTopics($limit = 5) {
+        $this->db->query('
+            SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image,
+                   (t.current_funding / t.funding_threshold * 100) as progress_percent
+            FROM topics t
+            JOIN creators c ON t.creator_id = c.id
+            WHERE t.status = "active" 
+            AND (t.current_funding / t.funding_threshold) >= 0.90
+            ORDER BY progress_percent DESC
+            LIMIT :limit
+        ');
+        $this->db->bind(':limit', $limit);
+        return $this->db->resultSet();
+    }
+
+    // Get recommended topics for user based on their contribution history
+    public function getRecommendedTopics($user_id, $limit = 5) {
+        $this->db->query('
+            SELECT DISTINCT t.*, c.display_name as creator_name, c.profile_image as creator_image
+            FROM topics t
+            JOIN creators c ON t.creator_id = c.id
+            WHERE t.status = "active"
+            AND t.creator_id IN (
+                SELECT DISTINCT t2.creator_id 
+                FROM contributions cont
+                JOIN topics t2 ON cont.topic_id = t2.id
+                WHERE cont.user_id = :user_id
+            )
+            AND t.id NOT IN (
+                SELECT topic_id FROM contributions WHERE user_id = :user_id
+            )
+            ORDER BY t.created_at DESC
+            LIMIT :limit
+        ');
+        $this->db->bind(':user_id', $user_id);
+        $this->db->bind(':limit', $limit);
+        return $this->db->resultSet();
+    }
+}
+
+// Enhanced funding widget function
+function renderFundingWidget($topic, $contributions = [], $analytics = null) {
+    $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
+    $progress_percent = min($progress_percent, 100);
+    $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
+    
+    // Calculate funding velocity (contributions in last 24 hours)
+    $recent_contributions = array_filter($contributions, function($c) {
+        return strtotime($c->contributed_at) >= strtotime('-24 hours');
+    });
+    $recent_funding = array_sum(array_map(function($c) { return $c->amount; }, $recent_contributions));
+    
+    // Estimate time to funding based on recent velocity
+    $days_to_funding = null;
+    if ($recent_funding > 0 && $remaining > 0) {
+        $daily_rate = $recent_funding; // Last 24 hours
+        $days_to_funding = ceil($remaining / $daily_rate);
+    }
+    
+    $milestones = [25, 50, 75, 90];
+    ?>
+    
+    <div class="enhanced-funding-widget" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #333;">Funding Progress</h3>
+            <?php if ($topic->status === 'active' && count($recent_contributions) > 0): ?>
+                <div style="background: #e8f5e8; color: #2d5f2d; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                    🔥 <?php echo count($recent_contributions); ?> recent contributions
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Main Progress Bar -->
+        <div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: <?php echo $progress_percent; ?>%;"></div>
+            
+            <!-- Milestone markers -->
+            <?php foreach ($milestones as $milestone): ?>
+                <div style="position: absolute; top: 0; left: <?php echo $milestone; ?>%; width: 2px; height: 100%; background: #fff; opacity: 0.7;"></div>
+                <div style="position: absolute; top: -25px; left: <?php echo $milestone; ?>%; transform: translateX(-50%); font-size: 10px; color: #666;">
+                    <?php echo $milestone; ?>%
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Funding Stats Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0;">
+            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: bold; color: #28a745;">
+                    $<?php echo number_format($topic->current_funding, 0); ?>
+                </div>
+                <div style="font-size: 12px; color: #666;">Raised</div>
+            </div>
+            
+            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: bold; color: #dc3545;">
+                    $<?php echo number_format($remaining, 0); ?>
+                </div>
+                <div style="font-size: 12px; color: #666;">Remaining</div>
+            </div>
+            
+            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: bold; color: #007bff;">
+                    <?php echo count($contributions); ?>
+                </div>
+                <div style="font-size: 12px; color: #666;">Backers</div>
+            </div>
+            
+            <?php if ($analytics && $analytics->average_contribution): ?>
+            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: bold; color: #6f42c1;">
+                    $<?php echo number_format($analytics->average_contribution, 0); ?>
+                </div>
+                <div style="font-size: 12px; color: #666;">Average</div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Velocity and Time Estimate -->
+        <?php if ($topic->status === 'active'): ?>
+            <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+                    <span>
+                        Last 24h: <strong style="color: #28a745;">$<?php echo number_format($recent_funding, 0); ?></strong>
+                    </span>
+                    <?php if ($days_to_funding && $days_to_funding <= 30): ?>
+                        <span>
+                            Est. funding: <strong><?php echo $days_to_funding; ?> days</strong>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- Milestone Badges -->
+        <div style="margin-top: 15px;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Milestones Reached:</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <?php foreach ($milestones as $milestone): ?>
+                    <?php if ($progress_percent >= $milestone): ?>
+                        <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                            <?php echo $milestone; ?>% ✓
+                        </span>
+                    <?php else: ?>
+                        <span style="background: #e9ecef; color: #666; padding: 4px 8px; border-radius: 12px; font-size: 11px;">
+                            <?php echo $milestone; ?>%
+                        </span>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div style="margin-top: 20px;">
+            <?php if ($topic->status === 'active'): ?>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/topics/') !== false) ? '' : '../topics/'; ?>fund.php?id=<?php echo $topic->id; ?>" 
+                       style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">
+                        Fund This Topic
+                    </a>
+                <?php else: ?>
+                    <a href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/auth/') !== false) ? '' : '../auth/'; ?>login.php" 
+                       style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">
+                        Login to Fund
+                    </a>
+                <?php endif; ?>
+            <?php elseif ($topic->status === 'funded'): ?>
+                <div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">
+                    ✅ Fully Funded! Content coming soon...
+                </div>
+            <?php elseif ($topic->status === 'completed'): ?>
+                <div style="background: #cce5ff; color: #004085; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">
+                    ✅ Completed!
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php
 }
 ?>
