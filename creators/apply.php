@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Fixed creator application form
+// creators/apply.php - Fixed creator application form with username handling
 session_start();
 require_once '../config/database.php';
 
@@ -29,6 +29,24 @@ if ($_POST && !$existing_application) {
     $platform_url = trim($_POST['platform_url']);
     $subscriber_count = (int)$_POST['subscriber_count'];
     $default_funding_threshold = (float)$_POST['default_funding_threshold'];
+    
+    // Generate a unique username based on display name and user ID
+    $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
+    $username = $base_username . '_' . $_SESSION['user_id'];
+    
+    // Make sure username is unique
+    $counter = 1;
+    $original_username = $username;
+    while (true) {
+        $db->query('SELECT id FROM creators WHERE username = :username');
+        $db->bind(':username', $username);
+        $db->execute();
+        if ($db->rowCount() == 0) {
+            break; // Username is unique
+        }
+        $username = $original_username . '_' . $counter;
+        $counter++;
+    }
     
     // Validation
     if (empty($display_name)) {
@@ -93,25 +111,27 @@ if ($_POST && !$existing_application) {
     // Create creator application if no errors
     if (empty($errors)) {
         try {
-            // Debug: Check what columns exist in the creators table
-            $db->query('SHOW COLUMNS FROM creators');
-            $columns = $db->resultSet();
-            echo "<div style='background: #fff3cd; padding: 10px; margin-bottom: 20px;'>";
-            echo "<strong>Debug - Creators table columns:</strong><br>";
-            foreach ($columns as $column) {
-                echo "- " . $column->Field . " (" . $column->Type . ")<br>";
-            }
-            echo "</div>";
+            // Get user email for the application
+            $db->query('SELECT email FROM users WHERE id = :user_id');
+            $db->bind(':user_id', $_SESSION['user_id']);
+            $user_data = $db->single();
+            $user_email = $user_data ? $user_data->email : '';
             
-            // Use only the columns that should exist
+            // Insert with all required fields including username and email
             $db->query('
-                INSERT INTO creators (display_name, bio, platform_type, platform_url, 
-                                    subscriber_count, default_funding_threshold, profile_image,
-                                    applicant_user_id, is_active, application_status) 
-                VALUES (:display_name, :bio, :platform_type, :platform_url, 
-                        :subscriber_count, :threshold, :profile_image, :user_id, 0, "pending")
+                INSERT INTO creators (
+                    username, display_name, email, bio, platform_type, platform_url, 
+                    subscriber_count, default_funding_threshold, profile_image,
+                    applicant_user_id, is_active, application_status, commission_rate,
+                    is_verified
+                ) VALUES (
+                    :username, :display_name, :email, :bio, :platform_type, :platform_url, 
+                    :subscriber_count, :threshold, :profile_image, :user_id, 0, "pending", 5.00, 0
+                )
             ');
+            $db->bind(':username', $username);
             $db->bind(':display_name', $display_name);
+            $db->bind(':email', $user_email);
             $db->bind(':bio', $bio);
             $db->bind(':platform_type', $platform_type);
             $db->bind(':platform_url', $platform_url);
@@ -121,18 +141,14 @@ if ($_POST && !$existing_application) {
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
-                $success = "Creator application submitted successfully! We'll review it and get back to you.";
+                $success = "Creator application submitted successfully! We'll review it and get back to you. Your creator username will be: " . $username;
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
         } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
-            // More detailed debug info
-            echo "<div style='background: #f8d7da; padding: 10px; margin-bottom: 20px;'>";
-            echo "<strong>Debug - Full error:</strong><br>";
-            echo htmlspecialchars($e->getMessage()) . "<br>";
-            echo "<strong>Error Code:</strong> " . $e->getCode() . "<br>";
-            echo "</div>";
+            // Debug info
+            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
 }
@@ -161,6 +177,7 @@ if ($_POST && !$existing_application) {
         .requirements h3 { margin-top: 0; }
         .requirements ul { margin-bottom: 0; }
         .debug { background: #fff3cd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        .username-info { background: #e3f2fd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -178,6 +195,10 @@ if ($_POST && !$existing_application) {
         <!-- Debug info -->
         <div class="debug">
             <strong>Debug:</strong> Logged in as <?php echo htmlspecialchars($_SESSION['username']); ?> (User ID: <?php echo $_SESSION['user_id']; ?>)
+        </div>
+
+        <div class="username-info">
+            <strong>ℹ️ Creator Username:</strong> Your creator username will be automatically generated from your display name to ensure uniqueness.
         </div>
 
         <div class="requirements">
@@ -198,6 +219,7 @@ if ($_POST && !$existing_application) {
 
         <?php if ($success): ?>
             <div class="success"><?php echo $success; ?></div>
+            <p><a href="../admin/creators.php">Go to Admin Panel</a> to approve this application (for testing)</p>
         <?php endif; ?>
 
         <?php if (!$success): ?>
@@ -205,7 +227,7 @@ if ($_POST && !$existing_application) {
                 <div class="form-group">
                     <label>Creator Display Name: *</label>
                     <input type="text" name="display_name" value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>" required>
-                    <small>The name your audience will see</small>
+                    <small>The name your audience will see (username will be auto-generated)</small>
                 </div>
 
                 <div class="form-group">
@@ -220,10 +242,6 @@ if ($_POST && !$existing_application) {
                         <option value="youtube" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'youtube') ? 'selected' : ''; ?>>YouTube</option>
                         <option value="twitch" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'twitch') ? 'selected' : ''; ?>>Twitch</option>
                         <option value="tiktok" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'tiktok') ? 'selected' : ''; ?>>TikTok</option>
-                        <option value="instagram" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'instagram') ? 'selected' : ''; ?>>Instagram</option>
-                        <option value="twitter" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'twitter') ? 'selected' : ''; ?>>Twitter/X</option>
-                        <option value="podcast" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'podcast') ? 'selected' : ''; ?>>Podcast</option>
-                        <option value="blog" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'blog') ? 'selected' : ''; ?>>Blog</option>
                         <option value="other" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'other') ? 'selected' : ''; ?>>Other</option>
                     </select>
                 </div>
