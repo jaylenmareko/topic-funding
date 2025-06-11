@@ -93,6 +93,17 @@ if ($_POST && !$existing_application) {
     // Create creator application if no errors
     if (empty($errors)) {
         try {
+            // Debug: Check what columns exist in the creators table
+            $db->query('SHOW COLUMNS FROM creators');
+            $columns = $db->resultSet();
+            echo "<div style='background: #fff3cd; padding: 10px; margin-bottom: 20px;'>";
+            echo "<strong>Debug - Creators table columns:</strong><br>";
+            foreach ($columns as $column) {
+                echo "- " . $column->Field . " (" . $column->Type . ")<br>";
+            }
+            echo "</div>";
+            
+            // Use only the columns that should exist
             $db->query('
                 INSERT INTO creators (display_name, bio, platform_type, platform_url, 
                                     subscriber_count, default_funding_threshold, profile_image,
@@ -116,8 +127,12 @@ if ($_POST && !$existing_application) {
             }
         } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
-            // Debug info
-            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            // More detailed debug info
+            echo "<div style='background: #f8d7da; padding: 10px; margin-bottom: 20px;'>";
+            echo "<strong>Debug - Full error:</strong><br>";
+            echo htmlspecialchars($e->getMessage()) . "<br>";
+            echo "<strong>Error Code:</strong> " . $e->getCode() . "<br>";
+            echo "</div>";
         }
     }
 }
