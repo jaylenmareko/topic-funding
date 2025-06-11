@@ -1,11 +1,21 @@
 <?php
-// admin/creators.php - Simple admin interface for managing creator applications
+// admin/creators.php - Fixed admin interface
 session_start();
 require_once '../config/database.php';
 
-// Simple admin check - in production, implement proper admin authentication
-if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] != 3) {
-    die('Access denied. This is a demo admin interface (user_id = 1 only).');
+// Simple admin check - for demo, allow user_id 1, 2, or 3
+$allowed_admin_ids = [1, 2, 3];
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], $allowed_admin_ids)) {
+    die('
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+            <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+                <h2>Access Denied</h2>
+                <p>This is a demo admin interface. Currently logged in as user ID: ' . ($_SESSION['user_id'] ?? 'none') . '</p>
+                <p>Allowed admin IDs: ' . implode(', ', $allowed_admin_ids) . '</p>
+                <p><a href="../index.php">← Back to Home</a></p>
+            </div>
+        </div>
+    ');
 }
 
 $db = new Database();
@@ -67,6 +77,7 @@ $applications = $db->resultSet();
         .detail-group { }
         .detail-label { font-weight: bold; color: #666; }
         .profile-image { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px; }
+        .admin-info { background: #e3f2fd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -81,6 +92,10 @@ $applications = $db->resultSet();
             <p>Review and manage creator applications</p>
         </div>
 
+        <div class="admin-info">
+            <strong>Admin Session:</strong> Logged in as <?php echo htmlspecialchars($_SESSION['username']); ?> (User ID: <?php echo $_SESSION['user_id']; ?>)
+        </div>
+
         <?php if ($message): ?>
             <div class="message"><?php echo $message; ?></div>
         <?php endif; ?>
@@ -88,6 +103,7 @@ $applications = $db->resultSet();
         <?php if (empty($applications)): ?>
             <div class="application-card">
                 <p>No creator applications yet.</p>
+                <p><a href="../creators/apply.php">Apply to be a creator</a> to test the system.</p>
             </div>
         <?php else: ?>
             <?php foreach ($applications as $app): ?>
