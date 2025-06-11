@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Creator application form
+// creators/apply.php - Fixed creator application form
 session_start();
 require_once '../config/database.php';
 
@@ -12,7 +12,17 @@ if (!isset($_SESSION['user_id'])) {
 $errors = [];
 $success = '';
 
-if ($_POST) {
+// Check if user already has a creator application
+$db = new Database();
+$db->query('SELECT * FROM creators WHERE applicant_user_id = :user_id');
+$db->bind(':user_id', $_SESSION['user_id']);
+$existing_application = $db->single();
+
+if ($existing_application) {
+    $success = "You already have a creator application. Status: " . ucfirst($existing_application->application_status);
+}
+
+if ($_POST && !$existing_application) {
     $display_name = trim($_POST['display_name']);
     $bio = trim($_POST['bio']);
     $platform_type = $_POST['platform_type'];
@@ -83,7 +93,6 @@ if ($_POST) {
     // Create creator application if no errors
     if (empty($errors)) {
         try {
-            $db = new Database();
             $db->query('
                 INSERT INTO creators (display_name, bio, platform_type, platform_url, 
                                     subscriber_count, default_funding_threshold, profile_image,
@@ -107,6 +116,8 @@ if ($_POST) {
             }
         } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
+            // Debug info
+            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
 }
@@ -134,6 +145,7 @@ if ($_POST) {
         .requirements { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
         .requirements h3 { margin-top: 0; }
         .requirements ul { margin-bottom: 0; }
+        .debug { background: #fff3cd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -146,6 +158,11 @@ if ($_POST) {
         <div class="header">
             <h1>Apply to be a Creator</h1>
             <p>Join our platform and let your audience fund the content they want to see!</p>
+        </div>
+
+        <!-- Debug info -->
+        <div class="debug">
+            <strong>Debug:</strong> Logged in as <?php echo htmlspecialchars($_SESSION['username']); ?> (User ID: <?php echo $_SESSION['user_id']; ?>)
         </div>
 
         <div class="requirements">
@@ -166,7 +183,9 @@ if ($_POST) {
 
         <?php if ($success): ?>
             <div class="success"><?php echo $success; ?></div>
-        <?php else: ?>
+        <?php endif; ?>
+
+        <?php if (!$success): ?>
             <form method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Creator Display Name: *</label>
