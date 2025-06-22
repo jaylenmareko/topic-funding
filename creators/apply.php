@@ -1,7 +1,9 @@
 <?php
-// creators/apply.php - Fixed creator application form with username handling
+// creators/apply.php - Fixed creator application form with security
 session_start();
 require_once '../config/database.php';
+require_once '../config/csrf.php';
+require_once '../config/sanitizer.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -23,12 +25,16 @@ if ($existing_application) {
 }
 
 if ($_POST && !$existing_application) {
-    $display_name = trim($_POST['display_name']);
-    $bio = trim($_POST['bio']);
-    $platform_type = $_POST['platform_type'];
-    $platform_url = trim($_POST['platform_url']);
-    $subscriber_count = (int)$_POST['subscriber_count'];
-    $default_funding_threshold = (float)$_POST['default_funding_threshold'];
+    // CSRF Protection
+    CSRFProtection::requireValidToken();
+    
+    // Sanitize inputs
+    $display_name = InputSanitizer::sanitizeString($_POST['display_name']);
+    $bio = InputSanitizer::sanitizeString($_POST['bio']);
+    $platform_type = InputSanitizer::sanitizeString($_POST['platform_type']);
+    $platform_url = InputSanitizer::sanitizeUrl($_POST['platform_url']);
+    $subscriber_count = InputSanitizer::sanitizeInt($_POST['subscriber_count']);
+    $default_funding_threshold = InputSanitizer::sanitizeFloat($_POST['default_funding_threshold']);
     
     // Generate a unique username based on display name and user ID
     $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
@@ -51,6 +57,8 @@ if ($_POST && !$existing_application) {
     // Validation
     if (empty($display_name)) {
         $errors[] = "Display name is required";
+    } elseif (strlen($display_name) < 2) {
+        $errors[] = "Display name must be at least 2 characters";
     }
     
     if (empty($bio)) {
@@ -77,31 +85,39 @@ if ($_POST && !$existing_application) {
         $errors[] = "Minimum funding threshold is $10";
     }
     
-    // Handle image upload
+    // Initialize profile_image variable
     $profile_image = null;
+    
+    // Enhanced file upload security
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = '../uploads/creators/';
         
-        // Create directory if it doesn't exist
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
         
         $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-        $file_type = $_FILES['profile_image']['type'];
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        
+        $file_info = finfo_open(FILEINFO_MIME_TYPE);
+        $detected_type = finfo_file($file_info, $_FILES['profile_image']['tmp_name']);
+        finfo_close($file_info);
+        
+        $file_extension = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
         $file_size = $_FILES['profile_image']['size'];
         
-        if (!in_array($file_type, $allowed_types)) {
+        if (!in_array($detected_type, $allowed_types)) {
             $errors[] = "Only JPG, PNG, and GIF images are allowed";
-        } elseif ($file_size > 2 * 1024 * 1024) { // 2MB limit
+        } elseif (!in_array($file_extension, $allowed_extensions)) {
+            $errors[] = "Invalid file extension";
+        } elseif ($file_size > 2 * 1024 * 1024) {
             $errors[] = "Image must be less than 2MB";
         } else {
-            $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
-            $new_filename = 'creator_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_extension;
-            $upload_path = $upload_dir . $new_filename;
+            $safe_filename = 'creator_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_extension;
+            $upload_path = $upload_dir . $safe_filename;
             
             if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
-                $profile_image = $new_filename;
+                $profile_image = $safe_filename;
             } else {
                 $errors[] = "Failed to upload image";
             }
@@ -147,7 +163,6 @@ if ($_POST && !$existing_application) {
             }
         } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
-            // Debug info
             error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
@@ -157,6 +172,7 @@ if ($_POST && !$existing_application) {
 <html>
 <head>
     <title>Apply to be a Creator - Topic Funding</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -169,15 +185,21 @@ if ($_POST && !$existing_application) {
             width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
         }
         textarea { height: 120px; resize: vertical; }
-        .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
         .btn:hover { background: #0056b3; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 10px; }
         .success { color: green; margin-bottom: 10px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
         .requirements { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
         .requirements h3 { margin-top: 0; }
         .requirements ul { margin-bottom: 0; }
-        .debug { background: #fff3cd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
-        .username-info { background: #e3f2fd; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        .security-note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .file-requirements { font-size: 12px; color: #666; margin-top: 5px; }
+        .char-counter { font-size: 12px; color: #666; margin-top: 5px; }
+        
+        @media (max-width: 768px) {
+            .container { margin: 10px; padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -192,13 +214,8 @@ if ($_POST && !$existing_application) {
             <p>Join our platform and let your audience fund the content they want to see!</p>
         </div>
 
-        <!-- Debug info -->
-        <div class="debug">
-            <strong>Debug:</strong> Logged in as <?php echo htmlspecialchars($_SESSION['username']); ?> (User ID: <?php echo $_SESSION['user_id']; ?>)
-        </div>
-
-        <div class="username-info">
-            <strong>ℹ️ Creator Username:</strong> Your creator username will be automatically generated from your display name to ensure uniqueness.
+        <div class="security-note">
+            🔒 Your application is protected with advanced security measures.
         </div>
 
         <div class="requirements">
@@ -213,26 +230,28 @@ if ($_POST && !$existing_application) {
 
         <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $error): ?>
-                <div class="error"><?php echo $error; ?></div>
+                <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
         <?php endif; ?>
 
         <?php if ($success): ?>
-            <div class="success"><?php echo $success; ?></div>
-            <p><a href="../admin/creators.php">Go to Admin Panel</a> to approve this application (for testing)</p>
+            <div class="success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
 
         <?php if (!$success): ?>
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" id="creatorForm">
+                <?php echo CSRFProtection::getTokenField(); ?>
+                
                 <div class="form-group">
                     <label>Creator Display Name: *</label>
-                    <input type="text" name="display_name" value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>" required>
+                    <input type="text" name="display_name" id="display_name" value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>" required>
                     <small>The name your audience will see (username will be auto-generated)</small>
                 </div>
 
                 <div class="form-group">
                     <label>Bio: *</label>
-                    <textarea name="bio" required placeholder="Tell us about yourself and your content (minimum 50 characters)"><?php echo isset($_POST['bio']) ? htmlspecialchars($_POST['bio']) : ''; ?></textarea>
+                    <textarea name="bio" id="bio" required placeholder="Tell us about yourself and your content (minimum 50 characters)"><?php echo isset($_POST['bio']) ? htmlspecialchars($_POST['bio']) : ''; ?></textarea>
+                    <div class="char-counter" id="bioCounter">0 / 50 characters minimum</div>
                 </div>
 
                 <div class="form-group">
@@ -254,25 +273,67 @@ if ($_POST && !$existing_application) {
 
                 <div class="form-group">
                     <label>Subscriber/Follower Count: *</label>
-                    <input type="number" name="subscriber_count" value="<?php echo isset($_POST['subscriber_count']) ? $_POST['subscriber_count'] : ''; ?>" min="100" required>
+                    <input type="number" name="subscriber_count" value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>" min="100" required>
                     <small>Current number of subscribers/followers</small>
                 </div>
 
                 <div class="form-group">
                     <label>Default Funding Threshold: *</label>
-                    <input type="number" name="default_funding_threshold" value="<?php echo isset($_POST['default_funding_threshold']) ? $_POST['default_funding_threshold'] : '50'; ?>" min="10" step="0.01" required>
+                    <input type="number" name="default_funding_threshold" value="<?php echo isset($_POST['default_funding_threshold']) ? htmlspecialchars($_POST['default_funding_threshold']) : '50'; ?>" min="10" step="0.01" required>
                     <small>Default amount needed to fund a topic (minimum $10)</small>
                 </div>
 
                 <div class="form-group">
                     <label>Profile Image:</label>
                     <input type="file" name="profile_image" accept="image/*">
-                    <small>JPG, PNG, or GIF. Max 2MB. (Optional but recommended)</small>
+                    <div class="file-requirements">JPG, PNG, or GIF. Max 2MB. (Optional but recommended)</div>
                 </div>
 
-                <button type="submit" class="btn">Submit Application</button>
+                <button type="submit" class="btn" id="submitBtn">Submit Application</button>
             </form>
         <?php endif; ?>
     </div>
+
+    <script>
+    // Bio character counter
+    const bioTextarea = document.getElementById('bio');
+    const bioCounter = document.getElementById('bioCounter');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function updateBioCounter() {
+        const length = bioTextarea.value.length;
+        bioCounter.textContent = length + ' / 50 characters minimum';
+        
+        if (length >= 50) {
+            bioCounter.style.color = '#28a745';
+        } else {
+            bioCounter.style.color = '#dc3545';
+        }
+        
+        validateForm();
+    }
+
+    function validateForm() {
+        const displayName = document.getElementById('display_name').value.trim();
+        const bio = bioTextarea.value.trim();
+        const isValid = displayName.length >= 2 && bio.length >= 50;
+        
+        submitBtn.disabled = !isValid;
+        submitBtn.style.opacity = isValid ? '1' : '0.6';
+    }
+
+    bioTextarea.addEventListener('input', updateBioCounter);
+    document.getElementById('display_name').addEventListener('input', validateForm);
+
+    // Initial validation
+    updateBioCounter();
+    validateForm();
+
+    // Form submission loading state
+    document.getElementById('creatorForm').addEventListener('submit', function() {
+        submitBtn.innerHTML = 'Submitting...';
+        submitBtn.disabled = true;
+    });
+    </script>
 </body>
 </html>
