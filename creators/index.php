@@ -87,16 +87,6 @@ if ($search) {
             </form>
         </div>
 
-        <!-- Debug info for development -->
-        <div class="debug-info">
-            <strong>Debug:</strong> Found <?php echo count($creators); ?> creators in database.
-            <?php if (isset($_SESSION['user_id'])): ?>
-                Logged in as: <?php echo htmlspecialchars($_SESSION['username']); ?>
-            <?php else: ?>
-                Not logged in.
-            <?php endif; ?>
-        </div>
-
         <?php if ($search): ?>
             <p>Search results for "<?php echo htmlspecialchars($search); ?>" (<?php echo count($creators); ?> found)</p>
         <?php endif; ?>
@@ -110,7 +100,6 @@ if ($search) {
                 <?php else: ?>
                     <h3>No creators yet</h3>
                     <p>The database appears to be empty. Make sure you've run the database setup script.</p>
-                    <a href="../test_connection.php">Test Database Connection</a>
                 <?php endif; ?>
             </div>
         <?php else: ?>
