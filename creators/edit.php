@@ -128,7 +128,6 @@ if ($_POST) {
         </div>
 
         <h1>Edit Creator Profile</h1>
-        <p><em>Note: This is a simplified editor for testing purposes</em></p>
 
         <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $error): ?>
