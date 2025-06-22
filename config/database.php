@@ -1,4 +1,12 @@
 <?php
+// Enhanced error logging
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
+
+// Create logs directory if it doesn't exist
+if (!is_dir(__DIR__ . '/../logs')) {
+    mkdir(__DIR__ . '/../logs', 0755, true);
+}
 // config/database.php
 // Database configuration and connection with enhanced funding logic
 
