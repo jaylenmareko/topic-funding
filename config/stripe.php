@@ -1,0 +1,13 @@
+<?php
+require_once __DIR__ . '/../stripe-php/init.php';
+
+// Replace with your LIVE Stripe keys for production
+define('STRIPE_PUBLISHABLE_KEY', 'pk_live_51QbKG8Kg5kxyA3jRmQrkUtkB4OKH0xwvAlpm5huKGKKh1G9QbLJYP8ZMijil8f3oQWHuDWofc0FRmapwzfqhw9Ne00eDEcgBQ3');
+define('STRIPE_SECRET_KEY', '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');
+
+\Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+
+define('STRIPE_CURRENCY', 'usd');
+define('STRIPE_SUCCESS_URL', 'https://topiclaunch.com/topics/fund_success.php');
+define('STRIPE_CANCEL_URL', 'https://topiclaunch.com/topics/fund_cancel.php');
+?>
