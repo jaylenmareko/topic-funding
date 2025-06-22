@@ -1,7 +1,10 @@
 <?php
-// topics/fund.php - Topic funding page
+// topics/fund.php - Topic funding page with Stripe integration and security
 session_start();
 require_once '../config/database.php';
+require_once '../config/stripe.php';
+require_once '../config/csrf.php';
+require_once '../config/sanitizer.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -10,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $helper = new DatabaseHelper();
-$topic_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$topic_id = isset($_GET['id']) ? InputSanitizer::sanitizeInt($_GET['id']) : 0;
 
 if (!$topic_id) {
     header('Location: index.php');
@@ -33,28 +36,87 @@ $errors = [];
 $success = '';
 
 if ($_POST) {
-    $amount = (float)$_POST['amount'];
+    // CSRF Protection
+    CSRFProtection::requireValidToken();
     
-    // Validation
-    if ($amount < 1) {
-        $errors[] = "Minimum contribution is $1";
-    } elseif ($amount > 1000) {
-        $errors[] = "Maximum contribution is $1,000";
+    // Rate limiting - max 5 funding attempts per hour per user
+    $rate_limit_key = 'funding_attempts_' . $_SESSION['user_id'];
+    $current_attempts = $_SESSION[$rate_limit_key] ?? 0;
+    $last_attempt_time = $_SESSION[$rate_limit_key . '_time'] ?? 0;
+    
+    // Reset counter if more than 1 hour has passed
+    if (time() - $last_attempt_time > 3600) {
+        $current_attempts = 0;
     }
     
-    // Add contribution if no errors
-    if (empty($errors)) {
-        if ($helper->addContribution($topic_id, $_SESSION['user_id'], $amount)) {
-            $success = "Thank you for your contribution of $" . number_format($amount, 2) . "!";
-            // Refresh topic data to show updated funding
-            $topic = $helper->getTopicById($topic_id);
-            
-            // Check if topic is now funded
-            if ($topic->status === 'funded') {
-                $success .= " This topic is now fully funded and the creator will begin working on it!";
+    if ($current_attempts >= 5) {
+        $errors[] = "Too many funding attempts. Please try again in an hour.";
+    } else {
+        $amount = InputSanitizer::sanitizeFloat($_POST['amount']);
+        
+        // Validation
+        if ($amount < 1) {
+            $errors[] = "Minimum contribution is $1";
+        } elseif ($amount > 1000) {
+            $errors[] = "Maximum contribution is $1,000";
+        } elseif (!is_numeric($amount)) {
+            $errors[] = "Please enter a valid amount";
+        }
+        
+        // Check if user has already contributed to this topic (optional limit)
+        $db = new Database();
+        $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
+        $db->bind(':topic_id', $topic_id);
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $existing_contributions = $db->single()->count;
+        
+        if ($existing_contributions >= 3) {
+            $errors[] = "You can only contribute up to 3 times per topic.";
+        }
+        
+        // Process payment if no errors
+        if (empty($errors)) {
+            try {
+                // Update rate limiting
+                $_SESSION[$rate_limit_key] = $current_attempts + 1;
+                $_SESSION[$rate_limit_key . '_time'] = time();
+                
+                // Create Stripe Checkout Session
+                $session = \Stripe\Checkout\Session::create([
+                    'payment_method_types' => ['card'],
+                    'line_items' => [[
+                        'price_data' => [
+                            'currency' => STRIPE_CURRENCY,
+                            'product_data' => [
+                                'name' => 'Fund Topic: ' . $topic->title,
+                                'description' => 'Contribution to fund this topic by ' . $topic->creator_name,
+                            ],
+                            'unit_amount' => $amount * 100, // Stripe expects cents
+                        ],
+                        'quantity' => 1,
+                    ]],
+                    'mode' => 'payment',
+                    'success_url' => STRIPE_SUCCESS_URL . '?topic_id=' . $topic_id . '&amount=' . $amount . '&session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => STRIPE_CANCEL_URL . '?topic_id=' . $topic_id,
+                    'metadata' => [
+                        'topic_id' => $topic_id,
+                        'user_id' => $_SESSION['user_id'],
+                        'amount' => $amount,
+                    ],
+                    'customer_email' => $_SESSION['email'] ?? null,
+                ]);
+                
+                // Redirect to Stripe Checkout
+                header('Location: ' . $session->url);
+                exit;
+                
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                $errors[] = "Payment processing error. Please try again.";
+                error_log("Stripe error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            } catch (Exception $e) {
+                $errors[] = "An error occurred. Please try again.";
+                error_log("Funding error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
             }
-        } else {
-            $errors[] = "Failed to process contribution. Please try again.";
         }
     }
 }
@@ -79,6 +141,7 @@ sort($suggested_amounts);
 <html>
 <head>
     <title>Fund Topic: <?php echo htmlspecialchars($topic->title); ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 800px; margin: 0 auto; }
@@ -99,7 +162,7 @@ sort($suggested_amounts);
         .amount-btn { padding: 12px; border: 2px solid #007bff; background: white; color: #007bff; border-radius: 4px; cursor: pointer; text-align: center; font-weight: bold; }
         .amount-btn:hover, .amount-btn.active { background: #007bff; color: white; }
         .custom-amount { margin-bottom: 20px; }
-        .custom-amount input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        .custom-amount input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
         .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 18px; width: 100%; }
         .btn:hover { background: #218838; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
@@ -109,6 +172,16 @@ sort($suggested_amounts);
         .recent-contributors { margin-top: 30px; }
         .contributor-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
         .contributor-item:last-child { border-bottom: none; }
+        .stripe-powered { text-align: center; margin-top: 15px; color: #666; font-size: 12px; }
+        .secure-badge { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 15px; color: #28a745; }
+        .security-features { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .rate-limit-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+        
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .topic-summary, .funding-form { padding: 20px; }
+            .amount-buttons { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -150,16 +223,38 @@ sort($suggested_amounts);
         <div class="funding-form">
             <?php if (!empty($errors)): ?>
                 <?php foreach ($errors as $error): ?>
-                    <div class="error"><?php echo $error; ?></div>
+                    <div class="error"><?php echo htmlspecialchars($error); ?></div>
                 <?php endforeach; ?>
             <?php endif; ?>
 
             <?php if ($success): ?>
-                <div class="success"><?php echo $success; ?></div>
+                <div class="success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+
+            <?php
+            // Show rate limit warning if approaching limit
+            $rate_limit_key = 'funding_attempts_' . $_SESSION['user_id'];
+            $current_attempts = $_SESSION[$rate_limit_key] ?? 0;
+            if ($current_attempts >= 3):
+            ?>
+            <div class="rate-limit-warning">
+                ⚠️ You have <?php echo 5 - $current_attempts; ?> funding attempts remaining this hour.
+            </div>
             <?php endif; ?>
 
             <?php if ($topic->status === 'active'): ?>
+                <div class="security-features">
+                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure payment processing.
+                </div>
+
+                <div class="secure-badge">
+                    <span>🔒</span>
+                    <span>Secure payment powered by Stripe</span>
+                </div>
+
                 <form method="POST" id="fundingForm">
+                    <?php echo CSRFProtection::getTokenField(); ?>
+                    
                     <div class="form-section">
                         <h3>Choose Your Contribution Amount</h3>
                         
@@ -180,10 +275,14 @@ sort($suggested_amounts);
                     </div>
 
                     <div class="payment-note">
-                        <strong>📝 Note:</strong> This is a demo platform. In a real implementation, this would integrate with a payment processor like Stripe or PayPal. For testing purposes, clicking "Fund Now" will simulate a successful payment.
+                        <strong>💳 Secure Payment:</strong> Your payment will be processed securely through Stripe. You will be redirected to complete your payment on Stripe's secure checkout page.
                     </div>
 
-                    <button type="submit" class="btn">Fund This Topic Now</button>
+                    <button type="submit" class="btn" id="submitBtn">Continue to Secure Payment</button>
+                    
+                    <div class="stripe-powered">
+                        Payments securely processed by <strong>Stripe</strong>
+                    </div>
                 </form>
             <?php else: ?>
                 <div class="success">
@@ -226,13 +325,28 @@ sort($suggested_amounts);
             
             // Set the custom amount input
             document.getElementById('customAmount').value = this.dataset.amount;
+            validateForm();
         });
     });
 
     // Clear button selection when typing custom amount
     document.getElementById('customAmount').addEventListener('input', function() {
         document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('active'));
+        validateForm();
     });
+
+    function validateForm() {
+        const amount = parseFloat(document.getElementById('customAmount').value);
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (amount >= 1 && amount <= 1000) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        }
+    }
 
     // Form validation
     document.getElementById('fundingForm').addEventListener('submit', function(e) {
@@ -250,11 +364,14 @@ sort($suggested_amounts);
             return;
         }
         
-        // Confirm the contribution
-        if (!confirm(`Are you sure you want to contribute $${amount.toFixed(2)} to this topic?`)) {
-            e.preventDefault();
-        }
+        // Show loading state
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerHTML = 'Processing...';
+        submitBtn.disabled = true;
     });
+    
+    // Initial validation
+    validateForm();
     </script>
 </body>
 </html>
