@@ -1,0 +1,162 @@
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $username in C:\xampp\htdocs\topic-funding\creators\apply.php on line 165
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $display_name in C:\xampp\htdocs\topic-funding\creators\apply.php on line 166
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $bio in C:\xampp\htdocs\topic-funding\creators\apply.php on line 168
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $platform_type in C:\xampp\htdocs\topic-funding\creators\apply.php on line 169
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $platform_url in C:\xampp\htdocs\topic-funding\creators\apply.php on line 170
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $subscriber_count in C:\xampp\htdocs\topic-funding\creators\apply.php on line 171
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $default_funding_threshold in C:\xampp\htdocs\topic-funding\creators\apply.php on line 172
+[19-Jun-2025 04:33:49 Europe/Berlin] PHP Warning:  Undefined variable $profile_image in C:\xampp\htdocs\topic-funding\creators\apply.php on line 173
+[19-Jun-2025 04:33:49 Europe/Berlin] Creator application error for user 7: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'username' cannot be null
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $username in C:\xampp\htdocs\topic-funding\creators\apply.php on line 165
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $display_name in C:\xampp\htdocs\topic-funding\creators\apply.php on line 166
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $bio in C:\xampp\htdocs\topic-funding\creators\apply.php on line 168
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $platform_type in C:\xampp\htdocs\topic-funding\creators\apply.php on line 169
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $platform_url in C:\xampp\htdocs\topic-funding\creators\apply.php on line 170
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $subscriber_count in C:\xampp\htdocs\topic-funding\creators\apply.php on line 171
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $default_funding_threshold in C:\xampp\htdocs\topic-funding\creators\apply.php on line 172
+[19-Jun-2025 04:33:56 Europe/Berlin] PHP Warning:  Undefined variable $profile_image in C:\xampp\htdocs\topic-funding\creators\apply.php on line 173
+[19-Jun-2025 04:33:56 Europe/Berlin] Creator application error for user 7: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'username' cannot be null
+[19-Jun-2025 04:36:56 Europe/Berlin] PHP Fatal error:  Uncaught Error: Class "InputSanitizer" not found in C:\xampp\htdocs\topic-funding\creators\apply.php:32
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\topic-funding\creators\apply.php on line 32
+[20-Jun-2025 04:19:15 Europe/Berlin] PHP Warning:  Undefined property: stdClass::$payment_id in C:\xampp\htdocs\topic-funding\admin\creators.php on line 149
+[20-Jun-2025 04:20:44 Europe/Berlin] PHP Warning:  Undefined property: stdClass::$payment_id in C:\xampp\htdocs\topic-funding\admin\creators.php on line 149
+[21-Jun-2025 03:41:35 Europe/Berlin] PHP Warning:  mail(): Failed to connect to mailserver at &quot;localhost&quot; port 25, verify your &quot;SMTP&quot; and &quot;smtp_port&quot; setting in php.ini or use ini_set() in C:\xampp\htdocs\topic-funding\config\notification_system.php on line 350
+[21-Jun-2025 03:41:35 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[21-Jun-2025 03:41:37 Europe/Berlin] PHP Warning:  mail(): Failed to connect to mailserver at &quot;localhost&quot; port 25, verify your &quot;SMTP&quot; and &quot;smtp_port&quot; setting in php.ini or use ini_set() in C:\xampp\htdocs\topic-funding\config\notification_system.php on line 350
+[21-Jun-2025 03:41:37 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[21-Jun-2025 03:52:25 Europe/Berlin] EMAIL TO: Cash@gmail.com | SUBJECT: 🎉 Your Topic is Fully Funded - 48 Hour Content Deadline | MESSAGE: 
+            Hi Cash,
+            
+            Great news! Your topic 'What is a Choir? Understanding the Basics of Group Singing' has reached its funding goal of $10.00!
+            
+            📅 IMPORTANT: Content Deadline
+            You have exactly 48 hours to create and upload your content for this topic.
+            
+            Deadline: Jun 23, 2025 3:52 AM
+            
+            📋 What you need to do:
+            1. Create your video/live stream for: What is a Choir? Understanding the Basics of Group Singing
+            2. Upload it to your platform (Platform)
+            3. Update the topic with your content URL before the deadline
+            
+            ⚠️ CRITICAL: If you don't upload content within 48 hours:
+            - All contributors will be automatically refunded
+            - The topic will be marked as failed
+            - This may affect your creator status
+            
+            💰 Funding Details:
+            - Amount Raised: $15.00
+            - Contributors: Multiple supporters are counting on you!
+            
+            📝 To upload your content:
+            1. Go to: https://topiclaunch.com/creators/upload_content.php?topic=11
+            2. Add your video/content URL
+            3. Mark the topic as completed
+            
+            Thank you for being part of TopicLaunch! Your supporters are excited to see your content.
+            
+            Questions? Reply to this email or contact support.
+            
+            Best regards,
+            TopicLaunch Team
+        
+[21-Jun-2025 03:52:25 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[21-Jun-2025 03:52:25 Europe/Berlin] EMAIL TO: marekodavis@gmail.com | SUBJECT: 🎉 Topic Funded! Content Coming Soon - What is a Choir? Understanding the Basics of Group Singing | MESSAGE: 
+                Hi jaylenmareko,
+                
+                Exciting news! The topic you funded has reached its goal:
+                
+                📺 Topic: What is a Choir? Understanding the Basics of Group Singing
+                💰 Your Contribution: $5.00
+                👥 Creator: Cash
+                
+                🕐 Content Deadline: Jun 23, 2025 3:52 AM
+                
+                The creator now has 48 hours to create and upload the content you requested.
+                
+                📋 What happens next:
+                ✅ Creator creates your requested content within 48 hours
+                ✅ You'll be notified when content is ready
+                ✅ You can access the content immediately
+                
+                ⚠️ Protection Policy:
+                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded the full amount ($5.00) to your original payment method.
+                
+                📱 Track Progress:
+                View topic status: https://topiclaunch.com/topics/view.php?id=11
+                
+                Thank you for supporting content creators on TopicLaunch!
+                
+                Best regards,
+                TopicLaunch Team
+            
+[21-Jun-2025 03:52:25 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[21-Jun-2025 04:13:07 Europe/Berlin] EMAIL TO: marekodavis@gmail.com | SUBJECT: 🎉 Your Topic is Fully Funded - 48 Hour Content Deadline | MESSAGE: 
+            Hi J7beatz,
+            
+            Great news! Your topic 'Big Beat' has reached its funding goal of $10.00!
+            
+            📅 IMPORTANT: Content Deadline
+            You have exactly 48 hours to create and upload your content for this topic.
+            
+            Deadline: Jun 23, 2025 4:13 AM
+            
+            📋 What you need to do:
+            1. Create your video/live stream for: Big Beat
+            2. Upload it to your platform (Platform)
+            3. Update the topic with your content URL before the deadline
+            
+            ⚠️ CRITICAL: If you don't upload content within 48 hours:
+            - All contributors will be automatically refunded
+            - The topic will be marked as failed
+            - This may affect your creator status
+            
+            💰 Funding Details:
+            - Amount Raised: $10.00
+            - Contributors: Multiple supporters are counting on you!
+            
+            📝 To upload your content:
+            1. Go to: https://topiclaunch.com/creators/upload_content.php?topic=12
+            2. Add your video/content URL
+            3. Mark the topic as completed
+            
+            Thank you for being part of TopicLaunch! Your supporters are excited to see your content.
+            
+            Questions? Reply to this email or contact support.
+            
+            Best regards,
+            TopicLaunch Team
+        
+[21-Jun-2025 04:13:07 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[21-Jun-2025 04:13:07 Europe/Berlin] EMAIL TO: marekodavis@gmail.com | SUBJECT: 🎉 Topic Funded! Content Coming Soon - Big Beat | MESSAGE: 
+                Hi jaylenmareko,
+                
+                Exciting news! The topic you funded has reached its goal:
+                
+                📺 Topic: Big Beat
+                💰 Your Contribution: $10.00
+                👥 Creator: J7beatz
+                
+                🕐 Content Deadline: Jun 23, 2025 4:13 AM
+                
+                The creator now has 48 hours to create and upload the content you requested.
+                
+                📋 What happens next:
+                ✅ Creator creates your requested content within 48 hours
+                ✅ You'll be notified when content is ready
+                ✅ You can access the content immediately
+                
+                ⚠️ Protection Policy:
+                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded the full amount ($10.00) to your original payment method.
+                
+                📱 Track Progress:
+                View topic status: https://topiclaunch.com/topics/view.php?id=12
+                
+                Thank you for supporting content creators on TopicLaunch!
+                
+                Best regards,
+                TopicLaunch Team
+            
+[21-Jun-2025 04:13:07 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
