@@ -436,7 +436,7 @@ class NotificationSystem {
                     • Will appear in your original payment method within 5-10 business days
                     • No action required from you
                     
-                    😔 We apologize for this inconvenience. Our 48-hour delivery guarantee ensures you only pay for content that gets created.
+                    We apologize for this inconvenience. Our 48-hour delivery guarantee ensures you only pay for content that gets created.
                     
                     🔍 Browse more topics: https://topiclaunch.com/topics/
                     
@@ -454,7 +454,7 @@ class NotificationSystem {
     }
     
     /**
-     * Send email notification
+     * Send email notification with SMTP
      */
     private function sendEmail($to, $subject, $message) {
         // For localhost testing - just log emails instead of sending
@@ -463,12 +463,31 @@ class NotificationSystem {
             return true; // Pretend it worked
         }
         
-        // Real email sending for live server
-        $headers = "From: noreply@topiclaunch.com\r\n";
-        $headers .= "Reply-To: support@topiclaunch.com\r\n";
-        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        // SMTP Configuration for HostGator
+        $smtp_host = 'mail.topiclaunch.com';
+        $smtp_port = 587;
+        $smtp_username = 'noreply@topiclaunch.com';
+        $smtp_password = '@J71c6ah8@';
         
-        return mail($to, $subject, $message, $headers);
+        // Email headers
+        $headers = array(
+            'From' => 'noreply@topiclaunch.com',
+            'Reply-To' => 'support@topiclaunch.com',
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'X-Mailer' => 'TopicLaunch Platform'
+        );
+        
+        // Try to send with SMTP (using PHP's mail function with proper headers)
+        $formatted_headers = '';
+        foreach ($headers as $key => $value) {
+            $formatted_headers .= "$key: $value\r\n";
+        }
+        
+        // Use mail() function with proper SMTP configuration
+        ini_set('SMTP', $smtp_host);
+        ini_set('smtp_port', $smtp_port);
+        
+        return mail($to, $subject, $message, $formatted_headers);
     }
     
     /**
