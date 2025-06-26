@@ -511,6 +511,84 @@ class NotificationSystem {
     }
     
     /**
+     * Send notification when topic is proposed to creator
+     */
+    public function sendTopicProposalNotification($topic_id) {
+        try {
+            // Get topic, creator, and proposer info
+            $this->db->query('
+                SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
+                       u.email as creator_user_email, proposer.username as proposer_name
+                FROM topics t 
+                JOIN creators c ON t.creator_id = c.id 
+                LEFT JOIN users u ON c.applicant_user_id = u.id
+                JOIN users proposer ON t.initiator_user_id = proposer.id
+                WHERE t.id = :topic_id
+            ');
+            $this->db->bind(':topic_id', $topic_id);
+            $topic = $this->db->single();
+            
+            if (!$topic) {
+                error_log("Topic not found for proposal notification: " . $topic_id);
+                return false;
+            }
+            
+            $creator_email = $topic->creator_user_email ?: $topic->creator_email;
+            
+            if (!$creator_email) {
+                error_log("No email found for creator ID: " . $topic->creator_id);
+                return false;
+            }
+            
+            $subject = "📋 New Topic Proposal - " . $topic->title;
+            $message = "
+                Hi " . $topic->creator_name . ",
+                
+                You have a new topic proposal waiting for your approval!
+                
+                📺 Topic: " . $topic->title . "
+                👤 Proposed by: " . $topic->proposer_name . "
+                💰 Suggested funding goal: $" . number_format($topic->funding_threshold, 2) . "
+                
+                📋 Description:
+                " . $topic->description . "
+                
+                🎯 What you need to do:
+                1. Review the topic proposal carefully
+                2. Decide if you want to create content on this topic
+                3. Approve or decline the proposal
+                
+                📱 Review and Approve:
+                Visit your Creator Dashboard: https://topiclaunch.com/creators/dashboard.php
+                
+                ⏰ No rush - take your time to review the proposal.
+                
+                💡 Remember:
+                • If you approve, the topic goes live for community funding
+                • Once funded, you'll have 48 hours to create the content
+                • You'll earn 90% of the funding (after 10% platform fee)
+                
+                Questions? Reply to this email or contact support.
+                
+                Best regards,
+                TopicLaunch Team
+            ";
+            
+            $this->sendEmail($creator_email, $subject, $message);
+            
+            // Log notification
+            $this->logNotification($topic->creator_id, 'creator', 'topic_proposal', 
+                "New topic proposal: '" . $topic->title . "' by " . $topic->proposer_name, $topic_id);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Topic proposal notification error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Create required database tables
      */
     private function createNotificationTables() {
