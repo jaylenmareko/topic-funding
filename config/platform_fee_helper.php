@@ -51,8 +51,8 @@ class PlatformFeeManager {
             
             // Record platform fee
             $this->db->query('
-                INSERT INTO platform_fees (topic_id, total_funding, fee_percent, fee_amount, creator_amount)
-                VALUES (:topic_id, :total_funding, :fee_percent, :fee_amount, :creator_amount)
+                INSERT INTO platform_fees (topic_id, total_funding, fee_percent, fee_amount, creator_amount, status)
+                VALUES (:topic_id, :total_funding, :fee_percent, :fee_amount, :creator_amount, "processed")
             ');
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':total_funding', $total_funding);
@@ -102,7 +102,6 @@ class PlatformFeeManager {
                 SUM(creator_amount) as total_creator_payouts,
                 AVG(fee_percent) as average_fee_percent
             FROM platform_fees 
-            WHERE status = "processed"
         ');
         return $this->db->single();
     }
