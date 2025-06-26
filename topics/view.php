@@ -1,7 +1,8 @@
 <?php
-// topics/view.php - Individual topic detail page with enhanced funding widget
+// topics/view.php - Individual topic detail page with simplified navigation
 session_start();
 require_once '../config/database.php';
+require_once '../config/navigation.php';
 
 $helper = new DatabaseHelper();
 $topic_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -31,61 +32,81 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
 <!DOCTYPE html>
 <html>
 <head>
-    <title><?php echo htmlspecialchars($topic->title); ?> - Topic Funding</title>
+    <title><?php echo htmlspecialchars($topic->title); ?> - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
-        .nav a:hover { text-decoration: underline; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .topic-header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .topic-title { font-size: 28px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
         .topic-meta { color: #666; margin-bottom: 20px; }
         .creator-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .creator-avatar { width: 60px; height: 60px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #666; }
+        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
         .creator-details h3 { margin: 0; color: #333; }
         .creator-details p { margin: 5px 0; color: #666; }
-        .status-badge { padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; }
+        .status-badge { padding: 8px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; }
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
+        .status-pending-approval { background: #f8d7da; color: #721c24; }
         .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         .main-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .sidebar { display: flex; flex-direction: column; gap: 20px; }
         .contributions-section { margin-top: 30px; }
-        .contribution-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .contribution-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
         .contribution-item:last-child { border-bottom: none; }
+        .contributor-info { display: flex; align-items: center; gap: 10px; }
+        .contributor-avatar { width: 30px; height: 30px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
         .contributor-name { font-weight: bold; }
         .contribution-amount { color: #28a745; font-weight: bold; }
         .contribution-date { font-size: 12px; color: #666; }
         .empty-contributions { text-align: center; color: #666; padding: 20px; }
-        .share-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
-        .share-buttons { display: flex; gap: 10px; margin-top: 10px; }
-        .share-btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; color: white; font-size: 14px; }
+        .share-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .share-buttons { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .share-btn { padding: 10px 15px; border-radius: 6px; text-decoration: none; color: white; font-size: 14px; font-weight: 500; transition: transform 0.3s; }
+        .share-btn:hover { transform: translateY(-1px); text-decoration: none; color: white; }
         .share-twitter { background: #1da1f2; }
         .share-facebook { background: #4267b2; }
-        .share-copy { background: #6c757d; }
-        .deadline-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
-        .completed-content { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .share-copy { background: #6c757d; border: none; cursor: pointer; }
+        .deadline-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .completed-content { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin: 20px 0; }
         .analytics-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; }
         .analytics-stat { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-        .analytics-number { font-size: 16px; font-weight: bold; color: #007bff; }
-        .analytics-label { font-size: 11px; color: #666; }
+        .analytics-number { font-size: 16px; font-weight: bold; color: #667eea; }
+        .analytics-label { font-size: 11px; color: #666; margin-top: 5px; }
+        .funding-widget { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .funding-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .funding-progress-bar { background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden; position: relative; }
+        .funding-progress { background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        .funding-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0; }
+        .funding-stat { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .funding-stat-number { font-size: 18px; font-weight: bold; color: #28a745; }
+        .funding-stat-label { font-size: 12px; color: #666; }
+        .action-button { background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold; margin-top: 20px; transition: background 0.3s; }
+        .action-button:hover { background: #218838; color: white; text-decoration: none; }
+        .action-button.login { background: #667eea; }
+        .action-button.login:hover { background: #5a6fd8; }
+        .action-button.completed { background: #6c757d; cursor: default; }
+        .pending-approval { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .content-grid { grid-template-columns: 1fr; }
+            .creator-info { flex-direction: column; text-align: center; }
+            .funding-stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .share-buttons { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="nav">
-            <a href="index.php">← Back to All Topics</a>
-            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>">View Creator Profile</a>
-            <a href="../index.php">Home</a>
-        </div>
+    <?php renderNavigation('browse_topics'); ?>
 
+    <div class="container">
         <div class="topic-header">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                <span class="status-badge status-<?php echo $topic->status; ?>">
-                    <?php echo ucfirst($topic->status); ?>
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <span class="status-badge status-<?php echo str_replace('_', '-', $topic->status); ?>">
+                    <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
                 </span>
                 <div class="topic-meta">
                     Created <?php echo date('M j, Y g:i A', strtotime($topic->created_at)); ?>
@@ -97,7 +118,8 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
             <div class="creator-info">
                 <div class="creator-avatar">
                     <?php if ($topic->creator_image): ?>
-                        <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" alt="Creator" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                        <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" 
+                             alt="Creator" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                     <?php else: ?>
                         <?php echo strtoupper(substr($topic->creator_name, 0, 1)); ?>
                     <?php endif; ?>
@@ -109,16 +131,25 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
             </div>
         </div>
 
+        <?php if ($topic->status === 'pending_approval'): ?>
+        <div class="pending-approval">
+            <h3>⏳ Awaiting Creator Approval</h3>
+            <p>This topic has been proposed and is waiting for the creator to review and approve it. Once approved, it will go live for community funding.</p>
+        </div>
+        <?php endif; ?>
+
         <div class="content-grid">
             <div class="main-content">
                 <h2>Topic Description</h2>
-                <p><?php echo nl2br(htmlspecialchars($topic->description)); ?></p>
+                <div style="line-height: 1.6; color: #666;">
+                    <?php echo nl2br(htmlspecialchars($topic->description)); ?>
+                </div>
 
                 <?php if ($topic->status === 'funded' && $topic->content_deadline): ?>
                 <div class="deadline-warning">
-                    <strong>⏰ Content Deadline:</strong> 
-                    <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?>
-                    <br><small>The creator has committed to delivering this content by the deadline above.</small>
+                    <h4 style="margin-top: 0;">⏰ Content Deadline</h4>
+                    <p><strong><?php echo date('l, M j, Y \a\t g:i A', strtotime($topic->content_deadline)); ?></strong></p>
+                    <p>The creator has committed to delivering this content by the deadline above. If content isn't delivered on time, all contributors will be automatically refunded.</p>
                 </div>
                 <?php endif; ?>
 
@@ -126,44 +157,115 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                 <div class="completed-content">
                     <h3>✅ Content Delivered!</h3>
                     <p>The creator has completed this topic. Check out the content below:</p>
-                    <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Content</a>
+                    <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" 
+                       style="background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin-top: 10px;">
+                        🎬 View Content
+                    </a>
+                    <?php if ($topic->completion_notes): ?>
+                        <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 6px;">
+                            <strong>Creator's Notes:</strong><br>
+                            <?php echo nl2br(htmlspecialchars($topic->completion_notes)); ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
 
                 <div class="contributions-section">
-                    <h3>Recent Contributors (<?php echo count($contributions); ?>)</h3>
+                    <h3>Contributors (<?php echo count($contributions); ?>)</h3>
                     <?php if (empty($contributions)): ?>
                         <div class="empty-contributions">
                             <p>No contributions yet. Be the first to fund this topic!</p>
                         </div>
                     <?php else: ?>
-                        <?php foreach (array_slice($contributions, 0, 10) as $contribution): ?>
-                            <div class="contribution-item">
-                                <div>
-                                    <div class="contributor-name"><?php echo htmlspecialchars($contribution->username); ?></div>
-                                    <div class="contribution-date"><?php echo date('M j, Y g:i A', strtotime($contribution->contributed_at)); ?></div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <?php foreach ($contributions as $contribution): ?>
+                                <div class="contribution-item">
+                                    <div class="contributor-info">
+                                        <div class="contributor-avatar">
+                                            <?php echo strtoupper(substr($contribution->username, 0, 1)); ?>
+                                        </div>
+                                        <div>
+                                            <div class="contributor-name"><?php echo htmlspecialchars($contribution->username); ?></div>
+                                            <div class="contribution-date"><?php echo date('M j, Y g:i A', strtotime($contribution->contributed_at)); ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="contribution-amount">$<?php echo number_format($contribution->amount, 2); ?></div>
                                 </div>
-                                <div class="contribution-amount">$<?php echo number_format($contribution->amount, 2); ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (count($contributions) > 10): ?>
-                            <div style="text-align: center; margin-top: 15px; color: #666;">
-                                And <?php echo count($contributions) - 10; ?> more contributors...
-                            </div>
-                        <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
 
             <div class="sidebar">
                 <!-- Enhanced Funding Widget -->
-                <?php renderFundingWidget($topic, $contributions, $analytics); ?>
+                <div class="funding-widget">
+                    <div class="funding-header">
+                        <h3 style="margin: 0; color: #333;">Funding Progress</h3>
+                        <?php if ($topic->status === 'active' && count($contributions) > 0): ?>
+                            <div style="background: #e8f5e8; color: #2d5f2d; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                                🔥 Active
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="funding-progress-bar">
+                        <div class="funding-progress" style="width: <?php echo $progress_percent; ?>%"></div>
+                    </div>
+
+                    <div class="funding-stats-grid">
+                        <div class="funding-stat">
+                            <div class="funding-stat-number">$<?php echo number_format($topic->current_funding, 0); ?></div>
+                            <div class="funding-stat-label">Raised</div>
+                        </div>
+                        <div class="funding-stat">
+                            <div class="funding-stat-number" style="color: #dc3545;">$<?php echo number_format($remaining, 0); ?></div>
+                            <div class="funding-stat-label">Remaining</div>
+                        </div>
+                        <div class="funding-stat">
+                            <div class="funding-stat-number" style="color: #667eea;"><?php echo count($contributions); ?></div>
+                            <div class="funding-stat-label">Backers</div>
+                        </div>
+                        <div class="funding-stat">
+                            <div class="funding-stat-number" style="color: #6f42c1;"><?php echo round($progress_percent); ?>%</div>
+                            <div class="funding-stat-label">Complete</div>
+                        </div>
+                    </div>
+
+                    <?php if ($topic->status === 'active'): ?>
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                            <a href="fund.php?id=<?php echo $topic->id; ?>" class="action-button">
+                                💰 Fund This Topic
+                            </a>
+                        <?php else: ?>
+                            <a href="../auth/login.php" class="action-button login">
+                                🔑 Login to Fund
+                            </a>
+                        <?php endif; ?>
+                    <?php elseif ($topic->status === 'funded'): ?>
+                        <div class="action-button completed">
+                            ✅ Fully Funded! Content coming soon...
+                        </div>
+                    <?php elseif ($topic->status === 'completed'): ?>
+                        <div class="action-button completed">
+                            ✅ Completed!
+                        </div>
+                    <?php elseif ($topic->status === 'pending_approval'): ?>
+                        <div class="action-button completed">
+                            ⏳ Awaiting Creator Approval
+                        </div>
+                    <?php endif; ?>
+                </div>
 
                 <!-- Additional Analytics (if available) -->
                 <?php if ($analytics && $analytics->total_contributors > 0): ?>
                 <div class="analytics-section">
                     <h4 style="margin-top: 0; color: #333;">Funding Analytics</h4>
                     <div class="analytics-grid">
+                        <div class="analytics-stat">
+                            <div class="analytics-number">$<?php echo number_format($analytics->average_contribution, 0); ?></div>
+                            <div class="analytics-label">Average</div>
+                        </div>
                         <div class="analytics-stat">
                             <div class="analytics-number">$<?php echo number_format($analytics->largest_contribution, 0); ?></div>
                             <div class="analytics-label">Largest</div>
@@ -182,32 +284,122 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                             <div class="analytics-label">First Contribution</div>
                         </div>
                         <?php endif; ?>
+                        <?php if ($analytics->latest_contribution_date): ?>
+                        <div class="analytics-stat">
+                            <div class="analytics-number"><?php echo date('M j', strtotime($analytics->latest_contribution_date)); ?></div>
+                            <div class="analytics-label">Latest Contribution</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
 
                 <!-- Share Section -->
-                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div class="share-section">
                     <h4 style="margin-top: 0;">Share This Topic</h4>
                     <p style="margin-bottom: 15px; color: #666;">Help this topic reach its funding goal!</p>
                     <div class="share-buttons">
-                        <a href="https://twitter.com/intent/tweet?text=<?php echo urlencode('Check out this topic: ' . $topic->title); ?>&url=<?php echo urlencode('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']); ?>" 
-                           target="_blank" class="share-btn share-twitter">Twitter</a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']); ?>" 
-                           target="_blank" class="share-btn share-facebook">Facebook</a>
-                        <button onclick="copyToClipboard()" class="share-btn share-copy">Copy Link</button>
+                        <a href="https://twitter.com/intent/tweet?text=<?php echo urlencode('Check out this topic: ' . $topic->title . ' on TopicLaunch'); ?>&url=<?php echo urlencode('https://topiclaunch.com' . $_SERVER['REQUEST_URI']); ?>" 
+                           target="_blank" class="share-btn share-twitter">🐦 Twitter</a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode('https://topiclaunch.com' . $_SERVER['REQUEST_URI']); ?>" 
+                           target="_blank" class="share-btn share-facebook">📘 Facebook</a>
+                        <button onclick="copyToClipboard()" class="share-btn share-copy">📋 Copy Link</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 14px;">
+                        <strong>🎯 Why share?</strong><br>
+                        <span style="color: #666;">More supporters = faster funding = content gets created sooner!</span>
                     </div>
                 </div>
+
+                <!-- Related Topics -->
+                <?php if ($topic->status === 'active' || $topic->status === 'completed'): ?>
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h4 style="margin-top: 0;">More from <?php echo htmlspecialchars($topic->creator_name); ?></h4>
+                    <p style="color: #666; margin-bottom: 15px;">Check out other topics by this creator</p>
+                    <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="action-button" style="margin-top: 0;">
+                        👤 View Creator Profile
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
+
+        <!-- Call to Action -->
+        <?php if ($topic->status === 'active'): ?>
+        <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3>Help Make This Content Happen!</h3>
+            <p>This topic needs $<?php echo number_format($remaining, 0); ?> more to get funded. Every contribution brings us closer to the goal!</p>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="fund.php?id=<?php echo $topic->id; ?>" class="action-button" style="display: inline-block; margin-top: 0;">
+                    💰 Fund This Topic Now
+                </a>
+                <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                    <strong>🛡️ Protected:</strong> Full refund if content isn't delivered within 48 hours of funding
+                </div>
+            <?php else: ?>
+                <a href="../auth/register.php" class="action-button login" style="display: inline-block; margin-top: 0;">
+                    🚀 Join TopicLaunch to Fund
+                </a>
+            <?php endif; ?>
+        </div>
+        <?php elseif ($topic->status === 'completed'): ?>
+        <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3>🎉 Success Story!</h3>
+            <p>This topic was successfully funded by <?php echo count($contributions); ?> contributors and the creator delivered amazing content!</p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                <a href="../topics/index.php" class="action-button" style="display: inline-block; margin-top: 0;">
+                    🔍 Browse More Topics
+                </a>
+                <a href="../topics/create.php?creator_id=<?php echo $topic->creator_id; ?>" class="action-button" style="display: inline-block; margin-top: 0; background: #667eea;">
+                    💡 Propose Another Topic
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <script>
     function copyToClipboard() {
         navigator.clipboard.writeText(window.location.href).then(function() {
+            // Show success feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Copied!';
+            button.style.background = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#6c757d';
+            }, 2000);
+        }).catch(function() {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = window.location.href;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
             alert('Link copied to clipboard!');
         });
     }
+
+    // Auto-refresh for funded topics to show real-time updates
+    <?php if ($topic->status === 'funded'): ?>
+    // Check for content updates every 5 minutes
+    setInterval(function() {
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                // Check if status changed to completed
+                if (html.includes('status-completed') && !document.querySelector('.status-completed')) {
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.log('Status check failed:', error));
+    }, 300000); // 5 minutes
+    <?php endif; ?>
     </script>
 </body>
 </html>
