@@ -1,7 +1,8 @@
 <?php
-// dashboard/index.php - User Dashboard
+// dashboard/index.php - User Dashboard with simplified navigation
 session_start();
 require_once '../config/database.php';
+require_once '../config/navigation.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -86,20 +87,18 @@ if ($total_contributed >= 500) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Dashboard - Topic Funding</title>
+    <title>My Dashboard - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
-        .nav a:hover { text-decoration: underline; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .user-info { display: flex; justify-content: space-between; align-items: center; }
+        .user-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
         .user-details h1 { margin: 0 0 10px 0; color: #333; }
         .user-level { padding: 8px 16px; border-radius: 20px; font-weight: bold; color: white; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-        .stat-number { font-size: 32px; font-weight: bold; color: #007bff; margin-bottom: 5px; }
+        .stat-number { font-size: 32px; font-weight: bold; color: #667eea; margin-bottom: 5px; }
         .stat-label { color: #666; font-size: 14px; }
         .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         .main-content { display: flex; flex-direction: column; gap: 20px; }
@@ -117,38 +116,59 @@ if ($total_contributed >= 500) {
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
+        .status-pending_approval { background: #f8d7da; color: #721c24; }
         .funding-bar { background: #e9ecef; height: 6px; border-radius: 3px; margin: 10px 0; }
         .funding-progress { background: #28a745; height: 100%; border-radius: 3px; transition: width 0.3s; }
-        .btn { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px; }
-        .btn:hover { background: #0056b3; }
+        .btn { background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px; }
+        .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
         .empty-state { text-align: center; color: #666; padding: 30px; }
         .milestone-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .milestone-item:last-child { border-bottom: none; }
         .achievement-badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-        .quick-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .quick-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .activity-feed { max-height: 400px; overflow-y: auto; }
+        .welcome-banner { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .welcome-banner h2 { margin: 0 0 10px 0; }
+        .level-progress { background: rgba(255,255,255,0.2); height: 6px; border-radius: 3px; margin-top: 10px; }
+        .level-bar { background: rgba(255,255,255,0.8); height: 100%; border-radius: 3px; }
+        
+        @media (max-width: 768px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .user-info { flex-direction: column; text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .quick-actions { justify-content: center; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="nav">
-            <a href="../index.php">← Back to Home</a>
-            <a href="../topics/index.php">Browse Topics</a>
-            <a href="../creators/index.php">Browse Creators</a>
-        </div>
+    <?php renderNavigation('dashboard'); ?>
 
-        <div class="header">
-            <div class="user-info">
-                <div class="user-details">
-                    <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
-                    <p style="margin: 0; color: #666;">Track your contributions and discover new topics to fund</p>
+    <div class="container">
+        <div class="welcome-banner">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h2>
+                    <p style="margin: 0; opacity: 0.9;">Track your contributions and discover new topics to fund</p>
                 </div>
                 <div>
                     <span class="user-level" style="background-color: <?php echo $level_color; ?>;">
                         <?php echo $user_level; ?>
                     </span>
                 </div>
+            </div>
+            
+            <!-- Level Progress -->
+            <?php 
+            $next_threshold = $total_contributed >= 500 ? 1000 : ($total_contributed >= 200 ? 500 : ($total_contributed >= 50 ? 200 : 50));
+            $progress_to_next = min(($total_contributed / $next_threshold) * 100, 100);
+            ?>
+            <div class="level-progress">
+                <div class="level-bar" style="width: <?php echo $progress_to_next; ?>%"></div>
+            </div>
+            <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
+                $<?php echo number_format($total_contributed, 0); ?> / $<?php echo number_format($next_threshold, 0); ?> to next level
             </div>
         </div>
 
@@ -182,32 +202,38 @@ if ($total_contributed >= 500) {
                             <a href="../topics/index.php" class="btn">Browse Topics</a>
                         </div>
                     <?php else: ?>
-                        <?php foreach ($recent_contributions as $contribution): ?>
-                            <div class="contribution-item">
-                                <div class="contribution-details">
-                                    <div class="topic-title"><?php echo htmlspecialchars($contribution->topic_title); ?></div>
-                                    <div class="topic-meta">
-                                        By <?php echo htmlspecialchars($contribution->creator_name); ?> • 
-                                        <?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?> •
-                                        <span class="topic-status status-<?php echo $contribution->topic_status; ?>">
-                                            <?php echo ucfirst($contribution->topic_status); ?>
-                                        </span>
-                                    </div>
-                                    <?php if ($contribution->topic_status === 'active'): ?>
-                                        <div class="funding-bar" style="width: 200px;">
-                                            <?php 
-                                            $progress = ($contribution->current_funding / $contribution->funding_threshold) * 100;
-                                            $progress = min($progress, 100);
-                                            ?>
-                                            <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
+                        <div class="activity-feed">
+                            <?php foreach ($recent_contributions as $contribution): ?>
+                                <div class="contribution-item">
+                                    <div class="contribution-details">
+                                        <div class="topic-title">
+                                            <a href="../topics/view.php?id=<?php echo $contribution->topic_id; ?>" style="color: #333; text-decoration: none;">
+                                                <?php echo htmlspecialchars($contribution->topic_title); ?>
+                                            </a>
                                         </div>
-                                    <?php endif; ?>
+                                        <div class="topic-meta">
+                                            By <?php echo htmlspecialchars($contribution->creator_name); ?> • 
+                                            <?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?> •
+                                            <span class="topic-status status-<?php echo $contribution->topic_status; ?>">
+                                                <?php echo ucfirst($contribution->topic_status); ?>
+                                            </span>
+                                        </div>
+                                        <?php if ($contribution->topic_status === 'active'): ?>
+                                            <div class="funding-bar" style="width: 200px;">
+                                                <?php 
+                                                $progress = ($contribution->current_funding / $contribution->funding_threshold) * 100;
+                                                $progress = min($progress, 100);
+                                                ?>
+                                                <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="contribution-amount">
+                                        $<?php echo number_format($contribution->amount, 2); ?>
+                                    </div>
                                 </div>
-                                <div class="contribution-amount">
-                                    $<?php echo number_format($contribution->amount, 2); ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
                         <?php if (count($recent_contributions) >= 10): ?>
                             <div style="text-align: center; margin-top: 15px;">
                                 <a href="contributions.php" class="btn">View All Contributions</a>
@@ -230,7 +256,7 @@ if ($total_contributed >= 500) {
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                                     <h4 style="margin: 0;"><?php echo htmlspecialchars($topic->title); ?></h4>
                                     <span class="topic-status status-<?php echo $topic->status; ?>">
-                                        <?php echo ucfirst($topic->status); ?>
+                                        <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
                                     </span>
                                 </div>
                                 <p style="margin: 5px 0; color: #666; font-size: 14px;">
@@ -269,9 +295,10 @@ if ($total_contributed >= 500) {
                 <div class="section">
                     <h3 style="margin-top: 0;">Quick Actions</h3>
                     <div class="quick-actions" style="flex-direction: column;">
-                        <a href="../topics/create.php" class="btn btn-success">Propose New Topic</a>
-                        <a href="../topics/index.php" class="btn">Browse Active Topics</a>
-                        <a href="../creators/apply.php" class="btn">Become a Creator</a>
+                        <a href="../topics/create.php" class="btn btn-success">💡 Propose New Topic</a>
+                        <a href="../topics/index.php" class="btn">🔍 Browse Active Topics</a>
+                        <a href="../creators/index.php" class="btn">👥 Browse Creators</a>
+                        <a href="../creators/apply.php" class="btn">🎯 Become a Creator</a>
                     </div>
                 </div>
 
@@ -304,7 +331,7 @@ if ($total_contributed >= 500) {
                 <!-- Contribution Tips -->
                 <div class="section">
                     <h3 style="margin-top: 0;">💡 Tips</h3>
-                    <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px;">
+                    <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.6;">
                         <li>Contribute early to show creators there's interest</li>
                         <li>Share topics with friends to reach funding goals faster</li>
                         <li>Follow your favorite creators for new topic updates</li>
