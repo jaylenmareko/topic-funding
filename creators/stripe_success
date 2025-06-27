@@ -1,0 +1,167 @@
+<?php
+// creators/stripe_success.php - Stripe onboarding success
+session_start();
+require_once '../config/database.php';
+require_once '../config/stripe_connect.php';
+
+$creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
+
+if (!$creator_id) {
+    header('Location: ../index.php');
+    exit;
+}
+
+$db = new Database();
+$stripeConnect = new StripeConnectManager();
+
+// Verify creator ownership
+$db->query('
+    SELECT c.*, u.email 
+    FROM creators c 
+    LEFT JOIN users u ON c.applicant_user_id = u.id 
+    WHERE c.id = :creator_id AND c.applicant_user_id = :user_id
+');
+$db->bind(':creator_id', $creator_id);
+$db->bind(':user_id', $_SESSION['user_id']);
+$creator = $db->single();
+
+if (!$creator) {
+    header('Location: ../index.php');
+    exit;
+}
+
+// Check account status
+$account_ready = $stripeConnect->isAccountReady($creator_id);
+
+// Get pending topics count
+$db->query('
+    SELECT COUNT(*) as count 
+    FROM topics 
+    WHERE creator_id = :creator_id AND status = "funded"
+');
+$db->bind(':creator_id', $creator_id);
+$pending_topics = $db->single()->count;
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Setup <?php echo $account_ready ? 'Complete' : 'In Progress'; ?> - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 50px auto; }
+        .success-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .success-icon { font-size: 64px; margin-bottom: 20px; }
+        .success-title { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 15px; }
+        .success-message { color: #666; margin-bottom: 30px; line-height: 1.6; font-size: 16px; }
+        .btn { background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px; font-weight: bold; transition: background 0.3s; }
+        .btn:hover { background: #218838; color: white; text-decoration: none; }
+        .btn-primary { background: #667eea; }
+        .btn-primary:hover { background: #5a6fd8; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-warning:hover { background: #e0a800; color: #212529; text-decoration: none; }
+        .status-pending { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .status-complete { background: #d4edda; border: 2px solid #28a745; color: #155724; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .next-steps { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; }
+        .next-steps h4 { margin-top: 0; color: #1976d2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-card">
+            <?php if ($account_ready): ?>
+                <div class="success-icon">🎉</div>
+                <h1 class="success-title">Payment Setup Complete!</h1>
+                <div class="success-message">
+                    Congratulations! Your Stripe account is now active and ready to receive automatic payouts.
+                    You'll be paid instantly when you complete funded topics.
+                </div>
+
+                <div class="status-complete">
+                    <strong>✅ Your account is ready for payouts!</strong><br>
+                    You'll receive 90% of funding automatically when you complete topics.
+                </div>
+
+                <?php if ($pending_topics > 0): ?>
+                <div class="next-steps">
+                    <h4>🚀 What's Next:</h4>
+                    <ul>
+                        <li><strong><?php echo $pending_topics; ?> funded topics</strong> are waiting for your content!</li>
+                        <li>Complete them within 48 hours to receive automatic payment</li>
+                        <li>Upload content URLs to mark topics as completed</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <a href="dashboard.php#funded-topics" class="btn btn-warning">
+                        ⚡ Complete Funded Topics (<?php echo $pending_topics; ?>)
+                    </a>
+                    <a href="dashboard.php" class="btn btn-primary">📊 Creator Dashboard</a>
+                </div>
+                <?php else: ?>
+                <div style="margin-top: 30px;">
+                    <a href="dashboard.php" class="btn">📊 Creator Dashboard</a>
+                    <a href="../topics/index.php" class="btn btn-primary">🔍 Browse Topics</a>
+                </div>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <div class="success-icon">⏳</div>
+                <h1 class="success-title">Setup In Progress</h1>
+                <div class="success-message">
+                    Your Stripe account has been created, but we're still waiting for some additional information 
+                    to enable payouts. This usually completes within a few minutes.
+                </div>
+
+                <div class="status-pending">
+                    <strong>⏳ Account verification in progress...</strong><br>
+                    We're processing your information with Stripe. You'll be notified when payouts are enabled.
+                </div>
+
+                <div class="next-steps">
+                    <h4>💡 While You Wait:</h4>
+                    <ul>
+                        <li>Check your email for any additional verification requests from Stripe</li>
+                        <li>Review your creator dashboard and upcoming topics</li>
+                        <li>Start planning content for your funded topics</li>
+                        <li>Refresh this page in a few minutes to check status</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <a href="stripe_onboarding.php?creator_id=<?php echo $creator_id; ?>" class="btn">🔄 Check Status</a>
+                    <a href="dashboard.php" class="btn btn-primary">📊 Creator Dashboard</a>
+                </div>
+            <?php endif; ?>
+
+            <div style="margin-top: 25px; color: #666; font-size: 14px;">
+                <p><strong>🔒 Secure:</strong> All payment information is handled securely by Stripe</p>
+                <p>Questions? <a href="mailto:support@topiclaunch.com" style="color: #667eea;">Contact our support team</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Auto-refresh if account is not ready yet
+    <?php if (!$account_ready): ?>
+    setTimeout(function() {
+        window.location.reload();
+    }, 30000); // Refresh every 30 seconds
+    <?php endif; ?>
+    
+    // Celebration effect for completed setup
+    <?php if ($account_ready): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add some celebration effects
+        setTimeout(function() {
+            if (<?php echo $pending_topics; ?> > 0) {
+                if (confirm('🎉 Payment setup complete! You have <?php echo $pending_topics; ?> funded topics waiting. Go complete them now?')) {
+                    window.location.href = 'dashboard.php#funded-topics';
+                }
+            }
+        }, 2000);
+    });
+    <?php endif; ?>
+    </script>
+</body>
+</html>
