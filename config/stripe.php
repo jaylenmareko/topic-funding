@@ -8,6 +8,9 @@ define('STRIPE_SECRET_KEY', 'sk_live_51QbKG8Kg5kxyA3jRr5fIiCLCBNw2d0RGJJ7dodMqMT
 \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
 define('STRIPE_CURRENCY', 'usd');
+
+// Different success URLs for different payment types
 define('STRIPE_SUCCESS_URL', 'https://topiclaunch.com/topics/fund_success.php');
+define('STRIPE_TOPIC_CREATION_SUCCESS_URL', 'https://topiclaunch.com/topics/creation_success.php');
 define('STRIPE_CANCEL_URL', 'https://topiclaunch.com/topics/fund_cancel.php');
 ?>
