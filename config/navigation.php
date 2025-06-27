@@ -168,18 +168,6 @@ function renderNavigation($current_page = '') {
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
                     <!-- Main Navigation for Logged In Users -->
-                    <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link <?php echo $current_page === 'browse_topics' ? 'active' : ''; ?>">
-                        Browse Topics
-                    </a>
-                    
-                    <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
-                        Browse Creators
-                    </a>
-                    
-                    <a href="<?php echo $base_path; ?>topics/create.php" class="nav-link <?php echo $current_page === 'propose_topic' ? 'active' : ''; ?>">
-                        💡 Propose Topic
-                    </a>
-                    
                     <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
                         My Dashboard
                     </a>
@@ -213,10 +201,6 @@ function renderNavigation($current_page = '') {
                     
                 <?php else: ?>
                     <!-- Navigation for Guests -->
-                    <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link">
-                        Browse Creators
-                    </a>
-                    
                     <a href="<?php echo $base_path; ?>auth/login.php" class="nav-btn">
                         Login
                     </a>
