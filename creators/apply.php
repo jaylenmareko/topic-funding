@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Fixed creator application form with security
+// creators/apply.php - Fixed creator application form with YouTube only
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -31,7 +31,7 @@ if ($_POST && !$existing_application) {
     // Sanitize inputs
     $display_name = InputSanitizer::sanitizeString($_POST['display_name']);
     $bio = InputSanitizer::sanitizeString($_POST['bio']);
-    $platform_type = InputSanitizer::sanitizeString($_POST['platform_type']);
+    $platform_type = 'youtube'; // Force YouTube only
     $platform_url = InputSanitizer::sanitizeUrl($_POST['platform_url']);
     $subscriber_count = InputSanitizer::sanitizeInt($_POST['subscriber_count']);
     $default_funding_threshold = InputSanitizer::sanitizeFloat($_POST['default_funding_threshold']);
@@ -67,18 +67,16 @@ if ($_POST && !$existing_application) {
         $errors[] = "Bio must be at least 50 characters";
     }
     
-    if (empty($platform_type)) {
-        $errors[] = "Platform type is required";
-    }
-    
     if (empty($platform_url)) {
-        $errors[] = "Platform URL is required";
+        $errors[] = "YouTube channel URL is required";
     } elseif (!filter_var($platform_url, FILTER_VALIDATE_URL)) {
-        $errors[] = "Please enter a valid URL";
+        $errors[] = "Please enter a valid YouTube channel URL";
+    } elseif (strpos($platform_url, 'youtube.com') === false && strpos($platform_url, 'youtu.be') === false) {
+        $errors[] = "Please enter a valid YouTube channel URL";
     }
     
     if ($subscriber_count < 100) {
-        $errors[] = "Minimum 100 subscribers required";
+        $errors[] = "Minimum 100 YouTube subscribers required";
     }
     
     if ($default_funding_threshold < 10) {
@@ -157,7 +155,7 @@ if ($_POST && !$existing_application) {
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
-                $success = "Creator application submitted successfully! We'll review it and get back to you. Your creator username will be: " . $username;
+                $success = "YouTube creator application submitted successfully! We'll review it and get back to you. Your creator username will be: " . $username;
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
@@ -171,7 +169,7 @@ if ($_POST && !$existing_application) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Apply to be a Creator - Topic Funding</title>
+    <title>Apply to be a YouTube Creator - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -179,23 +177,26 @@ if ($_POST && !$existing_application) {
         .nav { margin-bottom: 20px; }
         .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
         .header { text-align: center; margin-bottom: 30px; }
+        .youtube-header { background: #ff0000; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .youtube-header h2 { margin: 0; font-size: 24px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input[type="text"], input[type="url"], input[type="number"], select, textarea { 
             width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
         }
         textarea { height: 120px; resize: vertical; }
-        .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
-        .btn:hover { background: #0056b3; }
+        .btn { background: #ff0000; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn:hover { background: #cc0000; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 10px; }
-        .success { color: green; margin-bottom: 10px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
+        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
         .requirements { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .requirements h3 { margin-top: 0; }
+        .requirements h3 { margin-top: 0; color: #ff0000; }
         .requirements ul { margin-bottom: 0; }
         .security-note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
         .file-requirements { font-size: 12px; color: #666; margin-top: 5px; }
         .char-counter { font-size: 12px; color: #666; margin-top: 5px; }
+        .youtube-only { background: #ff0000; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
         
         @media (max-width: 768px) {
             .container { margin: 10px; padding: 20px; }
@@ -209,9 +210,9 @@ if ($_POST && !$existing_application) {
             <a href="../creators/index.php">Browse Creators</a>
         </div>
 
-        <div class="header">
-            <h1>Apply to be a Creator</h1>
-            <p>Join our platform and let your audience fund the content they want to see!</p>
+        <div class="youtube-header">
+            <h2>📺 Apply to be a YouTube Creator</h2>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Join TopicLaunch and let your audience fund the content they want to see!</p>
         </div>
 
         <div class="security-note">
@@ -219,12 +220,13 @@ if ($_POST && !$existing_application) {
         </div>
 
         <div class="requirements">
-            <h3>Requirements:</h3>
+            <h3>📺 YouTube Creator Requirements:</h3>
             <ul>
-                <li>Minimum 100 subscribers/followers</li>
-                <li>Active content creation on your platform</li>
+                <li>Minimum 100 YouTube subscribers</li>
+                <li>Active YouTube channel with recent uploads</li>
                 <li>Commitment to creating funded content within 48 hours</li>
-                <li>Valid platform URL for verification</li>
+                <li>Valid YouTube channel URL for verification</li>
+                <li>Must be focused on YouTube content creation</li>
             </ul>
         </div>
 
@@ -250,31 +252,30 @@ if ($_POST && !$existing_application) {
 
                 <div class="form-group">
                     <label>Bio: *</label>
-                    <textarea name="bio" id="bio" required placeholder="Tell us about yourself and your content (minimum 50 characters)"><?php echo isset($_POST['bio']) ? htmlspecialchars($_POST['bio']) : ''; ?></textarea>
+                    <textarea name="bio" id="bio" required placeholder="Tell us about yourself and your YouTube content (minimum 50 characters)"><?php echo isset($_POST['bio']) ? htmlspecialchars($_POST['bio']) : ''; ?></textarea>
                     <div class="char-counter" id="bioCounter">0 / 50 characters minimum</div>
                 </div>
 
                 <div class="form-group">
                     <label>Platform Type: *</label>
-                    <select name="platform_type" required>
-                        <option value="">Select Platform</option>
-                        <option value="youtube" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'youtube') ? 'selected' : ''; ?>>YouTube</option>
-                        <option value="twitch" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'twitch') ? 'selected' : ''; ?>>Twitch</option>
-                        <option value="tiktok" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'tiktok') ? 'selected' : ''; ?>>TikTok</option>
-                        <option value="other" <?php echo (isset($_POST['platform_type']) && $_POST['platform_type'] == 'other') ? 'selected' : ''; ?>>Other</option>
+                    <div class="youtube-only">📺 YouTube Only</div>
+                    <select name="platform_type" required disabled style="background: #f8f9fa;">
+                        <option value="youtube" selected>YouTube</option>
                     </select>
+                    <input type="hidden" name="platform_type" value="youtube">
+                    <small style="color: #666;">Currently accepting YouTube creators only</small>
                 </div>
 
                 <div class="form-group">
-                    <label>Platform URL: *</label>
-                    <input type="url" name="platform_url" value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>" required placeholder="https://youtube.com/channel/...">
-                    <small>Link to your main channel/profile for verification</small>
+                    <label>YouTube Channel URL: *</label>
+                    <input type="url" name="platform_url" value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>" required placeholder="https://youtube.com/c/yourchannel or https://youtube.com/@username">
+                    <small>Link to your main YouTube channel for verification</small>
                 </div>
 
                 <div class="form-group">
-                    <label>Subscriber/Follower Count: *</label>
+                    <label>YouTube Subscriber Count: *</label>
                     <input type="number" name="subscriber_count" value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>" min="100" required>
-                    <small>Current number of subscribers/followers</small>
+                    <small>Current number of YouTube subscribers (minimum 100)</small>
                 </div>
 
                 <div class="form-group">
@@ -289,7 +290,7 @@ if ($_POST && !$existing_application) {
                     <div class="file-requirements">JPG, PNG, or GIF. Max 2MB. (Optional but recommended)</div>
                 </div>
 
-                <button type="submit" class="btn" id="submitBtn">Submit Application</button>
+                <button type="submit" class="btn" id="submitBtn">Submit YouTube Creator Application</button>
             </form>
         <?php endif; ?>
     </div>
@@ -331,7 +332,7 @@ if ($_POST && !$existing_application) {
 
     // Form submission loading state
     document.getElementById('creatorForm').addEventListener('submit', function() {
-        submitBtn.innerHTML = 'Submitting...';
+        submitBtn.innerHTML = 'Submitting YouTube Application...';
         submitBtn.disabled = true;
     });
     </script>
