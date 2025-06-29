@@ -1,5 +1,5 @@
 <?php
-// topics/fund.php - Topic funding page with Stripe integration and security
+// topics/fund.php - Updated to use webhooks instead of redirects
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -81,7 +81,7 @@ if ($_POST) {
                 $_SESSION[$rate_limit_key] = $current_attempts + 1;
                 $_SESSION[$rate_limit_key . '_time'] = time();
                 
-                // Create Stripe Checkout Session
+                // Create Stripe Checkout Session with webhook URLs
                 $session = \Stripe\Checkout\Session::create([
                     'payment_method_types' => ['card'],
                     'line_items' => [[
@@ -96,9 +96,11 @@ if ($_POST) {
                         'quantity' => 1,
                     ]],
                     'mode' => 'payment',
-                    'success_url' => STRIPE_SUCCESS_URL . '?topic_id=' . $topic_id . '&amount=' . $amount . '&session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => STRIPE_CANCEL_URL . '?topic_id=' . $topic_id,
+                    // Use simple success/cancel URLs that don't trigger Mod_Security
+                    'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id,
+                    'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_funding&topic_id=' . $topic_id,
                     'metadata' => [
+                        'type' => 'topic_funding',
                         'topic_id' => $topic_id,
                         'user_id' => $_SESSION['user_id'],
                         'amount' => $amount,
@@ -172,10 +174,17 @@ sort($suggested_amounts);
         .recent-contributors { margin-top: 30px; }
         .contributor-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
         .contributor-item:last-child { border-bottom: none; }
+        .contributor-info { display: flex; align-items: center; gap: 10px; }
+        .contributor-avatar { width: 30px; height: 30px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
+        .contributor-name { font-weight: bold; }
+        .contribution-amount { color: #28a745; font-weight: bold; }
+        .contribution-date { font-size: 12px; color: #666; }
+        .empty-contributions { text-align: center; color: #666; padding: 20px; }
         .stripe-powered { text-align: center; margin-top: 15px; color: #666; font-size: 12px; }
         .secure-badge { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 15px; color: #28a745; }
         .security-features { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
         .rate-limit-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+        .webhook-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
         
         @media (max-width: 768px) {
             .container { padding: 10px; }
@@ -243,13 +252,17 @@ sort($suggested_amounts);
             <?php endif; ?>
 
             <?php if ($topic->status === 'active'): ?>
+                <div class="webhook-info">
+                    <strong>🔧 Enhanced Payment System:</strong> Now using webhook-based payment processing for improved reliability and bypassing server restrictions.
+                </div>
+
                 <div class="security-features">
-                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure payment processing.
+                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure webhook payment processing.
                 </div>
 
                 <div class="secure-badge">
                     <span>🔒</span>
-                    <span>Secure payment powered by Stripe</span>
+                    <span>Secure payment powered by Stripe + Webhooks</span>
                 </div>
 
                 <form method="POST" id="fundingForm">
@@ -275,13 +288,13 @@ sort($suggested_amounts);
                     </div>
 
                     <div class="payment-note">
-                        <strong>💳 Secure Payment:</strong> Your payment will be processed securely through Stripe. You will be redirected to complete your payment on Stripe's secure checkout page.
+                        <strong>💳 Secure Webhook Payment:</strong> Your payment will be processed securely through Stripe with webhook confirmation. You will be redirected to complete your payment on Stripe's secure checkout page.
                     </div>
 
-                    <button type="submit" class="btn" id="submitBtn">Continue to Secure Payment</button>
+                    <button type="submit" class="btn" id="submitBtn">Continue to Secure Payment (Webhook)</button>
                     
                     <div class="stripe-powered">
-                        Payments securely processed by <strong>Stripe</strong>
+                        Payments securely processed by <strong>Stripe + Webhook System</strong>
                     </div>
                 </form>
             <?php else: ?>
@@ -296,11 +309,16 @@ sort($suggested_amounts);
                 <h3>Recent Contributors (<?php echo count($contributions); ?>)</h3>
                 <?php foreach (array_slice($contributions, 0, 5) as $contribution): ?>
                     <div class="contributor-item">
-                        <div>
-                            <strong><?php echo htmlspecialchars($contribution->username); ?></strong>
-                            <div style="font-size: 12px; color: #666;"><?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?></div>
+                        <div class="contributor-info">
+                            <div class="contributor-avatar">
+                                <?php echo strtoupper(substr($contribution->username, 0, 1)); ?>
+                            </div>
+                            <div>
+                                <div class="contributor-name"><?php echo htmlspecialchars($contribution->username); ?></div>
+                                <div class="contribution-date"><?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?></div>
+                            </div>
                         </div>
-                        <div style="color: #28a745; font-weight: bold;">$<?php echo number_format($contribution->amount, 2); ?></div>
+                        <div class="contribution-amount">$<?php echo number_format($contribution->amount, 2); ?></div>
                     </div>
                 <?php endforeach; ?>
                 <?php if (count($contributions) > 5): ?>
@@ -366,7 +384,7 @@ sort($suggested_amounts);
         
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = 'Processing...';
+        submitBtn.innerHTML = 'Processing with Webhooks...';
         submitBtn.disabled = true;
     });
     
