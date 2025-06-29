@@ -1,9 +1,8 @@
 <?php
-// topics/create.php - Updated with initial payment requirement and YouTube only
+// topics/create.php - Updated to use webhooks instead of redirects
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
-require_once '../config/notification_system.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
@@ -83,7 +82,7 @@ if ($_POST) {
     // Create topic and process initial payment if no errors
     if (empty($errors)) {
         try {
-            // Create Stripe Checkout Session for initial payment
+            // Create Stripe Checkout Session with webhook success URL
             $session = \Stripe\Checkout\Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
@@ -98,8 +97,9 @@ if ($_POST) {
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => STRIPE_SUCCESS_URL . '?topic_creation=1&creator_id=' . $selected_creator_id . '&amount=' . $initial_contribution . '&session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => STRIPE_CANCEL_URL . '?topic_creation=1',
+                // Use simple success/cancel URLs that don't trigger Mod_Security
+                'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
+                'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
                 'metadata' => [
                     'type' => 'topic_creation',
                     'creator_id' => $selected_creator_id,
@@ -111,15 +111,6 @@ if ($_POST) {
                 ],
                 'customer_email' => $_SESSION['email'] ?? null,
             ]);
-            
-            // Store topic data in session for creation after payment
-            $_SESSION['pending_topic'] = [
-                'creator_id' => $selected_creator_id,
-                'title' => $title,
-                'description' => $description,
-                'funding_threshold' => $funding_threshold,
-                'initial_contribution' => $initial_contribution
-            ];
             
             // Redirect to Stripe Checkout
             header('Location: ' . $session->url);
@@ -170,6 +161,7 @@ $youtube_creators = $db->resultSet();
         .youtube-only { background: #ff0000; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 20px; display: inline-block; }
         .requirement { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         .requirement h4 { margin-top: 0; color: #856404; }
+        .webhook-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -189,10 +181,15 @@ $youtube_creators = $db->resultSet();
 
         <h1>Propose New Topic</h1>
         
+        <div class="webhook-info">
+            <strong>🔧 Enhanced Payment System:</strong> Now using webhook-based payment processing for improved reliability and bypassing server restrictions.
+        </div>
+        
         <div class="how-it-works">
             <h4>🚀 How Topic Creation Works:</h4>
             <ol style="margin: 10px 0;">
                 <li><strong>Propose & Pay:</strong> Submit your topic idea with an initial contribution (minimum 10% of goal)</li>
+                <li><strong>Secure Processing:</strong> Payment processed via webhook system (no redirect issues)</li>
                 <li><strong>Creator Review:</strong> YouTube creator reviews and approves your proposal</li>
                 <li><strong>Community Funding:</strong> If approved, topic goes live for others to fund</li>
                 <li><strong>Content Creation:</strong> Once funded, creator has 48 hours to deliver</li>
@@ -299,7 +296,7 @@ $youtube_creators = $db->resultSet();
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    💳 Pay & Create Topic
+                    💳 Pay & Create Topic (Webhook Processing)
                 </button>
             </form>
         <?php endif; ?>
@@ -356,13 +353,13 @@ $youtube_creators = $db->resultSet();
         const goal = parseFloat(document.getElementById('funding_threshold').value);
         const creator = document.getElementById('creator_id').options[document.getElementById('creator_id').selectedIndex].text;
 
-        if (!confirm(`Create topic with $${contribution.toFixed(2)} initial payment?\n\nCreator: ${creator}\nTotal Goal: $${goal.toFixed(2)}\n\nYou'll be redirected to secure payment.`)) {
+        if (!confirm(`Create topic with $${contribution.toFixed(2)} initial payment?\n\nCreator: ${creator}\nTotal Goal: $${goal.toFixed(2)}\n\nUsing secure webhook processing - you'll be redirected to Stripe.`)) {
             e.preventDefault();
             return;
         }
 
         // Show loading state
-        document.getElementById('submitBtn').innerHTML = '⏳ Processing...';
+        document.getElementById('submitBtn').innerHTML = '⏳ Processing with Webhooks...';
         document.getElementById('submitBtn').disabled = true;
     });
 
