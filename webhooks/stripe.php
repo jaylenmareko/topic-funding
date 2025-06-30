@@ -1,5 +1,5 @@
 <?php
-// webhooks/stripe.php - Handle Stripe webhook events
+// webhooks/stripe.php - Handle Stripe webhook events with direct topic creation
 header('Content-Type: application/json');
 
 // Set error reporting for debugging
@@ -12,26 +12,11 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/stripe.php';
 require_once __DIR__ . '/../config/notification_system.php';
 
-// Verify webhook signature (optional but recommended for production)
-function verifyWebhookSignature($payload, $sig_header, $endpoint_secret) {
-    try {
-        $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-        return $event;
-    } catch(\UnexpectedValueException $e) {
-        error_log('Invalid payload: ' . $e->getMessage());
-        return false;
-    } catch(\Stripe\Exception\SignatureVerificationException $e) {
-        error_log('Invalid signature: ' . $e->getMessage());
-        return false;
-    }
-}
-
 try {
     $payload = file_get_contents('php://input');
     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
     
-    // For now, just parse the JSON directly
-    // In production, use webhook signature verification
+    // Parse the JSON event
     $event_json = json_decode($payload, true);
     
     if (!$event_json) {
@@ -120,10 +105,10 @@ function handleTopicCreationPayment($metadata, $payment_intent, $db) {
         
         error_log("Creating topic: $title for user $user_id");
         
-        // Create the topic
+        // Create the topic with ACTIVE status (no approval needed)
         $db->query('
-            INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, approval_status, current_funding) 
-            VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "pending_approval", "pending", :initial_funding)
+            INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
+            VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "active", :initial_funding, NOW())
         ');
         $db->bind(':creator_id', $creator_id);
         $db->bind(':user_id', $user_id);
@@ -146,9 +131,28 @@ function handleTopicCreationPayment($metadata, $payment_intent, $db) {
         $db->bind(':payment_id', $payment_intent);
         $db->execute();
         
-        // Send notification to creator
-        $notificationSystem = new NotificationSystem();
-        $notificationSystem->sendTopicProposalNotification($topic_id);
+        // Check if topic is immediately fully funded
+        if ($initial_contribution >= $funding_threshold) {
+            $db->query('
+                UPDATE topics 
+                SET status = "funded", funded_at = NOW(), content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR)
+                WHERE id = :topic_id
+            ');
+            $db->bind(':topic_id', $topic_id);
+            $db->execute();
+            
+            // Process platform fees and send funding notifications
+            $notificationSystem = new NotificationSystem();
+            $notificationSystem->handleTopicFunded($topic_id);
+            
+            error_log("Topic $topic_id created and immediately fully funded!");
+        } else {
+            // Send notification to creator that topic is live
+            $notificationSystem = new NotificationSystem();
+            $notificationSystem->sendTopicLiveNotification($topic_id);
+            
+            error_log("Topic $topic_id created and is now live for funding");
+        }
         
         $db->endTransaction();
         
