@@ -1,5 +1,5 @@
 <?php
-// topics/create.php - Updated to use webhooks instead of redirects
+// topics/create.php - Direct topic creation (no approval needed)
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -89,15 +89,14 @@ if ($_POST) {
                     'price_data' => [
                         'currency' => STRIPE_CURRENCY,
                         'product_data' => [
-                            'name' => 'Initial Funding: ' . $title,
-                            'description' => 'Initial contribution to propose this topic',
+                            'name' => 'Create Topic: ' . $title,
+                            'description' => 'Create and fund this topic idea',
                         ],
                         'unit_amount' => $initial_contribution * 100, // Convert to cents
                     ],
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                // Use simple success/cancel URLs that don't trigger Mod_Security
                 'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
                 'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
                 'metadata' => [
@@ -134,7 +133,7 @@ $youtube_creators = $db->resultSet();
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Propose New Topic - TopicLaunch</title>
+    <title>Create New Topic - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
@@ -161,7 +160,7 @@ $youtube_creators = $db->resultSet();
         .youtube-only { background: #ff0000; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 20px; display: inline-block; }
         .requirement { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         .requirement h4 { margin-top: 0; color: #856404; }
-        .webhook-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+        .direct-live { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -179,31 +178,30 @@ $youtube_creators = $db->resultSet();
 
         <div class="youtube-only">📺 YouTube Creators Only</div>
 
-        <h1>Propose New Topic</h1>
+        <h1>Create New Topic</h1>
         
-        <div class="webhook-info">
-            <strong>🔧 Enhanced Payment System:</strong> Now using webhook-based payment processing for improved reliability and bypassing server restrictions.
+        <div class="direct-live">
+            <strong>🚀 Instant Live Topics:</strong> Your topic goes live immediately after payment - no waiting for approval!
         </div>
         
         <div class="how-it-works">
-            <h4>🚀 How Topic Creation Works:</h4>
+            <h4>🚀 How It Works (Simplified):</h4>
             <ol style="margin: 10px 0;">
-                <li><strong>Propose & Pay:</strong> Submit your topic idea with an initial contribution (minimum 10% of goal)</li>
-                <li><strong>Secure Processing:</strong> Payment processed via webhook system (no redirect issues)</li>
-                <li><strong>Creator Review:</strong> YouTube creator reviews and approves your proposal</li>
-                <li><strong>Community Funding:</strong> If approved, topic goes live for others to fund</li>
-                <li><strong>Content Creation:</strong> Once funded, creator has 48 hours to deliver</li>
+                <li><strong>Create & Pay:</strong> Submit your topic with initial funding</li>
+                <li><strong>Goes Live:</strong> Topic immediately goes live for community funding</li>
+                <li><strong>Community Funds:</strong> Others contribute until goal is reached</li>
+                <li><strong>Creator Delivers:</strong> Once funded, creator has 48 hours to deliver content</li>
             </ol>
         </div>
 
         <div class="requirement">
             <h4>💰 Initial Payment Required</h4>
-            <p><strong>You must make the first contribution to create this topic.</strong> This ensures only serious proposals get created and shows the creator there's real demand.</p>
+            <p><strong>Your payment creates the topic and shows there's real demand.</strong></p>
             <ul style="margin: 10px 0;">
                 <li>Minimum $5 initial contribution</li>
                 <li>Must be at least 10% of the funding goal</li>
-                <li>Your payment makes the topic visible to others</li>
-                <li>Full refund if creator rejects your proposal</li>
+                <li>Topic goes live immediately for others to fund</li>
+                <li>Full refund if creator doesn't deliver content on time</li>
             </ul>
         </div>
 
@@ -296,7 +294,7 @@ $youtube_creators = $db->resultSet();
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    💳 Pay & Create Topic (Webhook Processing)
+                    💳 Create Topic & Go Live
                 </button>
             </form>
         <?php endif; ?>
@@ -353,13 +351,13 @@ $youtube_creators = $db->resultSet();
         const goal = parseFloat(document.getElementById('funding_threshold').value);
         const creator = document.getElementById('creator_id').options[document.getElementById('creator_id').selectedIndex].text;
 
-        if (!confirm(`Create topic with $${contribution.toFixed(2)} initial payment?\n\nCreator: ${creator}\nTotal Goal: $${goal.toFixed(2)}\n\nUsing secure webhook processing - you'll be redirected to Stripe.`)) {
+        if (!confirm(`Create topic with $${contribution.toFixed(2)} initial payment?\n\nCreator: ${creator}\nTotal Goal: $${goal.toFixed(2)}\n\nTopic will go live immediately for community funding!`)) {
             e.preventDefault();
             return;
         }
 
         // Show loading state
-        document.getElementById('submitBtn').innerHTML = '⏳ Processing with Webhooks...';
+        document.getElementById('submitBtn').innerHTML = '⏳ Creating Topic...';
         document.getElementById('submitBtn').disabled = true;
     });
 
