@@ -39,7 +39,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     <title>TopicLaunch - Fund Topics from Your Favorite YouTuber</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5;         }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
         
         /* Navigation */
         .topiclaunch-nav {
@@ -146,3 +146,80 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             .login-form { flex-direction: column; gap: 5px; }
             .nav-container { flex-direction: column; gap: 15px; }
         }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="topiclaunch-nav">
+        <div class="nav-container">
+            <a href="index.php" class="nav-logo">TopicLaunch</a>
+            
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                <form method="POST" class="login-form">
+                    <input type="email" name="email" placeholder="Email" class="login-input" required>
+                    <input type="password" name="password" placeholder="Password" class="login-input" required>
+                    <button type="submit" class="login-btn">Login</button>
+                    <?php if ($login_error): ?>
+                        <span class="login-error"><?php echo htmlspecialchars($login_error); ?></span>
+                    <?php endif; ?>
+                </form>
+            <?php else: ?>
+                <div style="color: white;">
+                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
+                    <a href="dashboard/index.php" style="color: white; margin-left: 15px;">Dashboard</a>
+                    <a href="auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1>Fund Topics from Your Favorite YouTuber</h1>
+        <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
+        
+        <div class="hero-buttons">
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
+                <a href="topics/create.php" class="btn btn-success">Create a Topic</a>
+            <?php else: ?>
+                <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
+                <a href="auth/register.php" class="btn btn-success">Get Started</a>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Streamlined 3-Step Process -->
+        <div class="process-steps">
+            <div class="process-step" data-step="1">
+                <div class="process-icon">💡</div>
+                <h3>Create & Fund</h3>
+                <p>Have an idea for your favorite YouTuber? Create the topic and make the first contribution. Your topic goes live immediately!</p>
+            </div>
+            <div class="process-step" data-step="2">
+                <div class="process-icon">🤝</div>
+                <h3>Community Backs It</h3>
+                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content.</p>
+            </div>
+            <div class="process-step" data-step="3">
+                <div class="process-icon">⚡</div>
+                <h3>48-Hour Delivery</h3>
+                <p>YouTubers have 48 hours to deliver your requested content, or everyone gets automatically refunded.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div>
+            <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
+            <p>
+                <a href="#">Privacy Policy</a> | 
+                <a href="#">Terms of Service</a> | 
+                <a href="#">Contact</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
