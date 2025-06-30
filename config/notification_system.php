@@ -1,5 +1,5 @@
 <?php
-// config/notification_system.php - Updated with platform fee integration
+// config/notification_system.php - Updated with direct topic creation notifications
 require_once 'database.php';
 require_once 'refund_helper.php';
 require_once 'platform_fee_helper.php';
@@ -14,6 +14,140 @@ class NotificationSystem {
         $this->refundManager = new RefundManager();
         $this->feeManager = new PlatformFeeManager();
         $this->createNotificationTables();
+    }
+    
+    /**
+     * Send notification when topic goes live (no approval needed)
+     */
+    public function sendTopicLiveNotification($topic_id) {
+        try {
+            // Get topic, creator, and proposer info
+            $this->db->query('
+                SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
+                       u.email as creator_user_email, proposer.username as proposer_name,
+                       proposer.email as proposer_email
+                FROM topics t 
+                JOIN creators c ON t.creator_id = c.id 
+                LEFT JOIN users u ON c.applicant_user_id = u.id
+                JOIN users proposer ON t.initiator_user_id = proposer.id
+                WHERE t.id = :topic_id
+            ');
+            $this->db->bind(':topic_id', $topic_id);
+            $topic = $this->db->single();
+            
+            if (!$topic) {
+                error_log("Topic not found for live notification: " . $topic_id);
+                return false;
+            }
+            
+            // Notify creator that topic is live
+            $creator_email = $topic->creator_user_email ?: $topic->creator_email;
+            if ($creator_email) {
+                $this->sendCreatorTopicLiveNotification($topic, $creator_email);
+            }
+            
+            // Notify proposer that topic is live
+            if ($topic->proposer_email) {
+                $this->sendProposerTopicLiveNotification($topic);
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Topic live notification error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Send notification to creator when topic goes live
+     */
+    private function sendCreatorTopicLiveNotification($topic, $creator_email) {
+        $subject = "📺 New Topic Live for You - " . $topic->title;
+        $message = "
+            Hi " . $topic->creator_name . ",
+            
+            Great news! A new topic has been created for you and is now live for community funding:
+            
+            📺 Topic: " . $topic->title . "
+            👤 Proposed by: " . $topic->proposer_name . "
+            💰 Funding Goal: $" . number_format($topic->funding_threshold, 2) . "
+            💸 Already Raised: $" . number_format($topic->current_funding, 2) . "
+            
+            📋 Description:
+            " . $topic->description . "
+            
+            🎯 What this means:
+            • The topic is live and accepting funding from the community
+            • Once it reaches the goal, you'll have 48 hours to create the content
+            • You'll earn 90% of the funding (after 10% platform fee)
+            
+            📱 Track Progress:
+            View the topic: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
+            Creator Dashboard: https://topiclaunch.com/creators/dashboard.php
+            
+            💡 Tips for Success:
+            • Share the topic with your audience to help it get funded faster
+            • Start thinking about how you'll approach this content
+            • Make sure you can deliver within 48 hours once funded
+            
+            Questions? Reply to this email or contact support.
+            
+            Best regards,
+            TopicLaunch Team
+        ";
+        
+        $this->sendEmail($creator_email, $subject, $message);
+        
+        // Log notification
+        $this->logNotification($topic->creator_id, 'creator', 'topic_live', 
+            "New topic live: '" . $topic->title . "' by " . $topic->proposer_name, $topic->id);
+    }
+    
+    /**
+     * Send notification to proposer when topic goes live
+     */
+    private function sendProposerTopicLiveNotification($topic) {
+        $subject = "🚀 Your Topic is Live! - " . $topic->title;
+        $message = "
+            Hi " . $topic->proposer_name . ",
+            
+            Awesome! Your topic is now live and accepting funding:
+            
+            📺 Topic: " . $topic->title . "
+            👥 Creator: " . $topic->creator_name . "
+            💰 Funding Goal: $" . number_format($topic->funding_threshold, 2) . "
+            💸 Your Contribution: $" . number_format($topic->current_funding, 2) . "
+            
+            🎯 What happens next:
+            • Your topic is live for the community to fund
+            • Others can now contribute to reach the goal
+            • Once funded, " . $topic->creator_name . " has 48 hours to create content
+            • You'll be notified when it's fully funded and when content is delivered
+            
+            📱 Share Your Topic:
+            Help it get funded faster: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
+            
+            💡 Pro Tips:
+            • Share with friends who might be interested
+            • Post on social media to get more supporters
+            • The more funding, the faster content gets created!
+            
+            🛡️ Protection: If the creator doesn't deliver content within 48 hours of funding, you'll get a full refund automatically.
+            
+            Track progress in your dashboard: https://topiclaunch.com/dashboard/index.php
+            
+            Thanks for being part of TopicLaunch!
+            
+            Best regards,
+            TopicLaunch Team
+        ";
+        
+        $this->sendEmail($topic->proposer_email, $subject, $message);
+        
+        // Log notification
+        $this->logNotification($topic->initiator_user_id, 'proposer', 'topic_live', 
+            "Topic went live: '" . $topic->title . "'", $topic->id);
     }
     
     /**
@@ -86,7 +220,7 @@ class NotificationSystem {
     }
     
     /**
-     * Send notification to creator when topic is funded (updated with fee information)
+     * Send notification to creator when topic is funded
      */
     private function sendCreatorFundedNotification($topic, $deadline, $fee_info) {
         $creator_email = $topic->creator_user_email ?: $topic->creator_email;
@@ -114,7 +248,7 @@ class NotificationSystem {
             
             📋 What you need to do:
             1. Create your video/live stream for: " . $topic->title . "
-            2. Upload it to your platform (" . ucfirst($topic->platform_type ?? 'platform') . ")
+            2. Upload it to your platform (YouTube)
             3. Update the topic with your content URL before the deadline
             
             ⚠️ CRITICAL: If you don't upload content within 48 hours:
@@ -511,84 +645,6 @@ class NotificationSystem {
     }
     
     /**
-     * Send notification when topic is proposed to creator
-     */
-    public function sendTopicProposalNotification($topic_id) {
-        try {
-            // Get topic, creator, and proposer info
-            $this->db->query('
-                SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
-                       u.email as creator_user_email, proposer.username as proposer_name
-                FROM topics t 
-                JOIN creators c ON t.creator_id = c.id 
-                LEFT JOIN users u ON c.applicant_user_id = u.id
-                JOIN users proposer ON t.initiator_user_id = proposer.id
-                WHERE t.id = :topic_id
-            ');
-            $this->db->bind(':topic_id', $topic_id);
-            $topic = $this->db->single();
-            
-            if (!$topic) {
-                error_log("Topic not found for proposal notification: " . $topic_id);
-                return false;
-            }
-            
-            $creator_email = $topic->creator_user_email ?: $topic->creator_email;
-            
-            if (!$creator_email) {
-                error_log("No email found for creator ID: " . $topic->creator_id);
-                return false;
-            }
-            
-            $subject = "📋 New Topic Proposal - " . $topic->title;
-            $message = "
-                Hi " . $topic->creator_name . ",
-                
-                You have a new topic proposal waiting for your approval!
-                
-                📺 Topic: " . $topic->title . "
-                👤 Proposed by: " . $topic->proposer_name . "
-                💰 Suggested funding goal: $" . number_format($topic->funding_threshold, 2) . "
-                
-                📋 Description:
-                " . $topic->description . "
-                
-                🎯 What you need to do:
-                1. Review the topic proposal carefully
-                2. Decide if you want to create content on this topic
-                3. Approve or decline the proposal
-                
-                📱 Review and Approve:
-                Visit your Creator Dashboard: https://topiclaunch.com/creators/dashboard.php
-                
-                ⏰ No rush - take your time to review the proposal.
-                
-                💡 Remember:
-                • If you approve, the topic goes live for community funding
-                • Once funded, you'll have 48 hours to create the content
-                • You'll earn 90% of the funding (after 10% platform fee)
-                
-                Questions? Reply to this email or contact support.
-                
-                Best regards,
-                TopicLaunch Team
-            ";
-            
-            $this->sendEmail($creator_email, $subject, $message);
-            
-            // Log notification
-            $this->logNotification($topic->creator_id, 'creator', 'topic_proposal', 
-                "New topic proposal: '" . $topic->title . "' by " . $topic->proposer_name, $topic_id);
-            
-            return true;
-            
-        } catch (Exception $e) {
-            error_log("Topic proposal notification error: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
      * Create required database tables
      */
     private function createNotificationTables() {
@@ -597,7 +653,7 @@ class NotificationSystem {
             CREATE TABLE IF NOT EXISTS notifications (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
-                type ENUM('creator', 'contributor', 'admin') NOT NULL,
+                type ENUM('creator', 'contributor', 'proposer', 'admin') NOT NULL,
                 category VARCHAR(50) NOT NULL,
                 message TEXT NOT NULL,
                 topic_id INT,
