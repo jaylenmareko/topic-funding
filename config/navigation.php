@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Universal navigation component
+// config/navigation.php - Simplified navigation component
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -15,15 +15,6 @@ function renderNavigation($current_page = '') {
         $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
         $db->bind(':user_id', $user_id);
         $is_creator = $db->single() ? true : false;
-    }
-    
-    // Get pending topics count for creators
-    $pending_count = 0;
-    if ($is_creator) {
-        $db->query('SELECT COUNT(*) as count FROM topics t JOIN creators c ON t.creator_id = c.id WHERE c.applicant_user_id = :user_id AND t.approval_status = "pending"');
-        $db->bind(':user_id', $user_id);
-        $result = $db->single();
-        $pending_count = $result->count ?? 0;
     }
     
     // Determine base path based on current location
@@ -89,15 +80,6 @@ function renderNavigation($current_page = '') {
         font-weight: 500;
         color: #f0f0f0;
     }
-    .nav-badge {
-        background: #ff4757;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: bold;
-        margin-left: 5px;
-    }
     .nav-btn {
         background: rgba(255,255,255,0.2);
         color: white;
@@ -162,34 +144,45 @@ function renderNavigation($current_page = '') {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="<?php echo $base_path; ?>index.php" class="nav-logo">
-                🚀 TopicLaunch
+                TopicLaunch
             </a>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
                     <!-- Main Navigation for Logged In Users -->
                     <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                        My Dashboard
+                        Dashboard
                     </a>
+                    
+                    <!-- Only show Browse Topics and Creators when NOT on dashboard -->
+                    <?php if ($current_page !== 'dashboard'): ?>
+                        <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link <?php echo $current_page === 'browse_topics' ? 'active' : ''; ?>">
+                            Browse Topics
+                        </a>
+                        
+                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link">
+                            Creators
+                        </a>
+                    <?php endif; ?>
+                    
+                    <!-- Creator Application Button (if not already a creator) -->
+                    <?php if (!$is_creator): ?>
+                        <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
+                            📺 Join as Creator
+                        </a>
+                    <?php endif; ?>
                     
                     <!-- Creator Dashboard -->
                     <?php if ($is_creator): ?>
                         <a href="<?php echo $base_path; ?>creators/dashboard.php" class="nav-btn creator <?php echo $current_page === 'creator_dashboard' ? 'active' : ''; ?>">
-                            📋 Creator
-                            <?php if ($pending_count > 0): ?>
-                                <span class="nav-badge"><?php echo $pending_count; ?></span>
-                            <?php endif; ?>
-                        </a>
-                    <?php else: ?>
-                        <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-link">
-                            Become Creator
+                            📺 Creator Dashboard
                         </a>
                     <?php endif; ?>
                     
                     <!-- Admin Panel -->
                     <?php if ($is_admin): ?>
                         <a href="<?php echo $base_path; ?>admin/creators.php" class="nav-btn admin">
-                            ⚙️ Admin
+                            Admin
                         </a>
                     <?php endif; ?>
                     
@@ -201,6 +194,10 @@ function renderNavigation($current_page = '') {
                     
                 <?php else: ?>
                     <!-- Navigation for Guests -->
+                    <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
+                        📺 Join as Creator
+                    </a>
+                    
                     <a href="<?php echo $base_path; ?>auth/login.php" class="nav-btn">
                         Login
                     </a>
