@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Fixed creator application form with YouTube only
+// creators/apply.php - Simplified creator application
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -21,7 +21,7 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $existing_application = $db->single();
 
 if ($existing_application) {
-    $success = "You already have a creator application. Status: " . ucfirst($existing_application->application_status);
+    $success = "You already applied! Status: " . ucfirst($existing_application->application_status);
 }
 
 if ($_POST && !$existing_application) {
@@ -30,138 +30,69 @@ if ($_POST && !$existing_application) {
     
     // Sanitize inputs
     $display_name = InputSanitizer::sanitizeString($_POST['display_name']);
-    $bio = InputSanitizer::sanitizeString($_POST['bio']);
-    $platform_type = 'youtube'; // Force YouTube only
     $platform_url = InputSanitizer::sanitizeUrl($_POST['platform_url']);
     $subscriber_count = InputSanitizer::sanitizeInt($_POST['subscriber_count']);
     $default_funding_threshold = InputSanitizer::sanitizeFloat($_POST['default_funding_threshold']);
     
-    // Generate a unique username based on display name and user ID
+    // Generate username
     $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
     $username = $base_username . '_' . $_SESSION['user_id'];
     
-    // Make sure username is unique
-    $counter = 1;
-    $original_username = $username;
-    while (true) {
-        $db->query('SELECT id FROM creators WHERE username = :username');
-        $db->bind(':username', $username);
-        $db->execute();
-        if ($db->rowCount() == 0) {
-            break; // Username is unique
-        }
-        $username = $original_username . '_' . $counter;
-        $counter++;
-    }
-    
     // Validation
-    if (empty($display_name)) {
-        $errors[] = "Display name is required";
-    } elseif (strlen($display_name) < 2) {
-        $errors[] = "Display name must be at least 2 characters";
+    if (empty($display_name) || strlen($display_name) < 2) {
+        $errors[] = "Creator name is required (2+ characters)";
     }
     
-    if (empty($bio)) {
-        $errors[] = "Bio is required";
-    } elseif (strlen($bio) < 50) {
-        $errors[] = "Bio must be at least 50 characters";
-    }
-    
-    if (empty($platform_url)) {
-        $errors[] = "YouTube channel URL is required";
-    } elseif (!filter_var($platform_url, FILTER_VALIDATE_URL)) {
-        $errors[] = "Please enter a valid YouTube channel URL";
+    if (empty($platform_url) || !filter_var($platform_url, FILTER_VALIDATE_URL)) {
+        $errors[] = "Valid YouTube channel URL required";
     } elseif (strpos($platform_url, 'youtube.com') === false && strpos($platform_url, 'youtu.be') === false) {
-        $errors[] = "Please enter a valid YouTube channel URL";
+        $errors[] = "Must be a YouTube channel URL";
     }
     
     if ($subscriber_count < 100) {
-        $errors[] = "Minimum 100 YouTube subscribers required";
+        $errors[] = "Minimum 100 subscribers required";
     }
     
     if ($default_funding_threshold < 10) {
-        $errors[] = "Minimum funding threshold is $10";
-    }
-    
-    // Initialize profile_image variable
-    $profile_image = null;
-    
-    // Enhanced file upload security
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../uploads/creators/';
-        
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
-        
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-        
-        $file_info = finfo_open(FILEINFO_MIME_TYPE);
-        $detected_type = finfo_file($file_info, $_FILES['profile_image']['tmp_name']);
-        finfo_close($file_info);
-        
-        $file_extension = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
-        $file_size = $_FILES['profile_image']['size'];
-        
-        if (!in_array($detected_type, $allowed_types)) {
-            $errors[] = "Only JPG, PNG, and GIF images are allowed";
-        } elseif (!in_array($file_extension, $allowed_extensions)) {
-            $errors[] = "Invalid file extension";
-        } elseif ($file_size > 2 * 1024 * 1024) {
-            $errors[] = "Image must be less than 2MB";
-        } else {
-            $safe_filename = 'creator_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_extension;
-            $upload_path = $upload_dir . $safe_filename;
-            
-            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
-                $profile_image = $safe_filename;
-            } else {
-                $errors[] = "Failed to upload image";
-            }
-        }
+        $errors[] = "Minimum funding goal is $10";
     }
     
     // Create creator application if no errors
     if (empty($errors)) {
         try {
-            // Get user email for the application
+            // Get user email
             $db->query('SELECT email FROM users WHERE id = :user_id');
             $db->bind(':user_id', $_SESSION['user_id']);
             $user_data = $db->single();
             $user_email = $user_data ? $user_data->email : '';
             
-            // Insert with all required fields including username and email
+            // Insert application
             $db->query('
                 INSERT INTO creators (
                     username, display_name, email, bio, platform_type, platform_url, 
-                    subscriber_count, default_funding_threshold, profile_image,
-                    applicant_user_id, is_active, application_status, commission_rate,
-                    is_verified
+                    subscriber_count, default_funding_threshold, applicant_user_id, 
+                    is_active, application_status, commission_rate, is_verified
                 ) VALUES (
-                    :username, :display_name, :email, :bio, :platform_type, :platform_url, 
-                    :subscriber_count, :threshold, :profile_image, :user_id, 0, "pending", 5.00, 0
+                    :username, :display_name, :email, "YouTube Creator", "youtube", :platform_url, 
+                    :subscriber_count, :threshold, :user_id, 0, "pending", 5.00, 0
                 )
             ');
             $db->bind(':username', $username);
             $db->bind(':display_name', $display_name);
             $db->bind(':email', $user_email);
-            $db->bind(':bio', $bio);
-            $db->bind(':platform_type', $platform_type);
             $db->bind(':platform_url', $platform_url);
             $db->bind(':subscriber_count', $subscriber_count);
             $db->bind(':threshold', $default_funding_threshold);
-            $db->bind(':profile_image', $profile_image);
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
-                $success = "YouTube creator application submitted successfully! We'll review it and get back to you. Your creator username will be: " . $username;
+                $success = "Application submitted! We'll review it soon.";
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
         } catch (Exception $e) {
-            $errors[] = "Database error: " . $e->getMessage();
-            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            $errors[] = "Error submitting application.";
+            error_log("Creator application error: " . $e->getMessage());
         }
     }
 }
@@ -169,65 +100,47 @@ if ($_POST && !$existing_application) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Apply to be a YouTube Creator - TopicLaunch</title>
+    <title>Join as Creator - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header { text-align: center; margin-bottom: 30px; }
-        .youtube-header { background: #ff0000; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .youtube-header h2 { margin: 0; font-size: 24px; }
+        .header h1 { margin: 0 0 10px 0; color: #333; }
+        .header p { margin: 0; color: #666; }
         .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="url"], input[type="number"], select, textarea { 
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-        }
-        textarea { height: 120px; resize: vertical; }
-        .btn { background: #ff0000; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        .btn { background: #ff0000; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { background: #cc0000; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 10px; }
-        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
-        .requirements { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .requirements h3 { margin-top: 0; color: #ff0000; }
-        .requirements ul { margin-bottom: 0; }
-        .security-note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
-        .file-requirements { font-size: 12px; color: #666; margin-top: 5px; }
-        .char-counter { font-size: 12px; color: #666; margin-top: 5px; }
-        .youtube-only { background: #ff0000; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
+        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
+        .requirements { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+        .requirements h4 { margin-top: 0; color: #1976d2; }
+        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        .back-link:hover { text-decoration: underline; }
+        small { color: #666; font-size: 14px; }
         
-        @media (max-width: 768px) {
+        @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="nav">
-            <a href="../index.php">← Back to Home</a>
-            <a href="../creators/index.php">Browse Creators</a>
-        </div>
+        <a href="../dashboard/index.php" class="back-link">← Back to Dashboard</a>
 
-        <div class="youtube-header">
-            <h2>📺 Apply to be a YouTube Creator</h2>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Join TopicLaunch and let your audience fund the content they want to see!</p>
-        </div>
-
-        <div class="security-note">
-            🔒 Your application is protected with advanced security measures.
+        <div class="header">
+            <h1>📺 Join as Creator</h1>
+            <p>Let your audience fund the content they want to see!</p>
         </div>
 
         <div class="requirements">
-            <h3>📺 YouTube Creator Requirements:</h3>
-            <ul>
-                <li>Minimum 100 YouTube subscribers</li>
-                <li>Active YouTube channel with recent uploads</li>
-                <li>Commitment to creating funded content within 48 hours</li>
-                <li>Valid YouTube channel URL for verification</li>
-                <li>Must be focused on YouTube content creation</li>
-            </ul>
+            <h4>Quick Requirements:</h4>
+            • YouTube channel with 100+ subscribers<br>
+            • Valid YouTube channel URL<br>
+            • Commit to 48-hour content delivery
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -241,98 +154,71 @@ if ($_POST && !$existing_application) {
         <?php endif; ?>
 
         <?php if (!$success): ?>
-            <form method="POST" enctype="multipart/form-data" id="creatorForm">
+            <form method="POST" id="creatorForm">
                 <?php echo CSRFProtection::getTokenField(); ?>
                 
                 <div class="form-group">
-                    <label>Creator Display Name: *</label>
-                    <input type="text" name="display_name" id="display_name" value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>" required>
-                    <small>The name your audience will see (username will be auto-generated)</small>
+                    <label>Your Creator Name:</label>
+                    <input type="text" name="display_name" required minlength="2" 
+                           placeholder="How you want to appear on TopicLaunch"
+                           value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>">
                 </div>
 
                 <div class="form-group">
-                    <label>Bio: *</label>
-                    <textarea name="bio" id="bio" required placeholder="Tell us about yourself and your YouTube content (minimum 50 characters)"><?php echo isset($_POST['bio']) ? htmlspecialchars($_POST['bio']) : ''; ?></textarea>
-                    <div class="char-counter" id="bioCounter">0 / 50 characters minimum</div>
+                    <label>YouTube Channel URL:</label>
+                    <input type="url" name="platform_url" required 
+                           placeholder="https://youtube.com/@yourchannel"
+                           value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>">
                 </div>
 
                 <div class="form-group">
-                    <label>Platform Type: *</label>
-                    <div class="youtube-only">📺 YouTube Only</div>
-                    <select name="platform_type" required disabled style="background: #f8f9fa;">
-                        <option value="youtube" selected>YouTube</option>
-                    </select>
-                    <input type="hidden" name="platform_type" value="youtube">
-                    <small style="color: #666;">Currently accepting YouTube creators only</small>
+                    <label>Subscriber Count:</label>
+                    <input type="number" name="subscriber_count" min="100" required
+                           placeholder="100"
+                           value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>">
+                    <small>Must have at least 100 subscribers</small>
                 </div>
 
                 <div class="form-group">
-                    <label>YouTube Channel URL: *</label>
-                    <input type="url" name="platform_url" value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>" required placeholder="https://youtube.com/c/yourchannel or https://youtube.com/@username">
-                    <small>Link to your main YouTube channel for verification</small>
+                    <label>Default Topic Goal ($):</label>
+                    <input type="number" name="default_funding_threshold" min="10" step="0.01" required
+                           value="<?php echo isset($_POST['default_funding_threshold']) ? htmlspecialchars($_POST['default_funding_threshold']) : '50'; ?>">
+                    <small>How much should topics typically need to get funded?</small>
                 </div>
 
-                <div class="form-group">
-                    <label>YouTube Subscriber Count: *</label>
-                    <input type="number" name="subscriber_count" value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>" min="100" required>
-                    <small>Current number of YouTube subscribers (minimum 100)</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Default Funding Threshold: *</label>
-                    <input type="number" name="default_funding_threshold" value="<?php echo isset($_POST['default_funding_threshold']) ? htmlspecialchars($_POST['default_funding_threshold']) : '50'; ?>" min="10" step="0.01" required>
-                    <small>Default amount needed to fund a topic (minimum $10)</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Profile Image:</label>
-                    <input type="file" name="profile_image" accept="image/*">
-                    <div class="file-requirements">JPG, PNG, or GIF. Max 2MB. (Optional but recommended)</div>
-                </div>
-
-                <button type="submit" class="btn" id="submitBtn">Submit YouTube Creator Application</button>
+                <button type="submit" class="btn">
+                    📺 Submit Application
+                </button>
             </form>
+            
+            <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                <strong>What happens next:</strong><br>
+                We'll review your application and get back to you within 24 hours
+            </div>
         <?php endif; ?>
     </div>
 
     <script>
-    // Bio character counter
-    const bioTextarea = document.getElementById('bio');
-    const bioCounter = document.getElementById('bioCounter');
-    const submitBtn = document.getElementById('submitBtn');
-
-    function updateBioCounter() {
-        const length = bioTextarea.value.length;
-        bioCounter.textContent = length + ' / 50 characters minimum';
+    // Simple form validation
+    document.getElementById('creatorForm').addEventListener('submit', function(e) {
+        const displayName = document.querySelector('input[name="display_name"]').value.trim();
+        const subscribers = parseInt(document.querySelector('input[name="subscriber_count"]').value);
         
-        if (length >= 50) {
-            bioCounter.style.color = '#28a745';
-        } else {
-            bioCounter.style.color = '#dc3545';
+        if (displayName.length < 2) {
+            e.preventDefault();
+            alert('Creator name must be at least 2 characters');
+            return;
         }
         
-        validateForm();
-    }
-
-    function validateForm() {
-        const displayName = document.getElementById('display_name').value.trim();
-        const bio = bioTextarea.value.trim();
-        const isValid = displayName.length >= 2 && bio.length >= 50;
+        if (subscribers < 100) {
+            e.preventDefault();
+            alert('Minimum 100 subscribers required');
+            return;
+        }
         
-        submitBtn.disabled = !isValid;
-        submitBtn.style.opacity = isValid ? '1' : '0.6';
-    }
-
-    bioTextarea.addEventListener('input', updateBioCounter);
-    document.getElementById('display_name').addEventListener('input', validateForm);
-
-    // Initial validation
-    updateBioCounter();
-    validateForm();
-
-    // Form submission loading state
-    document.getElementById('creatorForm').addEventListener('submit', function() {
-        submitBtn.innerHTML = 'Submitting YouTube Application...';
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '⏳ Submitting...';
         submitBtn.disabled = true;
     });
     </script>
