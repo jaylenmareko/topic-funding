@@ -125,6 +125,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
         .btn-outline { background: transparent; color: #667eea; border: 2px solid #667eea; }
         .btn-outline:hover { background: #667eea; color: white; }
+        .btn-green { background: #28a745; }
+        .btn-green:hover { background: #218838; color: white; text-decoration: none; }
         .empty-state { text-align: center; color: #666; padding: 60px 20px; background: white; border-radius: 12px; }
         .featured-badge { background: linear-gradient(45deg, #feca57, #ff9ff3); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
         
@@ -253,7 +255,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                                     <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <a href="../auth/login.php" class="btn">Login to Fund Topics</a>
+                                <?php if ($creator->platform_url): ?>
+                                    <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -262,12 +266,12 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 
             <!-- Call to Action -->
             <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px;">
-                <h3>Want to become a YouTuber?</h3>
+                <h3>Are you a YouTuber?</h3>
                 <p>Join TopicLaunch and let your audience fund the content they want to see!</p>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="apply.php" class="btn">Apply to be a YouTuber</a>
+                    <a href="apply.php" class="btn btn-green">Apply to be a YouTuber</a>
                 <?php else: ?>
-                    <a href="../auth/register.php" class="btn">Get Started</a>
+                    <a href="../auth/register.php" class="btn btn-green">Get Started</a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
