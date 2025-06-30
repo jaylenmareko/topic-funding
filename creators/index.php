@@ -1,8 +1,7 @@
 <?php
-// creators/index.php - Browse creators with simplified navigation
+// creators/index.php - Simplified browse creators page
 session_start();
 require_once '../config/database.php';
-require_once '../config/navigation.php';
 
 try {
     $helper = new DatabaseHelper();
@@ -13,41 +12,100 @@ try {
 
 // Simple search functionality
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$platform_filter = isset($_GET['platform']) ? $_GET['platform'] : 'all';
 
-if ($search || $platform_filter !== 'all') {
-    $creators = array_filter($creators, function($creator) use ($search, $platform_filter) {
-        $matches_search = empty($search) || 
-                         stripos($creator->display_name, $search) !== false || 
-                         stripos($creator->bio, $search) !== false;
-        
-        $matches_platform = $platform_filter === 'all' || 
-                           $creator->platform_type === $platform_filter;
-        
-        return $matches_search && $matches_platform;
+if ($search) {
+    $creators = array_filter($creators, function($creator) use ($search) {
+        return stripos($creator->display_name, $search) !== false || 
+               stripos($creator->bio, $search) !== false;
     });
 }
 
-// Get unique platforms for filter
-$platforms = array_unique(array_column($creators, 'platform_type'));
+// Handle login form
+$login_error = '';
+if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    
+    if (!empty($email) && !empty($password)) {
+        $db = new Database();
+        $db->query('SELECT * FROM users WHERE email = :email AND is_active = 1');
+        $db->bind(':email', $email);
+        $user = $db->single();
+        
+        if ($user && password_verify($password, $user->password_hash)) {
+            $_SESSION['user_id'] = $user->id;
+            $_SESSION['username'] = $user->username;
+            $_SESSION['full_name'] = $user->full_name;
+            $_SESSION['email'] = $user->email;
+            session_regenerate_id(true);
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            $login_error = 'Invalid email or password';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Browse Creators - TopicLaunch</title>
+    <title>Browse YouTubers - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        
+        /* Navigation */
+        .topiclaunch-nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .nav-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+        .login-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .login-input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .login-btn {
+            background: white;
+            color: #667eea;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .login-btn:hover { background: #f0f0f0; }
+        .login-error { color: #ff6b6b; font-size: 12px; margin-left: 10px; }
+        
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header h1 { margin: 0 0 15px 0; color: #333; }
+        
         .filters { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .filter-section { display: flex; gap: 10px; align-items: center; }
-        .filter-label { font-weight: bold; color: #666; }
-        .filter-select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: white; }
         .search-box { flex: 1; max-width: 300px; }
         .search-box input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; }
         .search-box button { background: #667eea; color: white; padding: 12px 20px; border: none; border-radius: 25px; margin-left: 10px; cursor: pointer; }
+        
         .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; }
         .creator-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; }
         .creator-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
@@ -68,10 +126,6 @@ $platforms = array_unique(array_column($creators, 'platform_type'));
         .btn-outline { background: transparent; color: #667eea; border: 2px solid #667eea; }
         .btn-outline:hover { background: #667eea; color: white; }
         .empty-state { text-align: center; color: #666; padding: 60px 20px; background: white; border-radius: 12px; }
-        .stats-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .summary-card { background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .summary-number { font-size: 24px; font-weight: bold; color: #667eea; }
-        .summary-label { color: #666; font-size: 14px; }
         .featured-badge { background: linear-gradient(45deg, #feca57, #ff9ff3); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
         
         @media (max-width: 768px) {
@@ -80,87 +134,72 @@ $platforms = array_unique(array_column($creators, 'platform_type'));
             .creator-header { flex-direction: column; text-align: center; }
             .filters { flex-direction: column; align-items: stretch; }
             .search-box { max-width: none; }
+            .login-form { flex-direction: column; gap: 5px; }
+            .nav-container { flex-direction: column; gap: 15px; }
         }
     </style>
 </head>
 <body>
-    <?php renderNavigation('browse_creators'); ?>
+    <!-- Navigation -->
+    <nav class="topiclaunch-nav">
+        <div class="nav-container">
+            <a href="../index.php" class="nav-logo">TopicLaunch</a>
+            
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                <form method="POST" class="login-form">
+                    <input type="email" name="email" placeholder="Email" class="login-input" required>
+                    <input type="password" name="password" placeholder="Password" class="login-input" required>
+                    <button type="submit" class="login-btn">Login</button>
+                    <?php if ($login_error): ?>
+                        <span class="login-error"><?php echo htmlspecialchars($login_error); ?></span>
+                    <?php endif; ?>
+                </form>
+            <?php else: ?>
+                <div style="color: white;">
+                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
+                    <a href="../dashboard/index.php" style="color: white; margin-left: 15px;">Dashboard</a>
+                    <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </nav>
 
     <div class="container">
         <div class="header">
-            <h1>Browse Content Creators</h1>
-            <p>Discover talented creators and fund the topics you want to see covered</p>
+            <h1>Browse YouTubers</h1>
+            <p>Discover talented YouTubers and fund the topics you want to see covered</p>
             
-            <!-- Summary Stats -->
-            <div class="stats-summary">
-                <div class="summary-card">
-                    <div class="summary-number"><?php echo count($creators); ?></div>
-                    <div class="summary-label">Active Creators</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-number"><?php echo count($platforms); ?></div>
-                    <div class="summary-label">Platforms</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-number"><?php echo number_format(array_sum(array_column($creators, 'subscriber_count'))); ?></div>
-                    <div class="summary-label">Total Subscribers</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-number">$<?php echo number_format(array_sum(array_column($creators, 'default_funding_threshold')), 0); ?></div>
-                    <div class="summary-label">Combined Goals</div>
-                </div>
-            </div>
-
-            <!-- Filters -->
+            <!-- Search -->
             <div class="filters">
-                <div class="filter-section">
-                    <span class="filter-label">Platform:</span>
-                    <select class="filter-select" onchange="updateFilters()">
-                        <option value="all" <?php echo $platform_filter === 'all' ? 'selected' : ''; ?>>All Platforms</option>
-                        <?php foreach ($platforms as $platform): ?>
-                            <option value="<?php echo htmlspecialchars($platform); ?>" 
-                                    <?php echo $platform_filter === $platform ? 'selected' : ''; ?>>
-                                <?php echo ucfirst($platform); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
                 <form method="GET" class="search-box">
-                    <input type="hidden" name="platform" value="<?php echo htmlspecialchars($platform_filter); ?>">
-                    <input type="text" name="search" placeholder="Search creators..." 
+                    <input type="text" name="search" placeholder="Search YouTubers..." 
                            value="<?php echo htmlspecialchars($search); ?>">
                     <button type="submit">Search</button>
                 </form>
 
-                <?php if ($search || $platform_filter !== 'all'): ?>
-                    <a href="index.php" class="btn btn-outline">Clear Filters</a>
+                <?php if ($search): ?>
+                    <a href="index.php" style="background: #6c757d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 25px;">Clear Search</a>
                 <?php endif; ?>
             </div>
         </div>
 
-        <?php if ($search || $platform_filter !== 'all'): ?>
+        <?php if ($search): ?>
             <div style="margin-bottom: 20px; color: #666;">
-                <?php if ($search): ?>
-                    Search results for "<strong><?php echo htmlspecialchars($search); ?></strong>"
-                <?php endif; ?>
-                <?php if ($platform_filter !== 'all'): ?>
-                    • Filtered by <strong><?php echo ucfirst($platform_filter); ?></strong>
-                <?php endif; ?>
-                • <strong><?php echo count($creators); ?></strong> creators found
+                Search results for "<strong><?php echo htmlspecialchars($search); ?></strong>" • 
+                <strong><?php echo count($creators); ?></strong> YouTubers found
             </div>
         <?php endif; ?>
 
         <?php if (empty($creators)): ?>
             <div class="empty-state">
-                <?php if ($search || $platform_filter !== 'all'): ?>
-                    <h3>No creators found</h3>
-                    <p>No creators match your search criteria</p>
-                    <a href="index.php" class="btn">View All Creators</a>
+                <?php if ($search): ?>
+                    <h3>No YouTubers found</h3>
+                    <p>No YouTubers match your search criteria</p>
+                    <a href="index.php" class="btn">View All YouTubers</a>
                 <?php else: ?>
-                    <h3>No creators yet</h3>
-                    <p>Be the first to join as a creator!</p>
-                    <a href="apply.php" class="btn">Apply to be a Creator</a>
+                    <h3>No YouTubers yet</h3>
+                    <p>Be the first to join as a YouTuber!</p>
+                    <a href="apply.php" class="btn">Apply to be a YouTuber</a>
                 <?php endif; ?>
             </div>
         <?php else: ?>
@@ -184,7 +223,7 @@ $platforms = array_unique(array_column($creators, 'platform_type'));
                                     <?php endif; ?>
                                 </h3>
                                 <div class="creator-badges">
-                                    <span class="platform-badge"><?php echo ucfirst($creator->platform_type); ?></span>
+                                    <span class="platform-badge">YouTube</span>
                                     <?php if ($creator->is_verified): ?>
                                         <span class="verified-badge">✓ Verified</span>
                                     <?php endif; ?>
@@ -209,7 +248,7 @@ $platforms = array_unique(array_column($creators, 'platform_type'));
                         
                         <div class="creator-actions">
                             <?php if (isset($_SESSION['user_id'])): ?>
-                                <a href="profile.php?id=<?php echo $creator->id; ?>" class="btn">View Topics & Fund</a>
+                                <a href="profile.php?id=<?php echo $creator->id; ?>" class="btn">Fund Topics</a>
                                 <?php if ($creator->platform_url): ?>
                                     <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
                                 <?php endif; ?>
@@ -223,28 +262,15 @@ $platforms = array_unique(array_column($creators, 'platform_type'));
 
             <!-- Call to Action -->
             <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px;">
-                <h3>Want to become a creator?</h3>
+                <h3>Want to become a YouTuber?</h3>
                 <p>Join TopicLaunch and let your audience fund the content they want to see!</p>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="apply.php" class="btn">Apply to be a Creator</a>
+                    <a href="apply.php" class="btn">Apply to be a YouTuber</a>
                 <?php else: ?>
                     <a href="../auth/register.php" class="btn">Get Started</a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
-
-    <script>
-    function updateFilters() {
-        const platform = document.querySelector('.filter-select').value;
-        const search = new URLSearchParams(window.location.search).get('search') || '';
-        
-        const url = new URL(window.location);
-        url.searchParams.set('platform', platform);
-        if (search) url.searchParams.set('search', search);
-        
-        window.location.href = url.toString();
-    }
-    </script>
 </body>
 </html>
