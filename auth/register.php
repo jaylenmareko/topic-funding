@@ -1,5 +1,5 @@
 <?php
-// auth/register.php - Secured with CSRF protection and enhanced validation
+// auth/register.php - Auto-login after registration for better UX
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -7,7 +7,6 @@ require_once '../config/sanitizer.php';
 
 $helper = new DatabaseHelper();
 $errors = [];
-$success = '';
 
 if ($_POST) {
     // CSRF Protection
@@ -15,7 +14,6 @@ if ($_POST) {
     
     $username = InputSanitizer::sanitizeString($_POST['username']);
     $email = InputSanitizer::sanitizeEmail($_POST['email']);
-    $full_name = InputSanitizer::sanitizeString($_POST['full_name']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
@@ -38,12 +36,6 @@ if ($_POST) {
         $errors[] = "Email already registered";
     }
     
-    if (empty($full_name)) {
-        $errors[] = "Full name is required";
-    } elseif (strlen($full_name) < 2) {
-        $errors[] = "Full name must be at least 2 characters";
-    }
-    
     if (empty($password)) {
         $errors[] = "Password is required";
     } elseif (!InputSanitizer::validatePassword($password)) {
@@ -59,14 +51,27 @@ if ($_POST) {
         $errors[] = "Too many registration attempts. Please try again later.";
     }
     
-    // If no errors, create user
+    // If no errors, create user and auto-login
     if (empty($errors)) {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $user_id = $helper->createUser($username, $email, $password_hash, $full_name);
+        $user_id = $helper->createUser($username, $email, $password_hash, $username); // Use username as full_name
         
         if ($user_id) {
-            $success = "Registration successful! You can now login.";
-            unset($_SESSION['registration_attempts']); // Reset attempts on success
+            // Auto-login the user
+            $_SESSION['user_id'] = $user_id;
+            $_SESSION['username'] = $username;
+            $_SESSION['full_name'] = $username; // Use username as full_name
+            $_SESSION['email'] = $email;
+            
+            // Regenerate session ID for security
+            session_regenerate_id(true);
+            
+            // Reset attempts on success
+            unset($_SESSION['registration_attempts']);
+            
+            // Redirect to dashboard
+            header('Location: ../dashboard/index.php');
+            exit;
         } else {
             $errors[] = "Registration failed. Please try again.";
         }
@@ -79,7 +84,7 @@ if ($_POST) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register - Topic Funding</title>
+    <title>Register - TopicLaunch</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
         .form-group { margin-bottom: 15px; }
@@ -90,7 +95,6 @@ if ($_POST) {
         .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
         .btn:hover { background: #0056b3; }
         .error { color: red; margin-bottom: 10px; }
-        .success { color: green; margin-bottom: 10px; }
         .links { text-align: center; margin-top: 20px; }
         .password-requirements { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
         .security-note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
@@ -100,7 +104,7 @@ if ($_POST) {
     </style>
 </head>
 <body>
-    <h2>Register for Topic Funding</h2>
+    <h2>Join TopicLaunch</h2>
     
     <div class="security-note">
         🔒 Your registration is protected with advanced security measures.
@@ -112,10 +116,6 @@ if ($_POST) {
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
         </div>
-    <?php endif; ?>
-    
-    <?php if ($success): ?>
-        <div class="success"><?php echo htmlspecialchars($success); ?></div>
     <?php endif; ?>
     
     <form method="POST" id="registrationForm">
@@ -130,11 +130,6 @@ if ($_POST) {
         <div class="form-group">
             <label>Email:</label>
             <input type="email" name="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Full Name:</label>
-            <input type="text" name="full_name" value="<?php echo isset($_POST['full_name']) ? htmlspecialchars($_POST['full_name']) : ''; ?>" required>
         </div>
         
         <div class="form-group">
@@ -153,13 +148,9 @@ if ($_POST) {
             <div class="requirement" id="match-req">• Passwords must match</div>
         </div>
         
-        <button type="submit" class="btn" id="submitBtn">Register</button>
+        <button type="submit" class="btn" id="submitBtn">Create Account & Login</button>
     </form>
-    
-    <div class="links">
-        <a href="login.php">Already have an account? Login here</a><br>
-        <a href="../index.php">Back to Home</a>
-    </div>
+</body>
 
     <script>
     // Real-time password validation
@@ -219,6 +210,12 @@ if ($_POST) {
 
     password.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
+    
+    // Form submission feedback
+    document.getElementById('registrationForm').addEventListener('submit', function() {
+        submitBtn.innerHTML = 'Creating Account...';
+        submitBtn.disabled = true;
+    });
     
     // Initial validation
     validatePassword();
