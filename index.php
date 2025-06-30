@@ -1,5 +1,5 @@
 <?php
-// index.php - Updated homepage with streamlined 3-step process
+// index.php - Simplified homepage
 session_start();
 require_once 'config/database.php';
 require_once 'config/navigation.php';
@@ -181,7 +181,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <div class="hero-buttons">
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
-                <a href="topics/create.php" class="btn btn-success">Create a Topic</a>
+                <a href="topics/index.php" class="btn btn-success">Fund a Topic</a>
             <?php else: ?>
                 <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
                 <a href="auth/register.php" class="btn btn-success">Get Started</a>
@@ -200,7 +200,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             <div class="process-step" data-step="2">
                 <div class="process-icon">🤝</div>
                 <h3>Community Backs It</h3>
-                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content.</p>
+                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content. (TopicLaunch takes 10%)</p>
             </div>
             <div class="process-step" data-step="3">
                 <div class="process-icon">⚡</div>
