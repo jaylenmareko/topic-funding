@@ -165,14 +165,7 @@ function renderNavigation($current_page = '') {
                         </a>
                     <?php endif; ?>
                     
-                    <!-- Creator Application Button (if not already a creator) -->
-                    <?php if (!$is_creator): ?>
-                        <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
-                            📺 Join as Creator
-                        </a>
-                    <?php endif; ?>
-                    
-                    <!-- Creator Dashboard -->
+                    <!-- Creator Dashboard (only show if already a creator) -->
                     <?php if ($is_creator): ?>
                         <a href="<?php echo $base_path; ?>creators/dashboard.php" class="nav-btn creator <?php echo $current_page === 'creator_dashboard' ? 'active' : ''; ?>">
                             📺 Creator Dashboard
