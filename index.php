@@ -88,12 +88,75 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 20px; text-align: center; }
         .hero h1 { font-size: 48px; margin: 0 0 20px 0; font-weight: bold; }
         .hero p { font-size: 20px; margin: 0 0 30px 0; opacity: 0.9; }
-        .hero-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-        .btn { padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; transition: all 0.3s; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-success:hover { background: #218838; color: white; text-decoration: none; }
-        .btn-secondary { background: rgba(255,255,255,0.2); color: white; border: 2px solid white; }
-        .btn-secondary:hover { background: rgba(255,255,255,0.3); }
+        /* User Type Selector */
+        .user-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .user-type {
+            background: rgba(255,255,255,0.1);
+            padding: 40px 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .user-type:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-5px);
+        }
+        .user-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .user-type h3 {
+            color: white;
+            margin: 0 0 15px 0;
+            font-size: 24px;
+        }
+        .user-type p {
+            color: rgba(255,255,255,0.9);
+            margin: 0 0 25px 0;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        .btn-youtuber, .btn-fan {
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .btn-youtuber {
+            background: #ff0000;
+            color: white;
+        }
+        .btn-youtuber:hover {
+            background: #cc0000;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        .btn-fan {
+            background: #28a745;
+            color: white;
+        }
+        .btn-fan:hover {
+            background: #218838;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
         
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         .section-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #333; }
@@ -141,7 +204,16 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         @media (max-width: 768px) {
             .hero h1 { font-size: 36px; }
             .hero p { font-size: 18px; }
-            .hero-buttons { flex-direction: column; align-items: center; }
+            .user-type-selector { 
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .user-type {
+                padding: 30px 20px;
+            }
+            .user-icon {
+                font-size: 50px;
+            }
             .process-steps { grid-template-columns: 1fr; }
             .login-form { flex-direction: column; gap: 5px; }
             .nav-container { flex-direction: column; gap: 15px; }
@@ -178,14 +250,25 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <h1>Fund Topics from Your Favorite YouTuber</h1>
         <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
         
-        <div class="hero-buttons">
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
-                <a href="topics/index.php" class="btn btn-success">Fund a Topic</a>
-            <?php else: ?>
-                <a href="creators/index.php" class="btn btn-secondary">Browse Creators</a>
-                <a href="auth/register.php" class="btn btn-success">Get Started</a>
-            <?php endif; ?>
+        <!-- User Type Selection -->
+        <div class="user-type-selector">
+            <div class="user-type youtuber">
+                <div class="user-icon">📺</div>
+                <h3>Are you a YouTuber?</h3>
+                <p>Let your audience fund the content they want to see</p>
+                <a href="<?php echo isset($_SESSION['user_id']) ? 'creators/apply.php' : 'auth/register.php?type=creator'; ?>" class="btn-youtuber">
+                    Join as YouTuber
+                </a>
+            </div>
+            
+            <div class="user-type fan">
+                <div class="user-icon">💰</div>
+                <h3>Want to fund content?</h3>
+                <p>Get your favorite YouTubers to make what you want</p>
+                <a href="<?php echo isset($_SESSION['user_id']) ? 'topics/index.php' : 'auth/register.php?type=fan'; ?>" class="btn-fan">
+                    Fund a Topic
+                </a>
+            </div>
         </div>
     </div>
 
