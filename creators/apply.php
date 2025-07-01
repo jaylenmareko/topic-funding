@@ -1,9 +1,47 @@
 <?php
-// creators/apply.php - Simplified creator application
+// creators/apply.php - Simplified creator application with verification
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
+
+// Simple YouTube channel verification
+function verifyYouTubeChannel($url) {
+    // Extract channel ID or username from URL
+    $channel_info = extractChannelInfo($url);
+    if (!$channel_info) {
+        return ['valid' => false, 'error' => 'Invalid YouTube URL format'];
+    }
+    
+    // Simple verification - check if URL returns valid response
+    $headers = @get_headers($url);
+    if (!$headers || strpos($headers[0], '200') === false) {
+        return ['valid' => false, 'error' => 'YouTube channel not found or not public'];
+    }
+    
+    return ['valid' => true];
+}
+
+function extractChannelInfo($url) {
+    // Parse different YouTube URL formats
+    $patterns = [
+        '/youtube\.com\/@([a-zA-Z0-9_.-]+)/',
+        '/youtube\.com\/channel\/([a-zA-Z0-9_-]+)/',
+        '/youtube\.com\/c\/([a-zA-Z0-9_-]+)/',
+        '/youtube\.com\/user\/([a-zA-Z0-9_-]+)/'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+    }
+    return false;
+}
+
+function generateVerificationCode() {
+    return 'TL-' . strtoupper(substr(md5(uniqid()), 0, 8));
+}
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -48,6 +86,12 @@ if ($_POST && !$existing_application) {
         $errors[] = "Valid YouTube channel URL required";
     } elseif (strpos($platform_url, 'youtube.com') === false && strpos($platform_url, 'youtu.be') === false) {
         $errors[] = "Must be a YouTube channel URL";
+    } else {
+        // Simple YouTube channel verification
+        $verification_result = verifyYouTubeChannel($platform_url);
+        if (!$verification_result['valid']) {
+            $errors[] = $verification_result['error'];
+        }
     }
     
     if ($subscriber_count < 100) {
@@ -63,15 +107,15 @@ if ($_POST && !$existing_application) {
             $user_data = $db->single();
             $user_email = $user_data ? $user_data->email : '';
             
-            // Insert creator profile (ACTIVE immediately - no approval needed)
+            // Insert creator profile with PENDING verification status
             $db->query('
                 INSERT INTO creators (
                     username, display_name, email, bio, platform_type, platform_url, 
                     subscriber_count, default_funding_threshold, applicant_user_id, 
-                    is_active, application_status, commission_rate, is_verified
+                    is_active, application_status, commission_rate, is_verified, verification_status
                 ) VALUES (
                     :username, :display_name, :email, "YouTube Creator", "youtube", :platform_url, 
-                    :subscriber_count, 50, :user_id, 1, "approved", 5.00, 0
+                    :subscriber_count, 50, :user_id, 0, "pending_verification", 5.00, 0, "pending"
                 )
             ');
             $db->bind(':username', $username);
@@ -82,9 +126,17 @@ if ($_POST && !$existing_application) {
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
-                $success = "Welcome to TopicLaunch! You're now a creator.";
-                // Redirect to dashboard after 2 seconds
-                header("refresh:2;url=../dashboard/index.php");
+                $creator_id = $db->lastInsertId();
+                $verification_code = generateVerificationCode();
+                
+                // Store verification code
+                $db->query('INSERT INTO creator_verification (creator_id, verification_code, created_at) VALUES (:creator_id, :code, NOW())');
+                $db->bind(':creator_id', $creator_id);
+                $db->bind(':code', $verification_code);
+                $db->execute();
+                
+                $success = "Profile created! Please complete verification to start receiving topic requests.";
+                header("refresh:3;url=../creators/verify.php?creator_id=" . $creator_id);
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
