@@ -250,13 +250,14 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <h1>Fund Topics from Your Favorite YouTuber</h1>
         <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
         
-        <!-- User Type Selection -->
+        <?php if (!isset($_SESSION['user_id'])): ?>
+        <!-- User Type Selection (only for guests) -->
         <div class="user-type-selector">
             <div class="user-type youtuber">
                 <div class="user-icon">📺</div>
                 <h3>Are you a YouTuber?</h3>
                 <p>Let your audience fund the content they want to see</p>
-                <a href="<?php echo isset($_SESSION['user_id']) ? 'creators/apply.php' : 'auth/register.php?type=creator'; ?>" class="btn-youtuber">
+                <a href="auth/register.php?type=creator" class="btn-youtuber">
                     Join as YouTuber
                 </a>
             </div>
@@ -265,11 +266,22 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 <div class="user-icon">💰</div>
                 <h3>Want to fund content?</h3>
                 <p>Get your favorite YouTubers to make what you want</p>
-                <a href="<?php echo isset($_SESSION['user_id']) ? 'topics/index.php' : 'auth/register.php?type=fan'; ?>" class="btn-fan">
+                <a href="auth/register.php?type=fan" class="btn-fan">
                     Fund a Topic
                 </a>
             </div>
         </div>
+        <?php else: ?>
+        <!-- Logged-in user actions -->
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="topics/index.php" class="btn-fan" style="margin: 10px;">
+                🔍 Browse Topics
+            </a>
+            <a href="topics/create.php" class="btn-youtuber" style="margin: 10px;">
+                💡 Propose New Topic
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="container">
