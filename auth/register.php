@@ -1,12 +1,19 @@
 <?php
-// auth/register.php - Auto-login after registration for better UX
+// auth/register.php - Updated with creator flow
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
+// Redirect if already logged in
+if (isset($_SESSION['user_id'])) {
+    header('Location: ../index.php');
+    exit;
+}
+
 $helper = new DatabaseHelper();
 $errors = [];
+$user_type = $_GET['type'] ?? 'fan'; // 'creator' or 'fan'
 
 if ($_POST) {
     // CSRF Protection
@@ -46,68 +53,78 @@ if ($_POST) {
         $errors[] = "Passwords do not match";
     }
     
-    // Rate limiting check (basic)
-    if (isset($_SESSION['registration_attempts']) && $_SESSION['registration_attempts'] > 5) {
-        $errors[] = "Too many registration attempts. Please try again later.";
-    }
-    
     // If no errors, create user and auto-login
     if (empty($errors)) {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $user_id = $helper->createUser($username, $email, $password_hash, $username); // Use username as full_name
+        $user_id = $helper->createUser($username, $email, $password_hash, $username);
         
         if ($user_id) {
             // Auto-login the user
             $_SESSION['user_id'] = $user_id;
             $_SESSION['username'] = $username;
-            $_SESSION['full_name'] = $username; // Use username as full_name
+            $_SESSION['full_name'] = $username;
             $_SESSION['email'] = $email;
             
             // Regenerate session ID for security
             session_regenerate_id(true);
             
-            // Reset attempts on success
-            unset($_SESSION['registration_attempts']);
-            
-            // Redirect to dashboard
-            header('Location: ../dashboard/index.php');
+            // Redirect based on user type
+            if ($user_type === 'creator') {
+                header('Location: ../creators/apply.php');
+            } else {
+                header('Location: ../dashboard/index.php');
+            }
             exit;
         } else {
             $errors[] = "Registration failed. Please try again.";
         }
-    } else {
-        // Track failed attempts
-        $_SESSION['registration_attempts'] = ($_SESSION['registration_attempts'] ?? 0) + 1;
     }
 }
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register - TopicLaunch</title>
+    <title>Join TopicLaunch</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { margin: 0 0 10px 0; color: #333; }
+        .user-type-indicator { 
+            background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+            font-weight: bold; 
+        }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input[type="text"], input[type="email"], input[type="password"] { 
             width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
         }
-        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
-        .btn:hover { background: #0056b3; }
+        .btn { background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 10px; }
         .links { text-align: center; margin-top: 20px; }
         .password-requirements { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
-        .security-note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
         .requirement { color: #666; font-size: 12px; }
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
     </style>
 </head>
 <body>
-    <h2>Join TopicLaunch</h2>
-    
-    <div class="security-note">
-        🔒 Your registration is protected with advanced security measures.
+    <div class="header">
+        <h2>Join TopicLaunch</h2>
+        
+        <div class="user-type-indicator">
+            <?php if ($user_type === 'creator'): ?>
+                📺 YouTuber Registration
+            <?php else: ?>
+                💰 Fan Registration
+            <?php endif; ?>
+        </div>
     </div>
     
     <?php if (!empty($errors)): ?>
@@ -148,9 +165,19 @@ if ($_POST) {
             <div class="requirement" id="match-req">• Passwords must match</div>
         </div>
         
-        <button type="submit" class="btn" id="submitBtn">Create Account & Login</button>
+        <button type="submit" class="btn" id="submitBtn">
+            <?php if ($user_type === 'creator'): ?>
+                📺 Create Account → Set Up YouTuber Profile
+            <?php else: ?>
+                💰 Create Account & Start Funding
+            <?php endif; ?>
+        </button>
     </form>
-</body>
+
+    <div class="links">
+        <a href="login.php">Already have an account? Login here</a><br>
+        <a href="../index.php">Back to Home</a>
+    </div>
 
     <script>
     // Real-time password validation
@@ -213,7 +240,7 @@ if ($_POST) {
     
     // Form submission feedback
     document.getElementById('registrationForm').addEventListener('submit', function() {
-        submitBtn.innerHTML = 'Creating Account...';
+        submitBtn.innerHTML = '⏳ Creating Account...';
         submitBtn.disabled = true;
     });
     
