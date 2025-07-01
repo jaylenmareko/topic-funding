@@ -21,7 +21,9 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $existing_application = $db->single();
 
 if ($existing_application) {
-    $success = "You already applied! Status: " . ucfirst($existing_application->application_status);
+    // Redirect to homepage if already a creator
+    header('Location: ../index.php');
+    exit;
 }
 
 if ($_POST && !$existing_application) {
@@ -66,7 +68,7 @@ if ($_POST && !$existing_application) {
             $user_data = $db->single();
             $user_email = $user_data ? $user_data->email : '';
             
-            // Insert application
+            // Insert creator profile (ACTIVE immediately - no approval needed)
             $db->query('
                 INSERT INTO creators (
                     username, display_name, email, bio, platform_type, platform_url, 
@@ -74,7 +76,7 @@ if ($_POST && !$existing_application) {
                     is_active, application_status, commission_rate, is_verified
                 ) VALUES (
                     :username, :display_name, :email, "YouTube Creator", "youtube", :platform_url, 
-                    :subscriber_count, :threshold, :user_id, 0, "pending", 5.00, 0
+                    :subscriber_count, 50, :user_id, 1, "approved", 5.00, 0
                 )
             ');
             $db->bind(':username', $username);
@@ -82,11 +84,12 @@ if ($_POST && !$existing_application) {
             $db->bind(':email', $user_email);
             $db->bind(':platform_url', $platform_url);
             $db->bind(':subscriber_count', $subscriber_count);
-            $db->bind(':threshold', $default_funding_threshold);
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
-                $success = "Application submitted! We'll review it soon.";
+                $success = "Welcome to TopicLaunch! You're now a creator.";
+                // Redirect to homepage after 2 seconds
+                header("refresh:2;url=../index.php");
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
@@ -132,15 +135,8 @@ if ($_POST && !$existing_application) {
         <a href="../dashboard/index.php" class="back-link">← Back to Dashboard</a>
 
         <div class="header">
-            <h1>📺 Join as Creator</h1>
-            <p>Let your audience fund the content they want to see!</p>
-        </div>
-
-        <div class="requirements">
-            <h4>Quick Requirements:</h4>
-            • YouTube channel with 100+ subscribers<br>
-            • Valid YouTube channel URL<br>
-            • Commit to 48-hour content delivery
+            <h1>📺 Join as YouTuber</h1>
+            <p>Set up your creator profile to start receiving topic requests!</p>
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -179,21 +175,14 @@ if ($_POST && !$existing_application) {
                     <small>Must have at least 100 subscribers</small>
                 </div>
 
-                <div class="form-group">
-                    <label>Default Topic Goal ($):</label>
-                    <input type="number" name="default_funding_threshold" min="10" step="0.01" required
-                           value="<?php echo isset($_POST['default_funding_threshold']) ? htmlspecialchars($_POST['default_funding_threshold']) : '50'; ?>">
-                    <small>How much should topics typically need to get funded?</small>
-                </div>
-
                 <button type="submit" class="btn">
-                    📺 Submit Application
+                    📺 Complete Setup
                 </button>
             </form>
             
             <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                <strong>What happens next:</strong><br>
-                We'll review your application and get back to you within 24 hours
+                <strong>Almost done!</strong><br>
+                Complete your YouTuber profile to start receiving topic requests
             </div>
         <?php endif; ?>
     </div>
