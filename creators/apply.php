@@ -34,7 +34,6 @@ if ($_POST && !$existing_application) {
     $display_name = InputSanitizer::sanitizeString($_POST['display_name']);
     $platform_url = InputSanitizer::sanitizeUrl($_POST['platform_url']);
     $subscriber_count = InputSanitizer::sanitizeInt($_POST['subscriber_count']);
-    $default_funding_threshold = InputSanitizer::sanitizeFloat($_POST['default_funding_threshold']);
     
     // Generate username
     $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
@@ -53,10 +52,6 @@ if ($_POST && !$existing_application) {
     
     if ($subscriber_count < 100) {
         $errors[] = "Minimum 100 subscribers required";
-    }
-    
-    if ($default_funding_threshold < 10) {
-        $errors[] = "Minimum funding goal is $10";
     }
     
     // Create creator application if no errors
@@ -88,8 +83,8 @@ if ($_POST && !$existing_application) {
             
             if ($db->execute()) {
                 $success = "Welcome to TopicLaunch! You're now a creator.";
-                // Redirect to homepage after 2 seconds
-                header("refresh:2;url=../index.php");
+                // Redirect to dashboard after 2 seconds
+                header("refresh:2;url=../dashboard/index.php");
             } else {
                 $errors[] = "Failed to submit application. Please try again.";
             }
@@ -180,22 +175,27 @@ if ($_POST && !$existing_application) {
                 </button>
             </form>
             
-            <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                <strong>Almost done!</strong><br>
-                Complete your YouTuber profile to start receiving topic requests
-            </div>
+
         <?php endif; ?>
     </div>
 
     <script>
-    // Simple form validation
+    // Simple form validation with YouTube URL verification
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
         const displayName = document.querySelector('input[name="display_name"]').value.trim();
+        const youtubeUrl = document.querySelector('input[name="platform_url"]').value.trim();
         const subscribers = parseInt(document.querySelector('input[name="subscriber_count"]').value);
         
         if (displayName.length < 2) {
             e.preventDefault();
             alert('Creator name must be at least 2 characters');
+            return;
+        }
+        
+        // Validate YouTube URL format
+        if (!youtubeUrl || !isValidYouTubeUrl(youtubeUrl)) {
+            e.preventDefault();
+            alert('Please enter a valid YouTube channel URL (e.g., https://youtube.com/@yourchannel)');
             return;
         }
         
@@ -209,6 +209,50 @@ if ($_POST && !$existing_application) {
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.innerHTML = '⏳ Submitting...';
         submitBtn.disabled = true;
+    });
+    
+    // YouTube URL validation function
+    function isValidYouTubeUrl(url) {
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname.toLowerCase();
+            
+            // Check if it's a YouTube domain
+            if (hostname !== 'youtube.com' && hostname !== 'www.youtube.com' && hostname !== 'youtu.be') {
+                return false;
+            }
+            
+            // Check for common YouTube URL patterns
+            const pathname = urlObj.pathname;
+            
+            // Valid patterns: /channel/, /c/, /@username, /user/
+            const validPatterns = [
+                /^\/channel\/[a-zA-Z0-9_-]+/,
+                /^\/c\/[a-zA-Z0-9_-]+/,
+                /^\/user\/[a-zA-Z0-9_-]+/,
+                /^\/@[a-zA-Z0-9_.-]+/
+            ];
+            
+            return validPatterns.some(pattern => pattern.test(pathname));
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Real-time YouTube URL validation
+    document.querySelector('input[name="platform_url"]').addEventListener('input', function() {
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const url = this.value.trim();
+        
+        if (url && !isValidYouTubeUrl(url)) {
+            this.style.borderColor = '#dc3545';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        } else {
+            this.style.borderColor = '#ddd';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
     });
     </script>
 </body>
