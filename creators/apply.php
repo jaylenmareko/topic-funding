@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Simplified creator application with verification
+// creators/apply.php - Fixed creator application with verification
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -68,14 +68,21 @@ if ($_POST && !$existing_application) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
     
-    // Sanitize inputs
+    // Sanitize inputs - FIXED: Properly assign sanitized values
     $display_name = InputSanitizer::sanitizeString($_POST['display_name']);
     $platform_url = InputSanitizer::sanitizeUrl($_POST['platform_url']);
     $subscriber_count = InputSanitizer::sanitizeInt($_POST['subscriber_count']);
     
-    // Generate username
+    // Generate username from display name - FIXED: Proper username generation
     $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
     $username = $base_username . '_' . $_SESSION['user_id'];
+    
+    // Set default values - FIXED: Define all required variables
+    $bio = "YouTube Creator"; // Default bio
+    $platform_type = "youtube"; // Fixed platform type
+    $default_funding_threshold = 50; // Default threshold
+    $email = ''; // Will get user email below
+    $profile_image = null; // No profile image initially
     
     // Validation
     if (empty($display_name) || strlen($display_name) < 2) {
@@ -101,28 +108,34 @@ if ($_POST && !$existing_application) {
     // Create creator application if no errors
     if (empty($errors)) {
         try {
-            // Get user email
+            $db->beginTransaction();
+            
+            // Get user email - FIXED: Properly get user email
             $db->query('SELECT email FROM users WHERE id = :user_id');
             $db->bind(':user_id', $_SESSION['user_id']);
             $user_data = $db->single();
-            $user_email = $user_data ? $user_data->email : '';
+            $email = $user_data ? $user_data->email : '';
             
-            // Insert creator profile with PENDING verification status
+            // Insert creator profile - FIXED: All variables now properly defined
             $db->query('
                 INSERT INTO creators (
                     username, display_name, email, bio, platform_type, platform_url, 
                     subscriber_count, default_funding_threshold, applicant_user_id, 
                     is_active, application_status, commission_rate, is_verified, verification_status
                 ) VALUES (
-                    :username, :display_name, :email, "YouTube Creator", "youtube", :platform_url, 
-                    :subscriber_count, 50, :user_id, 0, "pending_verification", 5.00, 0, "pending"
+                    :username, :display_name, :email, :bio, :platform_type, :platform_url, 
+                    :subscriber_count, :default_funding_threshold, :user_id, 
+                    0, "pending_verification", 5.00, 0, "pending"
                 )
             ');
             $db->bind(':username', $username);
             $db->bind(':display_name', $display_name);
-            $db->bind(':email', $user_email);
+            $db->bind(':email', $email);
+            $db->bind(':bio', $bio);
+            $db->bind(':platform_type', $platform_type);
             $db->bind(':platform_url', $platform_url);
             $db->bind(':subscriber_count', $subscriber_count);
+            $db->bind(':default_funding_threshold', $default_funding_threshold);
             $db->bind(':user_id', $_SESSION['user_id']);
             
             if ($db->execute()) {
@@ -135,14 +148,18 @@ if ($_POST && !$existing_application) {
                 $db->bind(':code', $verification_code);
                 $db->execute();
                 
+                $db->endTransaction();
+                
                 $success = "Profile created! Please complete verification to start receiving topic requests.";
                 header("refresh:3;url=../creators/verify.php?creator_id=" . $creator_id);
             } else {
+                $db->cancelTransaction();
                 $errors[] = "Failed to submit application. Please try again.";
             }
         } catch (Exception $e) {
+            $db->cancelTransaction();
             $errors[] = "Error submitting application.";
-            error_log("Creator application error: " . $e->getMessage());
+            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
 }
