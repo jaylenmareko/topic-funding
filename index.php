@@ -1,11 +1,20 @@
 <?php
-// index.php - Simplified homepage
+// index.php - Simplified homepage with creator-specific content
 session_start();
 require_once 'config/database.php';
 require_once 'config/navigation.php';
 
 $helper = new DatabaseHelper();
 $creators = $helper->getAllCreators();
+
+// Check if user is a creator
+$is_creator = false;
+if (isset($_SESSION['user_id'])) {
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $is_creator = $db->single() ? true : false;
+}
 
 // Handle login form
 $login_error = '';
@@ -158,6 +167,45 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             transform: translateY(-2px);
         }
         
+        /* Logged-in user actions */
+        .logged-in-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .creator-welcome {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 0 auto;
+            max-width: 600px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .creator-welcome h3 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            color: white;
+        }
+        .creator-welcome p {
+            margin: 0 0 20px 0;
+            opacity: 0.9;
+        }
+        .dashboard-btn {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .dashboard-btn:hover {
+            background: #218838;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         .section-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #333; }
         
@@ -271,9 +319,22 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 </a>
             </div>
         </div>
+        
+        <?php elseif ($is_creator): ?>
+        <!-- Creator welcome message -->
+        <div class="logged-in-actions">
+            <div class="creator-welcome">
+                <h3>📺 Welcome back, Creator!</h3>
+                <p>Check your dashboard to see funded topics, earnings, and content requests from your fans.</p>
+                <a href="dashboard/index.php" class="dashboard-btn">
+                    Go to Creator Dashboard
+                </a>
+            </div>
+        </div>
+        
         <?php else: ?>
-        <!-- Logged-in user actions -->
-        <div style="text-align: center; margin-top: 30px;">
+        <!-- Regular user actions (fans) -->
+        <div class="logged-in-actions">
             <a href="topics/index.php" class="btn-fan" style="margin: 10px;">
                 🔍 Browse Topics
             </a>
