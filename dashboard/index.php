@@ -1,5 +1,5 @@
 <?php
-// dashboard/index.php - Smart dashboard that detects user type
+// dashboard/index.php - Unified dashboard that shows creator view for YouTubers, fan view for regular users
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -19,10 +19,8 @@ $db->query('SELECT * FROM creators WHERE applicant_user_id = :user_id AND is_act
 $db->bind(':user_id', $user_id);
 $creator = $db->single();
 
-// If creator, show creator dashboard (unless specifically viewing as fan)
-if ($creator && !isset($_GET['view'])) {
-    // Creator Dashboard Logic
-    
+// CREATOR DASHBOARD - Only for verified creators
+if ($creator) {
     // Get urgent funded topics awaiting content (48-hour deadline)
     $db->query('
         SELECT t.*, 
@@ -80,375 +78,374 @@ if ($creator && !isset($_GET['view'])) {
 
     // Check Stripe Connect status
     $stripe_connected = !empty($creator->stripe_account_id);
-    ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Creator Dashboard - TopicLaunch</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
-            .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-            
-            /* Header */
-            .dashboard-header { 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                color: white; 
-                padding: 30px 20px; 
-                margin-bottom: 30px;
-                border-radius: 12px;
-            }
-            .header-content { max-width: 1200px; margin: 0 auto; }
-            .header-title { font-size: 32px; margin: 0 0 10px 0; font-weight: bold; }
-            .header-subtitle { font-size: 18px; margin: 0; opacity: 0.9; }
-            .header-actions { margin-top: 20px; }
-            .header-btn { 
-                background: rgba(255,255,255,0.2); 
-                color: white; 
-                padding: 10px 20px; 
-                border: none; 
-                border-radius: 6px; 
-                text-decoration: none; 
-                margin-right: 10px;
-                display: inline-block;
-                font-weight: bold;
-            }
-            .header-btn:hover { 
-                background: rgba(255,255,255,0.3); 
-                color: white;
-                text-decoration: none;
-            }
-            
-            /* Alert Sections */
-            .urgent-section { 
-                background: #fff3cd; 
-                border: 2px solid #ffc107; 
-                border-radius: 12px; 
-                padding: 25px; 
-                margin-bottom: 30px;
-            }
-            .urgent-header { 
-                display: flex; 
-                align-items: center; 
-                margin-bottom: 20px; 
-            }
-            .urgent-icon { 
-                font-size: 28px; 
-                margin-right: 15px; 
-            }
-            .urgent-title { 
-                font-size: 24px; 
-                color: #856404; 
-                margin: 0; 
-                font-weight: bold;
-            }
-            
-            .stripe-alert {
-                background: #f8d7da;
-                border: 2px solid #dc3545;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 30px;
-                text-align: center;
-            }
-            .stripe-alert h3 {
-                color: #721c24;
-                margin: 0 0 10px 0;
-            }
-            .stripe-setup-btn {
-                background: #28a745;
-                color: white;
-                padding: 12px 25px;
-                border: none;
-                border-radius: 6px;
-                text-decoration: none;
-                font-weight: bold;
-                font-size: 16px;
-                display: inline-block;
-                margin-top: 10px;
-            }
-            .stripe-setup-btn:hover {
-                background: #218838;
-                color: white;
-                text-decoration: none;
-            }
-            
-            /* Cards */
-            .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
-            .dashboard-card { 
-                background: white; 
-                border-radius: 12px; 
-                padding: 25px; 
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            }
-            .card-header { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
-                margin-bottom: 20px; 
-                border-bottom: 2px solid #f1f3f4;
-                padding-bottom: 15px;
-            }
-            .card-title { 
-                font-size: 20px; 
-                font-weight: bold; 
-                color: #333; 
-                margin: 0; 
-            }
-            .card-icon { font-size: 24px; }
-            
-            /* Topic Items */
-            .topic-item { 
-                background: #f8f9fa; 
-                border-radius: 8px; 
-                padding: 20px; 
-                margin-bottom: 15px; 
-                border-left: 4px solid #007bff;
-            }
-            .urgent-topic { 
-                background: #fff3cd; 
-                border-left-color: #ffc107; 
-            }
-            .topic-title { 
-                font-size: 18px; 
-                font-weight: bold; 
-                color: #333; 
-                margin: 0 0 10px 0; 
-            }
-            .topic-meta { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
-                font-size: 14px; 
-                color: #666; 
-                margin-bottom: 15px;
-            }
-            .countdown { 
-                background: #dc3545; 
-                color: white; 
-                padding: 5px 12px; 
-                border-radius: 15px; 
-                font-weight: bold; 
-                font-size: 12px;
-            }
-            .progress-bar { 
-                background: #e9ecef; 
-                border-radius: 10px; 
-                height: 8px; 
-                overflow: hidden; 
-                margin: 10px 0;
-            }
-            .progress-fill { 
-                background: #28a745; 
-                height: 100%; 
-                transition: width 0.3s;
-            }
-            
-            /* Buttons */
-            .btn { 
-                padding: 10px 20px; 
-                border: none; 
-                border-radius: 6px; 
-                cursor: pointer; 
-                text-decoration: none; 
-                font-weight: bold; 
-                display: inline-block;
-                text-align: center;
-            }
-            .btn-primary { background: #007bff; color: white; }
-            .btn-primary:hover { background: #0056b3; color: white; text-decoration: none; }
-            .btn-success { background: #28a745; color: white; }
-            .btn-success:hover { background: #218838; color: white; text-decoration: none; }
-            .btn-danger { background: #dc3545; color: white; }
-            .btn-danger:hover { background: #c82333; color: white; text-decoration: none; }
-            
-            /* Stats */
-            .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; }
-            .stat-item { text-align: center; }
-            .stat-value { font-size: 32px; font-weight: bold; color: #007bff; margin: 0; }
-            .stat-label { font-size: 14px; color: #666; margin: 5px 0 0 0; }
-            
-            .empty-state { 
-                text-align: center; 
-                color: #666; 
-                padding: 40px 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-            }
-            
-            @media (max-width: 768px) {
-                .dashboard-grid { grid-template-columns: 1fr; }
-                .container { padding: 10px; }
-                .dashboard-header { margin: 10px; }
-            }
-        </style>
-    </head>
-    <body>
-        <?php renderNavigation('creator_dashboard'); ?>
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Creator Dashboard - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
-        <div class="container">
-            <!-- Header -->
-            <div class="dashboard-header">
-                <div class="header-content">
-                    <h1 class="header-title">📺 Creator Dashboard</h1>
-                    <p class="header-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
-                    <div class="header-actions">
-                        <a href="../topics/index.php" class="header-btn">🔍 Browse All Topics</a>
-                        <a href="?view=fan" class="header-btn">💰 View as Fan</a>
-                    </div>
-                </div>
+        /* Header */
+        .dashboard-header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px 20px; 
+            margin-bottom: 30px;
+            border-radius: 12px;
+        }
+        .header-content { max-width: 1200px; margin: 0 auto; }
+        .header-title { font-size: 32px; margin: 0 0 10px 0; font-weight: bold; }
+        .header-subtitle { font-size: 18px; margin: 0; opacity: 0.9; }
+        .header-actions { margin-top: 20px; }
+        .header-btn { 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            margin-right: 10px;
+            display: inline-block;
+            font-weight: bold;
+        }
+        .header-btn:hover { 
+            background: rgba(255,255,255,0.3); 
+            color: white;
+            text-decoration: none;
+        }
+        
+        /* Alert Sections */
+        .urgent-section { 
+            background: #fff3cd; 
+            border: 2px solid #ffc107; 
+            border-radius: 12px; 
+            padding: 25px; 
+            margin-bottom: 30px;
+        }
+        .urgent-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+        .urgent-icon { 
+            font-size: 28px; 
+            margin-right: 15px; 
+        }
+        .urgent-title { 
+            font-size: 24px; 
+            color: #856404; 
+            margin: 0; 
+            font-weight: bold;
+        }
+        
+        .stripe-alert {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .stripe-alert h3 {
+            color: #721c24;
+            margin: 0 0 10px 0;
+        }
+        .stripe-setup-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .stripe-setup-btn:hover {
+            background: #218838;
+            color: white;
+            text-decoration: none;
+        }
+        
+        /* Cards */
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .dashboard-card { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 25px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        .card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #f1f3f4;
+            padding-bottom: 15px;
+        }
+        .card-title { 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: #333; 
+            margin: 0; 
+        }
+        .card-icon { font-size: 24px; }
+        
+        /* Topic Items */
+        .topic-item { 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            border-left: 4px solid #007bff;
+        }
+        .urgent-topic { 
+            background: #fff3cd; 
+            border-left-color: #ffc107; 
+        }
+        .topic-title { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #333; 
+            margin: 0 0 10px 0; 
+        }
+        .topic-meta { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 14px; 
+            color: #666; 
+            margin-bottom: 15px;
+        }
+        .countdown { 
+            background: #dc3545; 
+            color: white; 
+            padding: 5px 12px; 
+            border-radius: 15px; 
+            font-weight: bold; 
+            font-size: 12px;
+        }
+        .progress-bar { 
+            background: #e9ecef; 
+            border-radius: 10px; 
+            height: 8px; 
+            overflow: hidden; 
+            margin: 10px 0;
+        }
+        .progress-fill { 
+            background: #28a745; 
+            height: 100%; 
+            transition: width 0.3s;
+        }
+        
+        /* Buttons */
+        .btn { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            text-decoration: none; 
+            font-weight: bold; 
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; color: white; text-decoration: none; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; color: white; text-decoration: none; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; color: white; text-decoration: none; }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 32px; font-weight: bold; color: #007bff; margin: 0; }
+        .stat-label { font-size: 14px; color: #666; margin: 5px 0 0 0; }
+        
+        .empty-state { 
+            text-align: center; 
+            color: #666; 
+            padding: 40px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .container { padding: 10px; }
+            .dashboard-header { margin: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <?php renderNavigation('dashboard'); ?>
+    
+    <div class="container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="header-title">📺 Creator Dashboard</h1>
+                <p class="header-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
+            </div>
+        </div>
+        
+        <!-- Stripe Setup Alert -->
+        <?php if (!$stripe_connected): ?>
+        <div class="stripe-alert">
+            <h3>⚠️ Payment Setup Required</h3>
+            <p>You need to connect your Stripe account to receive payments when you complete topics.</p>
+            <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
+                💳 Setup Instant Payments
+            </a>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Urgent: Funded Topics Awaiting Content -->
+        <?php if (!empty($urgent_topics)): ?>
+        <div class="urgent-section">
+            <div class="urgent-header">
+                <span class="urgent-icon">🔥</span>
+                <h2 class="urgent-title">Action Required - Deliver Content</h2>
             </div>
             
-            <!-- Stripe Setup Alert -->
-            <?php if (!$stripe_connected): ?>
-            <div class="stripe-alert">
-                <h3>⚠️ Payment Setup Required</h3>
-                <p>You need to connect your Stripe account to receive payments when you complete topics.</p>
-                <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
-                    💳 Setup Instant Payments
-                </a>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Urgent: Funded Topics Awaiting Content -->
-            <?php if (!empty($urgent_topics)): ?>
-            <div class="urgent-section">
-                <div class="urgent-header">
-                    <span class="urgent-icon">🔥</span>
-                    <h2 class="urgent-title">Action Required - Deliver Content</h2>
+            <?php foreach ($urgent_topics as $topic): ?>
+            <div class="topic-item urgent-topic">
+                <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                <div class="topic-meta">
+                    <span><strong>$<?php echo number_format($topic->current_funding, 2); ?></strong> funded</span>
+                    <span class="countdown">
+                        ⏰ <?php echo max(0, $topic->hours_remaining); ?> hours left
+                    </span>
                 </div>
-                
-                <?php foreach ($urgent_topics as $topic): ?>
-                <div class="topic-item urgent-topic">
-                    <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                    <div class="topic-meta">
-                        <span><strong>$<?php echo number_format($topic->current_funding, 2); ?></strong> funded</span>
-                        <span class="countdown">
-                            ⏰ <?php echo max(0, $topic->hours_remaining); ?> hours left
-                        </span>
-                    </div>
-                    <p style="margin: 10px 0; color: #666;">
-                        <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
-                    </p>
-                    <div style="margin-top: 15px;">
-                        <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
-                            🎬 Upload Content Now
-                        </a>
-                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
-                            👁️ View Details
-                        </a>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Main Dashboard Grid -->
-            <div class="dashboard-grid">
-                <!-- Live Topics Being Funded -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h2 class="card-title">📈 Topics Being Funded</h2>
-                        <span class="card-icon">💰</span>
-                    </div>
-                    
-                    <?php if (!empty($live_topics)): ?>
-                        <?php foreach ($live_topics as $topic): ?>
-                        <div class="topic-item">
-                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                            <div class="topic-meta">
-                                <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
-                                <span><?php echo $topic->contributor_count; ?> contributors</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
-                            </div>
-                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
-                                View Topic
-                            </a>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <p>No topics currently being funded.</p>
-                            <p>Fans will create topics for you - just wait for them to reach the funding goal!</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Earnings & Stats -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h2 class="card-title">💵 Earnings</h2>
-                        <span class="card-icon">📊</span>
-                    </div>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <p class="stat-value">$<?php echo number_format($earnings->total_earned ?? 0, 2); ?></p>
-                            <p class="stat-label">Total Earned</p>
-                        </div>
-                        <div class="stat-item">
-                            <p class="stat-value">$<?php echo number_format($earnings->pending_earnings ?? 0, 2); ?></p>
-                            <p class="stat-label">Pending</p>
-                        </div>
-                        <div class="stat-item">
-                            <p class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></p>
-                            <p class="stat-label">Completed</p>
-                        </div>
-                        <div class="stat-item">
-                            <p class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></p>
-                            <p class="stat-label">Due Soon</p>
-                        </div>
-                    </div>
-                    
-                    <?php if ($stripe_connected): ?>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">
-                            💳 View Payouts
-                        </a>
-                    </div>
-                    <?php endif; ?>
+                <p style="margin: 10px 0; color: #666;">
+                    <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
+                </p>
+                <div style="margin-top: 15px;">
+                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
+                        🎬 Upload Content Now
+                    </a>
+                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
+                        👁️ View Details
+                    </a>
                 </div>
             </div>
-            
-            <!-- Recently Completed Topics -->
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Live Topics Being Funded -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <h2 class="card-title">✅ Recently Completed</h2>
-                    <span class="card-icon">🎉</span>
+                    <h2 class="card-title">📈 Topics Being Funded</h2>
+                    <span class="card-icon">💰</span>
                 </div>
                 
-                <?php if (!empty($completed_topics)): ?>
-                    <?php foreach ($completed_topics as $topic): ?>
+                <?php if (!empty($live_topics)): ?>
+                    <?php foreach ($live_topics as $topic): ?>
                     <div class="topic-item">
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <div class="topic-meta">
-                            <span><strong>$<?php echo number_format($topic->current_funding * 0.9, 2); ?></strong> earned</span>
-                            <span>Completed <?php echo date('M j, Y', strtotime($topic->completed_at)); ?></span>
+                            <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
+                            <span><?php echo $topic->contributor_count; ?> contributors</span>
                         </div>
-                        <div style="margin-top: 10px;">
-                            <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" class="btn btn-primary">
-                                🎬 View Content
-                            </a>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
                         </div>
+                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
+                            View Topic
+                        </a>
                     </div>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="empty-state">
-                        <p>No completed topics yet.</p>
-                        <p>Complete your first funded topic to see it here!</p>
+                        <p>No topics currently being funded.</p>
+                        <p>Fans will create topics for you - just wait for them to reach the funding goal!</p>
                     </div>
                 <?php endif; ?>
             </div>
+            
+            <!-- Earnings & Stats -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">💵 Earnings</h2>
+                    <span class="card-icon">📊</span>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <p class="stat-value">$<?php echo number_format($earnings->total_earned ?? 0, 2); ?></p>
+                        <p class="stat-label">Total Earned</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="stat-value">$<?php echo number_format($earnings->pending_earnings ?? 0, 2); ?></p>
+                        <p class="stat-label">Pending</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></p>
+                        <p class="stat-label">Completed</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></p>
+                        <p class="stat-label">Due Soon</p>
+                    </div>
+                </div>
+                
+                <?php if ($stripe_connected): ?>
+                <div style="margin-top: 20px; text-align: center;">
+                    <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">
+                        💳 View Payouts
+                    </a>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
-    </body>
-    </html>
-    <?php
-    exit;
+        
+        <!-- Recently Completed Topics -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">✅ Recently Completed</h2>
+                <span class="card-icon">🎉</span>
+            </div>
+            
+            <?php if (!empty($completed_topics)): ?>
+                <?php foreach ($completed_topics as $topic): ?>
+                <div class="topic-item">
+                    <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                    <div class="topic-meta">
+                        <span><strong>$<?php echo number_format($topic->current_funding * 0.9, 2); ?></strong> earned</span>
+                        <span>Completed <?php echo date('M j, Y', strtotime($topic->completed_at)); ?></span>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" class="btn btn-primary">
+                            🎬 View Content
+                        </a>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="empty-state">
+                    <p>No completed topics yet.</p>
+                    <p>Complete your first funded topic to see it here!</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</body>
+</html>
+<?php
+    // CRITICAL: Exit here to prevent fan dashboard from loading
+    exit();
 }
 
-// Continue with fan dashboard code below...
+// ==============================================================================
+// FAN DASHBOARD - Only for regular users (non-creators)
+// ==============================================================================
 
 // Get user's contribution statistics
 $db->query('
@@ -550,7 +547,7 @@ if ($total_contributed >= 500) {
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
-        .status-pending_approval { background: #f8d7da; color: #721c24; }
+        .status-pending-approval { background: #f8d7da; color: #721c24; }
         .funding-bar { background: #e9ecef; height: 6px; border-radius: 3px; margin: 10px 0; }
         .funding-progress { background: #28a745; height: 100%; border-radius: 3px; transition: width 0.3s; }
         .btn { background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px; }
@@ -567,8 +564,6 @@ if ($total_contributed >= 500) {
         .welcome-banner h2 { margin: 0 0 10px 0; }
         .level-progress { background: rgba(255,255,255,0.2); height: 6px; border-radius: 3px; margin-top: 10px; }
         .level-bar { background: rgba(255,255,255,0.8); height: 100%; border-radius: 3px; }
-        .creator-toggle { background: #ff0000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-left: 15px; }
-        .creator-toggle:hover { background: #cc0000; color: white; text-decoration: none; }
         
         @media (max-width: 768px) {
             .content-grid { grid-template-columns: 1fr; }
@@ -587,17 +582,11 @@ if ($total_contributed >= 500) {
                 <div>
                     <h2>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h2>
                     <p style="margin: 0; opacity: 0.9;">Track your contributions and discover new topics to fund</p>
-                    <?php if ($creator): ?>
-                        <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 14px;">You're viewing the fan dashboard</p>
-                    <?php endif; ?>
                 </div>
                 <div>
                     <span class="user-level" style="background-color: <?php echo $level_color; ?>;">
                         <?php echo $user_level; ?>
                     </span>
-                    <?php if ($creator): ?>
-                        <a href="index.php" class="creator-toggle">📺 Creator Dashboard</a>
-                    <?php endif; ?>
                 </div>
             </div>
             
@@ -740,9 +729,7 @@ if ($total_contributed >= 500) {
                         <a href="../topics/create.php" class="btn btn-success">💡 Propose New Topic</a>
                         <a href="../topics/index.php" class="btn">🔍 Browse Active Topics</a>
                         <a href="../creators/index.php" class="btn">👥 Browse Creators</a>
-                        <?php if (!$creator): ?>
-                            <a href="../creators/apply.php" class="btn" style="background: #ff0000;">🎯 Become a Creator</a>
-                        <?php endif; ?>
+                        <a href="../creators/apply.php" class="btn" style="background: #ff0000;">🎯 Become a Creator</a>
                     </div>
                 </div>
 
