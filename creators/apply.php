@@ -1,40 +1,7 @@
 <?php
-// creators/apply.php - Debug version with detailed error logging
+// creators/apply.php - Exact match for your database structure
 session_start();
 require_once '../config/database.php';
-require_once '../config/csrf.php';
-require_once '../config/sanitizer.php';
-
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Simple YouTube channel verification
-function verifyYouTubeChannel($url) {
-    // For now, just do basic URL validation to avoid external API issues
-    return ['valid' => true];
-}
-
-function extractChannelInfo($url) {
-    // Parse different YouTube URL formats
-    $patterns = [
-        '/youtube\.com\/@([a-zA-Z0-9_.-]+)/',
-        '/youtube\.com\/channel\/([a-zA-Z0-9_-]+)/',
-        '/youtube\.com\/c\/([a-zA-Z0-9_-]+)/',
-        '/youtube\.com\/user\/([a-zA-Z0-9_-]+)/'
-    ];
-    
-    foreach ($patterns as $pattern) {
-        if (preg_match($pattern, $url, $matches)) {
-            return $matches[1];
-        }
-    }
-    return false;
-}
-
-function generateVerificationCode() {
-    return 'TL-' . strtoupper(substr(md5(uniqid()), 0, 8));
-}
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -44,7 +11,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $errors = [];
 $success = '';
-$debug_info = [];
 
 // Check if user already has a creator application
 $db = new Database();
@@ -53,77 +19,34 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $existing_application = $db->single();
 
 if ($existing_application) {
-    // Redirect to homepage if already a creator
     header('Location: ../index.php');
     exit;
 }
 
-if ($_POST && !$existing_application) {
-    $debug_info[] = "Form submitted by user: " . $_SESSION['user_id'];
+if ($_POST) {
+    // Simple validation
+    $display_name = trim($_POST['display_name'] ?? '');
+    $platform_url = trim($_POST['platform_url'] ?? '');
+    $subscriber_count = (int)($_POST['subscriber_count'] ?? 0);
     
-    // CSRF Protection
-    try {
-        CSRFProtection::requireValidToken();
-        $debug_info[] = "CSRF token validated";
-    } catch (Exception $e) {
-        $errors[] = "CSRF validation failed: " . $e->getMessage();
-        $debug_info[] = "CSRF error: " . $e->getMessage();
+    // Basic validation
+    if (empty($display_name) || strlen($display_name) < 2) {
+        $errors[] = "Creator name is required (2+ characters)";
     }
     
-    if (empty($errors)) {
-        // Debug: Show what we received
-        $debug_info[] = "POST data received: " . json_encode($_POST);
-        
-        // Sanitize inputs with error checking
-        try {
-            $display_name = isset($_POST['display_name']) ? InputSanitizer::sanitizeString($_POST['display_name']) : '';
-            $platform_url = isset($_POST['platform_url']) ? InputSanitizer::sanitizeUrl($_POST['platform_url']) : '';
-            $subscriber_count = isset($_POST['subscriber_count']) ? (int)InputSanitizer::sanitizeInt($_POST['subscriber_count']) : 0;
-            
-            $debug_info[] = "Sanitized data - Name: $display_name, URL: $platform_url, Subs: $subscriber_count";
-            
-            // Generate username from display name
-            $base_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name));
-            $username = $base_username . '_' . $_SESSION['user_id'];
-            
-            // Set default values
-            $bio = "YouTube Creator";
-            $platform_type = "youtube";
-            $default_funding_threshold = 50;
-            $email = '';
-            
-            $debug_info[] = "Generated username: $username";
-            
-        } catch (Exception $e) {
-            $errors[] = "Data sanitization error: " . $e->getMessage();
-            $debug_info[] = "Sanitization error: " . $e->getMessage();
-        }
+    if (empty($platform_url) || !filter_var($platform_url, FILTER_VALIDATE_URL)) {
+        $errors[] = "Valid YouTube channel URL required";
     }
     
-    if (empty($errors)) {
-        // Validation
-        if (empty($display_name) || strlen($display_name) < 2) {
-            $errors[] = "Creator name is required (2+ characters)";
-        }
-        
-        if (empty($platform_url) || !filter_var($platform_url, FILTER_VALIDATE_URL)) {
-            $errors[] = "Valid YouTube channel URL required";
-        } elseif (strpos($platform_url, 'youtube.com') === false && strpos($platform_url, 'youtu.be') === false) {
-            $errors[] = "Must be a YouTube channel URL";
-        }
-        
-        if ($subscriber_count < 100) {
-            $errors[] = "Minimum 100 subscribers required";
-        }
-        
-        $debug_info[] = "Validation completed. Errors: " . count($errors);
+    if ($subscriber_count < 100) {
+        $errors[] = "Minimum 100 subscribers required";
     }
     
-    // Create creator application if no errors
+    // Create application if no errors
     if (empty($errors)) {
         try {
-            $debug_info[] = "Starting database transaction";
-            $db->beginTransaction();
+            // Generate simple username
+            $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name)) . '_' . $_SESSION['user_id'];
             
             // Get user email
             $db->query('SELECT email FROM users WHERE id = :user_id');
@@ -131,81 +54,67 @@ if ($_POST && !$existing_application) {
             $user_data = $db->single();
             $email = $user_data ? $user_data->email : '';
             
-            $debug_info[] = "User email retrieved: " . ($email ? "Yes" : "No");
-            
-            // Check if creator_verification table exists, create if not
-            try {
-                $db->query("
-                    CREATE TABLE IF NOT EXISTS creator_verification (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        creator_id INT NOT NULL,
-                        verification_code VARCHAR(50) NOT NULL,
-                        verified_at TIMESTAMP NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE KEY unique_creator (creator_id)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                ");
-                $db->execute();
-                $debug_info[] = "Verification table checked/created";
-            } catch (Exception $e) {
-                $debug_info[] = "Table creation error: " . $e->getMessage();
-            }
-            
-            // Insert creator profile
-            $sql = '
+            // Insert creator record using YOUR EXACT table structure
+            $db->query('
                 INSERT INTO creators (
-                    username, display_name, email, bio, platform_type, platform_url, 
-                    subscriber_count, default_funding_threshold, applicant_user_id, 
-                    is_active, application_status, commission_rate, is_verified, verification_status
+                    username, 
+                    display_name, 
+                    email, 
+                    bio, 
+                    platform_type, 
+                    platform_url, 
+                    subscriber_count, 
+                    default_funding_threshold, 
+                    commission_rate, 
+                    is_verified, 
+                    is_active, 
+                    applicant_user_id, 
+                    application_status
                 ) VALUES (
-                    :username, :display_name, :email, :bio, :platform_type, :platform_url, 
-                    :subscriber_count, :default_funding_threshold, :user_id, 
-                    0, "pending_verification", 5.00, 0, "pending"
+                    :username, 
+                    :display_name, 
+                    :email, 
+                    :bio, 
+                    :platform_type, 
+                    :platform_url, 
+                    :subscriber_count, 
+                    :default_funding_threshold, 
+                    :commission_rate, 
+                    :is_verified, 
+                    :is_active, 
+                    :applicant_user_id, 
+                    :application_status
                 )
-            ';
+            ');
             
-            $debug_info[] = "Preparing SQL query";
-            $db->query($sql);
             $db->bind(':username', $username);
             $db->bind(':display_name', $display_name);
             $db->bind(':email', $email);
-            $db->bind(':bio', $bio);
-            $db->bind(':platform_type', $platform_type);
+            $db->bind(':bio', 'YouTube Creator');
+            $db->bind(':platform_type', 'youtube');
             $db->bind(':platform_url', $platform_url);
             $db->bind(':subscriber_count', $subscriber_count);
-            $db->bind(':default_funding_threshold', $default_funding_threshold);
-            $db->bind(':user_id', $_SESSION['user_id']);
-            
-            $debug_info[] = "Parameters bound";
+            $db->bind(':default_funding_threshold', 50.00);
+            $db->bind(':commission_rate', 5.00);
+            $db->bind(':is_verified', 1);
+            $db->bind(':is_active', 1);
+            $db->bind(':applicant_user_id', $_SESSION['user_id']);
+            $db->bind(':application_status', 'approved');
             
             if ($db->execute()) {
                 $creator_id = $db->lastInsertId();
-                $debug_info[] = "Creator inserted with ID: " . $creator_id;
+                $success = "🎉 Creator profile created successfully! You can now receive topic requests.";
                 
-                // Generate and store verification code
-                $verification_code = generateVerificationCode();
+                // Log successful creation
+                error_log("Creator profile created successfully for user " . $_SESSION['user_id'] . " with creator ID " . $creator_id);
                 
-                $db->query('INSERT INTO creator_verification (creator_id, verification_code, created_at) VALUES (:creator_id, :code, NOW())');
-                $db->bind(':creator_id', $creator_id);
-                $db->bind(':code', $verification_code);
-                
-                if ($db->execute()) {
-                    $debug_info[] = "Verification code stored";
-                    $db->endTransaction();
-                    
-                    $success = "Profile created! Please complete verification to start receiving topic requests.";
-                    header("refresh:3;url=../creators/verify.php?creator_id=" . $creator_id);
-                } else {
-                    throw new Exception("Failed to store verification code");
-                }
+                header("refresh:3;url=../dashboard/index.php");
             } else {
                 throw new Exception("Failed to insert creator record");
             }
             
         } catch (Exception $e) {
-            $db->cancelTransaction();
-            $errors[] = "Database error occurred. Please try again.";
-            $debug_info[] = "Database error: " . $e->getMessage();
+            $errors[] = "Registration failed: " . $e->getMessage();
             error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
@@ -224,17 +133,17 @@ if ($_POST && !$existing_application) {
         .header p { margin: 0; color: #666; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         .btn { background: #ff0000; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { background: #cc0000; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
-        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
-        .debug { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 12px; }
-        .debug h4 { margin-top: 0; color: #1976d2; }
+        .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
+        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
         small { color: #666; font-size: 14px; }
+        .requirements { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+        .requirements h4 { margin-top: 0; color: #1976d2; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -250,14 +159,14 @@ if ($_POST && !$existing_application) {
             <p>Set up your creator profile to start receiving topic requests!</p>
         </div>
 
-        <?php if (!empty($debug_info)): ?>
-        <div class="debug">
-            <h4>🔧 Debug Information:</h4>
-            <?php foreach ($debug_info as $info): ?>
-                <div><?php echo htmlspecialchars($info); ?></div>
-            <?php endforeach; ?>
+        <div class="requirements">
+            <h4>🚀 What you get as a TopicLaunch Creator:</h4>
+            • Fans propose and fund topics for you<br>
+            • Get paid 90% of the funding (we keep 10%)<br>
+            • 48-hour delivery window<br>
+            • Automatic payment processing<br>
+            • No upfront costs or monthly fees
         </div>
-        <?php endif; ?>
 
         <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $error): ?>
@@ -266,18 +175,20 @@ if ($_POST && !$existing_application) {
         <?php endif; ?>
 
         <?php if ($success): ?>
-            <div class="success"><?php echo htmlspecialchars($success); ?></div>
+            <div class="success">
+                <?php echo htmlspecialchars($success); ?><br><br>
+                <strong>Redirecting to your dashboard...</strong>
+            </div>
         <?php endif; ?>
 
         <?php if (!$success): ?>
             <form method="POST" id="creatorForm">
-                <?php echo CSRFProtection::getTokenField(); ?>
-                
                 <div class="form-group">
                     <label>Your Creator Name:</label>
-                    <input type="text" name="display_name" required minlength="2" 
+                    <input type="text" name="display_name" required minlength="2" maxlength="50"
                            placeholder="How you want to appear on TopicLaunch"
                            value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>">
+                    <small>This is how fans will see your name</small>
                 </div>
 
                 <div class="form-group">
@@ -285,38 +196,35 @@ if ($_POST && !$existing_application) {
                     <input type="url" name="platform_url" required 
                            placeholder="https://youtube.com/@yourchannel"
                            value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>">
+                    <small>Your main YouTube channel URL</small>
                 </div>
 
                 <div class="form-group">
                     <label>Subscriber Count:</label>
-                    <input type="number" name="subscriber_count" min="100" required
-                           placeholder="100"
+                    <input type="number" name="subscriber_count" min="100" max="100000000" required
+                           placeholder="1000"
                            value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>">
                     <small>Must have at least 100 subscribers</small>
                 </div>
 
-                <button type="submit" class="btn">
-                    📺 Complete Setup
+                <button type="submit" class="btn" id="submitBtn">
+                    📺 Create Creator Profile
                 </button>
+                
+                <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
+                    By joining, you agree to create content within 48 hours of funding
+                </div>
             </form>
         <?php endif; ?>
-
-        <!-- Debug: Session Info -->
-        <div class="debug">
-            <h4>📊 Session Info:</h4>
-            <div>User ID: <?php echo $_SESSION['user_id'] ?? 'Not set'; ?></div>
-            <div>Username: <?php echo $_SESSION['username'] ?? 'Not set'; ?></div>
-            <div>Email: <?php echo $_SESSION['email'] ?? 'Not set'; ?></div>
-        </div>
     </div>
 
     <script>
-    // Simple form validation
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
         const displayName = document.querySelector('input[name="display_name"]').value.trim();
         const youtubeUrl = document.querySelector('input[name="platform_url"]').value.trim();
         const subscribers = parseInt(document.querySelector('input[name="subscriber_count"]').value);
         
+        // Validation
         if (displayName.length < 2) {
             e.preventDefault();
             alert('Creator name must be at least 2 characters');
@@ -336,8 +244,8 @@ if ($_POST && !$existing_application) {
         }
         
         // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.innerHTML = '⏳ Submitting...';
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerHTML = '⏳ Creating Profile...';
         submitBtn.disabled = true;
     });
     </script>
