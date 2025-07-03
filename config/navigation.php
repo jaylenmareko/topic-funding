@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation component without dual dashboards
+// config/navigation.php - Updated navigation component with YouTuber terminology
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -151,7 +151,7 @@ function renderNavigation($current_page = '') {
                 <?php if ($is_logged_in): ?>
                     <!-- Main Navigation for Logged In Users -->
                     <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                        <?php echo $is_creator ? '📺 Creator Dashboard' : 'Dashboard'; ?>
+                        <?php echo $is_creator ? '📺 YouTuber Dashboard' : 'Dashboard'; ?>
                     </a>
                     
                     <!-- Only show Browse Topics and Creators when NOT on dashboard -->
@@ -177,7 +177,7 @@ function renderNavigation($current_page = '') {
                         <span class="nav-username">
                             <?php echo htmlspecialchars($username); ?>
                             <?php if ($is_creator): ?>
-                                <span style="font-size: 12px; opacity: 0.8;"> (Creator)</span>
+                                <span style="font-size: 12px; opacity: 0.8;"> (YouTuber)</span>
                             <?php endif; ?>
                         </span>
                         <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
