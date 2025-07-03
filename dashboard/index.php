@@ -82,7 +82,7 @@ if ($creator) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Creator Dashboard - TopicLaunch</title>
+    <title>YouTuber Dashboard - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
@@ -288,7 +288,7 @@ if ($creator) {
         <!-- Header -->
         <div class="dashboard-header">
             <div class="header-content">
-                <h1 class="header-title">📺 Creator Dashboard</h1>
+                <h1 class="header-title">📺 YouTuber Dashboard</h1>
                 <p class="header-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
             </div>
         </div>
@@ -409,12 +409,12 @@ if ($creator) {
         <!-- Recently Completed Topics -->
         <div class="dashboard-card">
             <div class="card-header">
-                <h2 class="card-title">✅ Recently Completed</h2>
+                <h2 class="card-title">✅ Recent Completed Topics</h2>
                 <span class="card-icon">🎉</span>
             </div>
             
             <?php if (!empty($completed_topics)): ?>
-                <?php foreach ($completed_topics as $topic): ?>
+                <?php foreach (array_slice($completed_topics, 0, 5) as $topic): ?>
                 <div class="topic-item">
                     <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                     <div class="topic-meta">
@@ -498,22 +498,6 @@ $db->query('
 ');
 $db->bind(':user_id', $user_id);
 $funded_topics = $db->resultSet();
-
-// Calculate user level based on contributions
-$total_contributed = $user_stats->total_contributed;
-if ($total_contributed >= 500) {
-    $user_level = "Platinum Supporter";
-    $level_color = "#e5e4e2";
-} elseif ($total_contributed >= 200) {
-    $user_level = "Gold Supporter";
-    $level_color = "#ffd700";
-} elseif ($total_contributed >= 50) {
-    $user_level = "Silver Supporter";
-    $level_color = "#c0c0c0";
-} else {
-    $user_level = "Bronze Supporter";
-    $level_color = "#cd7f32";
-}
 ?>
 <!DOCTYPE html>
 <html>
@@ -521,55 +505,340 @@ if ($total_contributed >= 500) {
     <title>My Dashboard - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background: #f8f9fa; 
+            color: #212529;
+        }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .user-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
-        .user-details h1 { margin: 0 0 10px 0; color: #333; }
-        .user-level { padding: 8px 16px; border-radius: 20px; font-weight: bold; color: white; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-        .stat-number { font-size: 32px; font-weight: bold; color: #667eea; margin-bottom: 5px; }
-        .stat-label { color: #666; font-size: 14px; }
-        .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .main-content { display: flex; flex-direction: column; gap: 20px; }
-        .sidebar { display: flex; flex-direction: column; gap: 20px; }
-        .section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .section h2 { margin-top: 0; color: #333; }
-        .contribution-item { display: flex; justify-content: space-between; align-items: start; padding: 15px 0; border-bottom: 1px solid #eee; }
+        
+        /* Welcome Header */
+        .welcome-header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 40px 30px; 
+            border-radius: 16px; 
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+        .welcome-content { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+        }
+        .welcome-text h1 { 
+            font-size: 2.5rem; 
+            margin: 0 0 0.5rem 0; 
+            font-weight: 700; 
+            letter-spacing: -0.02em;
+        }
+        .welcome-text p { 
+            font-size: 1.1rem; 
+            margin: 0; 
+            opacity: 0.9; 
+            font-weight: 400;
+        }
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .welcome-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .welcome-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
+        }
+        .welcome-btn-primary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border-color: transparent;
+        }
+        .welcome-btn-primary:hover {
+            background: white;
+            color: #5a6fd8;
+        }
+        
+        /* Stats Grid */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .stat-card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 16px; 
+            text-align: center; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        .stat-number { 
+            font-size: 2.25rem; 
+            font-weight: 700; 
+            color: #667eea; 
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+        .stat-label { 
+            color: #6c757d; 
+            font-size: 0.875rem; 
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Content Grid */
+        .content-grid { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr; 
+            gap: 30px; 
+        }
+        .main-content { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 25px; 
+        }
+        .sidebar { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 25px; 
+        }
+        
+        /* Section Cards */
+        .section { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .section h2 { 
+            margin: 0 0 24px 0; 
+            color: #212529; 
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        .section h3 { 
+            margin: 0 0 20px 0; 
+            color: #212529; 
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        /* Activity Items */
+        .contribution-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: start; 
+            padding: 20px 0; 
+            border-bottom: 1px solid #e9ecef; 
+        }
         .contribution-item:last-child { border-bottom: none; }
         .contribution-details { flex: 1; }
-        .topic-title { font-weight: bold; color: #333; margin-bottom: 5px; }
-        .topic-meta { color: #666; font-size: 12px; }
-        .contribution-amount { font-weight: bold; color: #28a745; font-size: 18px; }
-        .topic-card { border: 1px solid #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
-        .topic-status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .topic-title { 
+            font-weight: 600; 
+            color: #212529; 
+            margin-bottom: 8px; 
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+        .topic-title a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .topic-title a:hover {
+            color: #667eea;
+        }
+        .topic-meta { 
+            color: #6c757d; 
+            font-size: 0.875rem;
+            margin-bottom: 12px;
+        }
+        .contribution-amount { 
+            font-weight: 600; 
+            color: #28a745; 
+            font-size: 1.125rem;
+        }
+        
+        /* Topic Cards */
+        .topic-card { 
+            border: 1px solid #e9ecef; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+        .topic-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+        }
+        .topic-status { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.75rem; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
         .status-pending-approval { background: #f8d7da; color: #721c24; }
-        .funding-bar { background: #e9ecef; height: 6px; border-radius: 3px; margin: 10px 0; }
-        .funding-progress { background: #28a745; height: 100%; border-radius: 3px; transition: width 0.3s; }
-        .btn { background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px; }
-        .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #218838; }
-        .empty-state { text-align: center; color: #666; padding: 30px; }
-        .milestone-item { padding: 10px 0; border-bottom: 1px solid #eee; }
-        .milestone-item:last-child { border-bottom: none; }
-        .achievement-badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-        .quick-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-        .activity-feed { max-height: 400px; overflow-y: auto; }
-        .welcome-banner { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .welcome-banner h2 { margin: 0 0 10px 0; }
-        .level-progress { background: rgba(255,255,255,0.2); height: 6px; border-radius: 3px; margin-top: 10px; }
-        .level-bar { background: rgba(255,255,255,0.8); height: 100%; border-radius: 3px; }
         
+        /* Funding Progress */
+        .funding-bar { 
+            background: #e9ecef; 
+            height: 6px; 
+            border-radius: 3px; 
+            margin: 12px 0;
+            overflow: hidden;
+        }
+        .funding-progress { 
+            background: linear-gradient(90deg, #28a745, #20c997); 
+            height: 100%; 
+            border-radius: 3px; 
+            transition: width 0.5s ease; 
+        }
+        
+        /* Empty States */
+        .empty-state { 
+            text-align: center; 
+            color: #6c757d; 
+            padding: 40px 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #dee2e6;
+        }
+        .empty-state h4 {
+            color: #495057;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .empty-state p {
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        
+        /* Buttons */
+        .btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 12px 20px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            display: inline-block; 
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover { 
+            background: #5a6fd8; 
+            color: white; 
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+        .btn-success { 
+            background: #28a745; 
+        }
+        .btn-success:hover { 
+            background: #218838; 
+        }
+        
+        /* Milestone Items */
+        .milestone-item { 
+            padding: 16px 0; 
+            border-bottom: 1px solid #e9ecef; 
+        }
+        .milestone-item:last-child { border-bottom: none; }
+        .milestone-title {
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .milestone-meta {
+            color: #6c757d;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .milestone-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        /* Activity Feed */
+        .activity-feed { 
+            max-height: 500px; 
+            overflow-y: auto; 
+        }
+        
+        /* Responsive Design */
         @media (max-width: 768px) {
             .content-grid { grid-template-columns: 1fr; }
-            .user-info { flex-direction: column; text-align: center; }
+            .welcome-content { 
+                flex-direction: column; 
+                text-align: center; 
+                gap: 20px;
+            }
+            .welcome-text h1 { font-size: 2rem; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .quick-actions { justify-content: center; }
+            .welcome-actions {
+                justify-content: center;
+                width: 100%;
+            }
+            .welcome-btn {
+                flex: 1;
+                justify-content: center;
+                min-width: 140px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container { padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .welcome-actions {
+                flex-direction: column;
+            }
+            .welcome-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -577,32 +846,25 @@ if ($total_contributed >= 500) {
     <?php renderNavigation('dashboard'); ?>
 
     <div class="container">
-        <div class="welcome-banner">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h2>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h2>
-                    <p style="margin: 0; opacity: 0.9;">Track your contributions and discover new topics to fund</p>
+        <!-- Welcome Header -->
+        <div class="welcome-header">
+            <div class="welcome-content">
+                <div class="welcome-text">
+                    <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
+                    <p>Fund topics and track your impact on the creator community</p>
                 </div>
-                <div>
-                    <span class="user-level" style="background-color: <?php echo $level_color; ?>;">
-                        <?php echo $user_level; ?>
-                    </span>
+                <div class="welcome-actions">
+                    <a href="../topics/create.php" class="welcome-btn welcome-btn-primary">
+                        💡 Propose New Topic
+                    </a>
+                    <a href="../creators/index.php" class="welcome-btn">
+                        👥 Browse Creators
+                    </a>
                 </div>
-            </div>
-            
-            <!-- Level Progress -->
-            <?php 
-            $next_threshold = $total_contributed >= 500 ? 1000 : ($total_contributed >= 200 ? 500 : ($total_contributed >= 50 ? 200 : 50));
-            $progress_to_next = min(($total_contributed / $next_threshold) * 100, 100);
-            ?>
-            <div class="level-progress">
-                <div class="level-bar" style="width: <?php echo $progress_to_next; ?>%"></div>
-            </div>
-            <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
-                $<?php echo number_format($total_contributed, 0); ?> / $<?php echo number_format($next_threshold, 0); ?> to next level
             </div>
         </div>
 
+        <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-number">$<?php echo number_format($user_stats->total_contributed, 0); ?></div>
@@ -614,7 +876,7 @@ if ($total_contributed >= 500) {
             </div>
             <div class="stat-card">
                 <div class="stat-number"><?php echo $user_stats->topics_funded; ?></div>
-                <div class="stat-label">Topics Funded</div>
+                <div class="stat-label">Topics Supported</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number"><?php echo count($funded_topics); ?></div>
@@ -622,15 +884,17 @@ if ($total_contributed >= 500) {
             </div>
         </div>
 
+        <!-- Main Content Grid -->
         <div class="content-grid">
             <div class="main-content">
                 <!-- Recent Contributions -->
                 <div class="section">
-                    <h2>Recent Contributions</h2>
+                    <h2>Recent Activity</h2>
                     <?php if (empty($recent_contributions)): ?>
                         <div class="empty-state">
-                            <p>You haven't made any contributions yet.</p>
-                            <a href="../topics/index.php" class="btn">Browse Topics</a>
+                            <h4>No contributions yet</h4>
+                            <p>Start supporting creators by funding topics you're interested in!</p>
+                            <a href="../topics/index.php" class="btn">Browse Active Topics</a>
                         </div>
                     <?php else: ?>
                         <div class="activity-feed">
@@ -638,7 +902,7 @@ if ($total_contributed >= 500) {
                                 <div class="contribution-item">
                                     <div class="contribution-details">
                                         <div class="topic-title">
-                                            <a href="../topics/view.php?id=<?php echo $contribution->topic_id; ?>" style="color: #333; text-decoration: none;">
+                                            <a href="../topics/view.php?id=<?php echo $contribution->topic_id; ?>">
                                                 <?php echo htmlspecialchars($contribution->topic_title); ?>
                                             </a>
                                         </div>
@@ -657,6 +921,11 @@ if ($total_contributed >= 500) {
                                                 ?>
                                                 <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
                                             </div>
+                                            <div style="font-size: 0.8rem; color: #6c757d; margin-top: 4px;">
+                                                $<?php echo number_format($contribution->current_funding, 0); ?> / 
+                                                $<?php echo number_format($contribution->funding_threshold, 0); ?> 
+                                                (<?php echo round($progress); ?>%)
+                                            </div>
                                         <?php endif; ?>
                                     </div>
                                     <div class="contribution-amount">
@@ -666,7 +935,7 @@ if ($total_contributed >= 500) {
                             <?php endforeach; ?>
                         </div>
                         <?php if (count($recent_contributions) >= 10): ?>
-                            <div style="text-align: center; margin-top: 15px;">
+                            <div style="text-align: center; margin-top: 20px;">
                                 <a href="contributions.php" class="btn">View All Contributions</a>
                             </div>
                         <?php endif; ?>
@@ -678,22 +947,25 @@ if ($total_contributed >= 500) {
                     <h2>Topics You Proposed</h2>
                     <?php if (empty($user_topics)): ?>
                         <div class="empty-state">
-                            <p>You haven't proposed any topics yet.</p>
+                            <h4>No topics proposed yet</h4>
+                            <p>Have an idea for your favorite creator? Propose it and fund it to make it happen!</p>
                             <a href="../topics/create.php" class="btn btn-success">Propose Your First Topic</a>
                         </div>
                     <?php else: ?>
                         <?php foreach ($user_topics as $topic): ?>
                             <div class="topic-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                    <h4 style="margin: 0;"><?php echo htmlspecialchars($topic->title); ?></h4>
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">
+                                        <?php echo htmlspecialchars($topic->title); ?>
+                                    </h4>
                                     <span class="topic-status status-<?php echo $topic->status; ?>">
                                         <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
                                     </span>
                                 </div>
-                                <p style="margin: 5px 0; color: #666; font-size: 14px;">
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 12px;">
                                     For <?php echo htmlspecialchars($topic->creator_name); ?> • 
                                     Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?>
-                                </p>
+                                </div>
                                 <?php if ($topic->status === 'active'): ?>
                                     <?php 
                                     $progress = ($topic->current_funding / $topic->funding_threshold) * 100;
@@ -702,8 +974,8 @@ if ($total_contributed >= 500) {
                                     <div class="funding-bar">
                                         <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
                                     </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                                        <span style="font-size: 14px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                                        <span style="font-size: 0.875rem; color: #6c757d;">
                                             $<?php echo number_format($topic->current_funding, 0); ?> / 
                                             $<?php echo number_format($topic->funding_threshold, 0); ?> 
                                             (<?php echo round($progress); ?>%)
@@ -711,7 +983,7 @@ if ($total_contributed >= 500) {
                                         <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
                                     </div>
                                 <?php else: ?>
-                                    <div style="margin-top: 10px;">
+                                    <div style="margin-top: 12px;">
                                         <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
                                     </div>
                                 <?php endif; ?>
@@ -722,52 +994,26 @@ if ($total_contributed >= 500) {
             </div>
 
             <div class="sidebar">
-                <!-- Quick Actions -->
+                <!-- Milestones -->
                 <div class="section">
-                    <h3 style="margin-top: 0;">Quick Actions</h3>
-                    <div class="quick-actions" style="flex-direction: column;">
-                        <a href="../topics/create.php" class="btn btn-success">💡 Propose New Topic</a>
-                        <a href="../topics/index.php" class="btn">🔍 Browse Active Topics</a>
-                        <a href="../creators/index.php" class="btn">👥 Browse Creators</a>
-                        <a href="../creators/apply.php" class="btn" style="background: #ff0000;">🎯 Become a Creator</a>
-                    </div>
-                </div>
-
-                <!-- Achievements/Milestones -->
-                <div class="section">
-                    <h3 style="margin-top: 0;">Recent Milestones</h3>
+                    <h3>Recent Milestones</h3>
                     <?php if (empty($funded_topics)): ?>
                         <div class="empty-state">
-                            <p style="font-size: 14px;">No funded topics yet. Keep contributing!</p>
+                            <p style="font-size: 0.9rem;">No funded topics yet. Keep contributing to see your impact!</p>
                         </div>
                     <?php else: ?>
                         <?php foreach ($funded_topics as $milestone): ?>
                             <div class="milestone-item">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: bold; font-size: 14px;">
-                                            <?php echo htmlspecialchars($milestone->title); ?>
-                                        </div>
-                                        <div style="color: #666; font-size: 12px;">
-                                            <?php echo htmlspecialchars($milestone->creator_name); ?>
-                                        </div>
-                                    </div>
-                                    <span class="achievement-badge">Funded!</span>
+                                <div class="milestone-title">
+                                    <?php echo htmlspecialchars($milestone->title); ?>
+                                </div>
+                                <div class="milestone-meta">
+                                    <span><?php echo htmlspecialchars($milestone->creator_name); ?></span>
+                                    <span class="milestone-badge">Funded!</span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </div>
-
-                <!-- Contribution Tips -->
-                <div class="section">
-                    <h3 style="margin-top: 0;">💡 Tips</h3>
-                    <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.6;">
-                        <li>Contribute early to show creators there's interest</li>
-                        <li>Share topics with friends to reach funding goals faster</li>
-                        <li>Follow your favorite creators for new topic updates</li>
-                        <li>Propose topics you're passionate about</li>
-                    </ul>
                 </div>
             </div>
         </div>
