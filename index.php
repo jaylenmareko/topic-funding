@@ -209,8 +209,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         .section-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #333; }
         
-        /* 3-Step Process */
+        /* 2-Step Process for YouTubers */
         .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 60px 0; }
+        .process-steps.youtuber-steps { grid-template-columns: repeat(2, 1fr); }
         .process-step { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         .process-step::before {
             content: attr(data-step);
@@ -263,6 +264,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 font-size: 50px;
             }
             .process-steps { grid-template-columns: 1fr; }
+            .process-steps.youtuber-steps { grid-template-columns: 1fr; }
             .login-form { flex-direction: column; gap: 5px; }
             .nav-container { flex-direction: column; gap: 15px; }
         }
@@ -285,8 +287,10 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 </form>
             <?php else: ?>
                 <div style="color: white;">
-                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                    <a href="dashboard/index.php" style="color: white; margin-left: 15px;">Dashboard</a>
+                    <?php if (!$is_creator): ?>
+                        Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
+                        <a href="dashboard/index.php" style="color: white; margin-left: 15px;">Dashboard</a>
+                    <?php endif; ?>
                     <a href="auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
                 </div>
             <?php endif; ?>
@@ -295,58 +299,77 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Fund Topics from Your Favorite YouTuber</h1>
-        <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
-        
-        <?php if (!isset($_SESSION['user_id'])): ?>
-        <!-- User Type Selection (only for guests) -->
-        <div class="user-type-selector">
-            <div class="user-type youtuber">
-                <div class="user-icon">📺</div>
-                <h3>Are you a YouTuber?</h3>
-                <p>Let your audience fund the content they want to see</p>
-                <a href="auth/register.php?type=creator" class="btn-youtuber">
-                    Join as YouTuber
-                </a>
+        <?php if ($is_creator): ?>
+            <!-- YouTuber specific hero -->
+            <h1>Get Paid for Content Your Fans Want</h1>
+            <p>Check your dashboard to see funded topics, earnings, and upload content.</p>
+            
+            <div class="logged-in-actions">
+                <div class="creator-welcome">
+                    <h3>📺 Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h3>
+                    <a href="dashboard/index.php" class="dashboard-btn">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- Default hero for fans and guests -->
+            <h1>Fund Topics from Your Favorite YouTuber</h1>
+            <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
+            
+            <?php if (!isset($_SESSION['user_id'])): ?>
+            <!-- User Type Selection (only for guests) -->
+            <div class="user-type-selector">
+                <div class="user-type youtuber">
+                    <div class="user-icon">📺</div>
+                    <h3>Are you a YouTuber?</h3>
+                    <p>Let your audience fund the content they want to see</p>
+                    <a href="auth/register.php?type=creator" class="btn-youtuber">
+                        Join as YouTuber
+                    </a>
+                </div>
+                
+                <div class="user-type fan">
+                    <div class="user-icon">💰</div>
+                    <h3>Want to fund content?</h3>
+                    <p>Get your favorite YouTubers to make what you want</p>
+                    <a href="auth/register.php?type=fan" class="btn-fan">
+                        Fund a Topic
+                    </a>
+                </div>
             </div>
             
-            <div class="user-type fan">
-                <div class="user-icon">💰</div>
-                <h3>Want to fund content?</h3>
-                <p>Get your favorite YouTubers to make what you want</p>
-                <a href="auth/register.php?type=fan" class="btn-fan">
-                    Fund a Topic
+            <?php else: ?>
+            <!-- Regular user actions (fans) -->
+            <div class="logged-in-actions">
+                <a href="topics/index.php" class="btn-fan" style="margin: 10px;">
+                    🔍 Browse Topics
+                </a>
+                <a href="topics/create.php" class="btn-youtuber" style="margin: 10px;">
+                    💡 Propose New Topic
                 </a>
             </div>
-        </div>
-        
-        <?php elseif ($is_creator): ?>
-        <!-- Creator welcome message -->
-        <div class="logged-in-actions">
-            <div class="creator-welcome">
-                <h3>📺 Welcome back, Creator!</h3>
-                <p>Check your dashboard to see funded topics, earnings, and content requests from your fans.</p>
-                <a href="dashboard/index.php" class="dashboard-btn">
-                    Go to Creator Dashboard
-                </a>
-            </div>
-        </div>
-        
-        <?php else: ?>
-        <!-- Regular user actions (fans) -->
-        <div class="logged-in-actions">
-            <a href="topics/index.php" class="btn-fan" style="margin: 10px;">
-                🔍 Browse Topics
-            </a>
-            <a href="topics/create.php" class="btn-youtuber" style="margin: 10px;">
-                💡 Propose New Topic
-            </a>
-        </div>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 
     <div class="container">
-        <!-- Streamlined 3-Step Process -->
+        <?php if ($is_creator): ?>
+        <!-- 2-Step Process for YouTubers -->
+        <div class="process-steps youtuber-steps">
+            <div class="process-step" data-step="1">
+                <div class="process-icon">💰</div>
+                <h3>Fans Fund Your Topics</h3>
+                <p>Your audience proposes and funds topics they want to see. Once fully funded, you get notified immediately.</p>
+            </div>
+            <div class="process-step" data-step="2">
+                <div class="process-icon">⚡</div>
+                <h3>Create Content in 48 Hours</h3>
+                <p>You have 48 hours to create and upload the requested content. Once delivered, you receive 90% of the funding automatically.</p>
+            </div>
+        </div>
+        <?php else: ?>
+        <!-- Regular 3-Step Process for Fans -->
         <div class="process-steps">
             <div class="process-step" data-step="1">
                 <div class="process-icon">💡</div>
@@ -364,6 +387,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 <p>YouTubers have 48 hours to deliver your requested content, or everyone gets automatically refunded.</p>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- Footer -->
