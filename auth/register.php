@@ -1,5 +1,5 @@
 <?php
-// auth/register.php - Updated with creator flow
+// auth/register.php - Updated with creator flow that delays account creation
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -53,30 +53,40 @@ if ($_POST) {
         $errors[] = "Passwords do not match";
     }
     
-    // If no errors, create user and auto-login
+    // If no errors, handle based on user type
     if (empty($errors)) {
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $user_id = $helper->createUser($username, $email, $password_hash, $username);
-        
-        if ($user_id) {
-            // Auto-login the user
-            $_SESSION['user_id'] = $user_id;
-            $_SESSION['username'] = $username;
-            $_SESSION['full_name'] = $username;
-            $_SESSION['email'] = $email;
+        if ($user_type === 'creator') {
+            // For creators: Store registration data in session, don't create account yet
+            $_SESSION['pending_creator_registration'] = [
+                'username' => $username,
+                'email' => $email,
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'full_name' => $username
+            ];
             
-            // Regenerate session ID for security
-            session_regenerate_id(true);
-            
-            // Redirect based on user type
-            if ($user_type === 'creator') {
-                header('Location: ../creators/apply.php');
-            } else {
-                header('Location: ../dashboard/index.php');
-            }
+            // Redirect to creator application form
+            header('Location: ../creators/apply.php');
             exit;
         } else {
-            $errors[] = "Registration failed. Please try again.";
+            // For fans: Create account immediately and auto-login
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $user_id = $helper->createUser($username, $email, $password_hash, $username);
+            
+            if ($user_id) {
+                // Auto-login the user
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                $_SESSION['full_name'] = $username;
+                $_SESSION['email'] = $email;
+                
+                // Regenerate session ID for security
+                session_regenerate_id(true);
+                
+                header('Location: ../dashboard/index.php');
+                exit;
+            } else {
+                $errors[] = "Registration failed. Please try again.";
+            }
         }
     }
 }
@@ -112,6 +122,7 @@ if ($_POST) {
         .requirement { color: #666; font-size: 12px; }
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
+        .flow-info { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -120,12 +131,19 @@ if ($_POST) {
         
         <div class="user-type-indicator">
             <?php if ($user_type === 'creator'): ?>
-                📺 YouTuber Registration
+                📺 YouTuber Registration - Step 1 of 2
             <?php else: ?>
                 💰 Fan Registration
             <?php endif; ?>
         </div>
     </div>
+    
+    <?php if ($user_type === 'creator'): ?>
+    <div class="flow-info">
+        <strong>Step 1:</strong> Create your account<br>
+        <strong>Step 2:</strong> Set up your YouTuber profile
+    </div>
+    <?php endif; ?>
     
     <?php if (!empty($errors)): ?>
         <div class="errors">
@@ -142,6 +160,9 @@ if ($_POST) {
             <label>Username:</label>
             <input type="text" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
             <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
+            <?php if ($user_type === 'creator'): ?>
+                <div class="requirement">This will be your creator name on TopicLaunch</div>
+            <?php endif; ?>
         </div>
         
         <div class="form-group">
@@ -167,7 +188,7 @@ if ($_POST) {
         
         <button type="submit" class="btn" id="submitBtn">
             <?php if ($user_type === 'creator'): ?>
-                📺 Create Account → Set Up YouTuber Profile
+                📺 Continue to YouTuber Setup
             <?php else: ?>
                 💰 Create Account & Start Funding
             <?php endif; ?>
