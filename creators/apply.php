@@ -3,37 +3,22 @@
 session_start();
 require_once '../config/database.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
+// Check if user has pending creator registration
+if (!isset($_SESSION['pending_creator_registration'])) {
+    header('Location: ../auth/register.php?type=creator');
     exit;
 }
 
 $errors = [];
 $success = '';
-
-// Check if user already has a creator application
-$db = new Database();
-$db->query('SELECT * FROM creators WHERE applicant_user_id = :user_id');
-$db->bind(':user_id', $_SESSION['user_id']);
-$existing_application = $db->single();
-
-if ($existing_application) {
-    header('Location: ../index.php');
-    exit;
-}
+$pending_registration = $_SESSION['pending_creator_registration'];
 
 if ($_POST) {
     // Simple validation
-    $display_name = trim($_POST['display_name'] ?? '');
     $platform_url = trim($_POST['platform_url'] ?? '');
     $subscriber_count = (int)($_POST['subscriber_count'] ?? 0);
     
     // Basic validation
-    if (empty($display_name) || strlen($display_name) < 2) {
-        $errors[] = "Creator name is required (2+ characters)";
-    }
-    
     if (empty($platform_url) || !filter_var($platform_url, FILTER_VALIDATE_URL)) {
         $errors[] = "Valid YouTube channel URL required";
     }
@@ -42,19 +27,29 @@ if ($_POST) {
         $errors[] = "Minimum 100 subscribers required";
     }
     
-    // Create application if no errors
+    // Create both user account and creator profile atomically
     if (empty($errors)) {
         try {
-            // Generate simple username
-            $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $display_name)) . '_' . $_SESSION['user_id'];
+            $db = new Database();
+            $db->beginTransaction();
             
-            // Get user email
-            $db->query('SELECT email FROM users WHERE id = :user_id');
-            $db->bind(':user_id', $_SESSION['user_id']);
-            $user_data = $db->single();
-            $email = $user_data ? $user_data->email : '';
+            // Create user account from pending registration data
+            $db->query('
+                INSERT INTO users (username, email, password_hash, full_name) 
+                VALUES (:username, :email, :password_hash, :full_name)
+            ');
+            $db->bind(':username', $pending_registration['username']);
+            $db->bind(':email', $pending_registration['email']);
+            $db->bind(':password_hash', $pending_registration['password_hash']);
+            $db->bind(':full_name', $pending_registration['full_name']);
+            $db->execute();
             
-            // Insert creator record using YOUR EXACT table structure
+            $user_id = $db->lastInsertId();
+            
+            // Generate creator username from user username
+            $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $pending_registration['username'])) . '_' . $user_id;
+            
+            // Create creator profile
             $db->query('
                 INSERT INTO creators (
                     username, 
@@ -88,8 +83,8 @@ if ($_POST) {
             ');
             
             $db->bind(':username', $username);
-            $db->bind(':display_name', $display_name);
-            $db->bind(':email', $email);
+            $db->bind(':display_name', $pending_registration['username']); // Use username as display name
+            $db->bind(':email', $pending_registration['email']);
             $db->bind(':bio', 'YouTube Creator');
             $db->bind(':platform_type', 'youtube');
             $db->bind(':platform_url', $platform_url);
@@ -98,24 +93,35 @@ if ($_POST) {
             $db->bind(':commission_rate', 5.00);
             $db->bind(':is_verified', 1);
             $db->bind(':is_active', 1);
-            $db->bind(':applicant_user_id', $_SESSION['user_id']);
+            $db->bind(':applicant_user_id', $user_id);
             $db->bind(':application_status', 'approved');
+            $db->execute();
             
-            if ($db->execute()) {
-                $creator_id = $db->lastInsertId();
-                $success = "🎉 Creator profile created successfully! You can now receive topic requests.";
-                
-                // Log successful creation
-                error_log("Creator profile created successfully for user " . $_SESSION['user_id'] . " with creator ID " . $creator_id);
-                
-                header("refresh:3;url=../dashboard/index.php");
-            } else {
-                throw new Exception("Failed to insert creator record");
-            }
+            $creator_id = $db->lastInsertId();
+            
+            // Commit transaction
+            $db->endTransaction();
+            
+            // Clear pending registration and log user in
+            unset($_SESSION['pending_creator_registration']);
+            $_SESSION['user_id'] = $user_id;
+            $_SESSION['username'] = $pending_registration['username'];
+            $_SESSION['full_name'] = $pending_registration['full_name'];
+            $_SESSION['email'] = $pending_registration['email'];
+            
+            // Regenerate session ID for security
+            session_regenerate_id(true);
+            
+            $success = "🎉 YouTuber profile created successfully! Welcome to TopicLaunch.";
+            
+            error_log("Creator profile created successfully for new user " . $user_id . " with creator ID " . $creator_id);
+            
+            header("refresh:3;url=../dashboard/index.php");
             
         } catch (Exception $e) {
+            $db->cancelTransaction();
             $errors[] = "Registration failed: " . $e->getMessage();
-            error_log("Creator application error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            error_log("Creator application error: " . $e->getMessage());
         }
     }
 }
@@ -152,11 +158,13 @@ if ($_POST) {
 </head>
 <body>
     <div class="container">
-        <a href="../dashboard/index.php" class="back-link">← Back to Dashboard</a>
-
         <div class="header">
-            <h1>📺 Join as YouTuber</h1>
-            <p>Set up your creator profile to start receiving topic requests!</p>
+            <h1>📺 YouTuber Profile Setup</h1>
+            <p>Step 2 of 2: Complete your YouTuber profile</p>
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
+                <strong>Username:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
+                <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
+            </div>
         </div>
 
         <div class="requirements">
@@ -184,14 +192,6 @@ if ($_POST) {
         <?php if (!$success): ?>
             <form method="POST" id="creatorForm">
                 <div class="form-group">
-                    <label>Your Creator Name:</label>
-                    <input type="text" name="display_name" required minlength="2" maxlength="50"
-                           placeholder="How you want to appear on TopicLaunch"
-                           value="<?php echo isset($_POST['display_name']) ? htmlspecialchars($_POST['display_name']) : ''; ?>">
-                    <small>This is how fans will see your name</small>
-                </div>
-
-                <div class="form-group">
                     <label>YouTube Channel URL:</label>
                     <input type="url" name="platform_url" required 
                            placeholder="https://youtube.com/@yourchannel"
@@ -208,11 +208,11 @@ if ($_POST) {
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    📺 Create Creator Profile
+                    📺 Complete YouTuber Setup
                 </button>
                 
                 <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-                    By joining, you agree to create content within 48 hours of funding
+                    By completing setup, you agree to create content within 48 hours of funding
                 </div>
             </form>
         <?php endif; ?>
@@ -220,17 +220,10 @@ if ($_POST) {
 
     <script>
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
-        const displayName = document.querySelector('input[name="display_name"]').value.trim();
         const youtubeUrl = document.querySelector('input[name="platform_url"]').value.trim();
         const subscribers = parseInt(document.querySelector('input[name="subscriber_count"]').value);
         
         // Validation
-        if (displayName.length < 2) {
-            e.preventDefault();
-            alert('Creator name must be at least 2 characters');
-            return;
-        }
-        
         if (!youtubeUrl || !youtubeUrl.includes('youtube.com')) {
             e.preventDefault();
             alert('Please enter a valid YouTube channel URL');
@@ -245,7 +238,7 @@ if ($_POST) {
         
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = '⏳ Creating Profile...';
+        submitBtn.innerHTML = '⏳ Completing Setup...';
         submitBtn.disabled = true;
     });
     </script>
