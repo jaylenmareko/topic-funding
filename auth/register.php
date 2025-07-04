@@ -196,7 +196,9 @@ if ($_POST) {
     </form>
 
     <div class="links">
-        <a href="login.php">Already have an account? Login here</a><br>
+        <?php if (!isset($_GET['type'])): ?>
+            <a href="login.php">Already have an account? Login here</a><br>
+        <?php endif; ?>
         <a href="../index.php">Back to Home</a>
     </div>
 
