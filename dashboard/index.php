@@ -99,23 +99,6 @@ if ($creator) {
         .header-content { max-width: 1200px; margin: 0 auto; }
         .header-title { font-size: 32px; margin: 0 0 10px 0; font-weight: bold; }
         .header-subtitle { font-size: 18px; margin: 0; opacity: 0.9; }
-        .header-actions { margin-top: 20px; }
-        .header-btn { 
-            background: rgba(255,255,255,0.2); 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            text-decoration: none; 
-            margin-right: 10px;
-            display: inline-block;
-            font-weight: bold;
-        }
-        .header-btn:hover { 
-            background: rgba(255,255,255,0.3); 
-            color: white;
-            text-decoration: none;
-        }
         
         /* Alert Sections */
         .urgent-section { 
