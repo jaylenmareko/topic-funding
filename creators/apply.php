@@ -148,8 +148,6 @@ if ($_POST) {
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
         small { color: #666; font-size: 14px; }
-        .requirements { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
-        .requirements h4 { margin-top: 0; color: #1976d2; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -158,22 +156,15 @@ if ($_POST) {
 </head>
 <body>
     <div class="container">
+        <a href="index.php" class="back-link">← Back to Topics</a>
+
         <div class="header">
             <h1>📺 YouTuber Profile Setup</h1>
-            <p>Step 2 of 2: Complete your YouTuber profile</p>
+            <p>Complete your YouTuber profile</p>
             <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
                 <strong>Username:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
                 <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
             </div>
-        </div>
-
-        <div class="requirements">
-            <h4>🚀 What you get as a TopicLaunch Creator:</h4>
-            • Fans propose and fund topics for you<br>
-            • Get paid 90% of the funding (we keep 10%)<br>
-            • 48-hour delivery window<br>
-            • Automatic payment processing<br>
-            • No upfront costs or monthly fees
         </div>
 
         <?php if (!empty($errors)): ?>
