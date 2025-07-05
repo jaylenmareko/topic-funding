@@ -44,8 +44,8 @@ if ($_POST) {
             // Regenerate session ID for security
             session_regenerate_id(true);
             
-            // Redirect to home page
-            header('Location: ../index.php');
+            // Redirect to dashboard after login
+            header('Location: ../dashboard/index.php');
             exit;
         } else {
             $errors[] = "Invalid email or password";
@@ -103,7 +103,6 @@ if ($_POST) {
     </form>
     
     <div class="links">
-        <a href="register.php">Don't have an account? Register here</a><br>
         <a href="../index.php">Back to Home</a>
     </div>
 </body>
