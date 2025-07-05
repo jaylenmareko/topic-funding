@@ -76,10 +76,6 @@ function renderNavigation($current_page = '') {
         gap: 15px;
         color: white;
     }
-    .nav-username {
-        font-weight: 500;
-        color: #f0f0f0;
-    }
     .nav-btn {
         background: rgba(255,255,255,0.2);
         color: white;
@@ -172,16 +168,8 @@ function renderNavigation($current_page = '') {
                         </a>
                     <?php endif; ?>
                     
-                    <!-- User Info & Logout -->
-                    <div class="nav-user">
-                        <span class="nav-username">
-                            <?php echo htmlspecialchars($username); ?>
-                            <?php if ($is_creator): ?>
-                                <span style="font-size: 12px; opacity: 0.8;"> (YouTuber)</span>
-                            <?php endif; ?>
-                        </span>
-                        <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
-                    </div>
+                    <!-- Just logout -->
+                    <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
                     
                 <?php else: ?>
                     <!-- Navigation for Guests -->
