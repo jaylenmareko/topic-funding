@@ -122,7 +122,6 @@ if ($_POST) {
         .requirement { color: #666; font-size: 12px; }
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
-        .flow-info { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -131,19 +130,12 @@ if ($_POST) {
         
         <div class="user-type-indicator">
             <?php if ($user_type === 'creator'): ?>
-                📺 YouTuber Registration - Step 1 of 2
+                📺 YouTuber Registration
             <?php else: ?>
                 💰 Fan Registration
             <?php endif; ?>
         </div>
     </div>
-    
-    <?php if ($user_type === 'creator'): ?>
-    <div class="flow-info">
-        <strong>Step 1:</strong> Create your account<br>
-        <strong>Step 2:</strong> Set up your YouTuber profile
-    </div>
-    <?php endif; ?>
     
     <?php if (!empty($errors)): ?>
         <div class="errors">
