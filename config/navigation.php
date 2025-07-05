@@ -139,16 +139,19 @@ function renderNavigation($current_page = '') {
     
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <a href="<?php echo $base_path; ?>index.php" class="nav-logo">
+            <span class="nav-logo">
                 TopicLaunch
-            </a>
+            </span>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
                     <!-- Main Navigation for Logged In Users -->
-                    <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                        <?php echo $is_creator ? '📺 YouTuber Dashboard' : 'Dashboard'; ?>
-                    </a>
+                    <?php if ($current_page !== 'dashboard'): ?>
+                        <!-- Only show dashboard link if NOT currently on dashboard -->
+                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
+                            Dashboard
+                        </a>
+                    <?php endif; ?>
                     
                     <!-- Only show Browse Topics and Creators when NOT on dashboard -->
                     <?php if ($current_page !== 'dashboard'): ?>
