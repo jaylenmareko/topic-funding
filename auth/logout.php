@@ -14,7 +14,7 @@ session_destroy();
 <html>
 <head>
     <title>Logged Out - Topic Funding</title>
-    <meta http-equiv="refresh" content="2;url=../index.php">
+    <meta http-equiv="refresh" content="2;url=auth/login.php">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
         .logout-message { background: white; padding: 30px; border-radius: 8px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -25,8 +25,8 @@ session_destroy();
     <div class="logout-message">
         <div class="success">✅ Logged out successfully!</div>
         <p>Goodbye, <?php echo htmlspecialchars($username); ?>!</p>
-        <p>Redirecting to home page...</p>
-        <a href="../index.php">Click here if not redirected automatically</a>
+        <p>Redirecting to login page...</p>
+        <a href="login.php">Click here if not redirected automatically</a>
     </div>
 </body>
 </html>
