@@ -145,8 +145,6 @@ if ($_POST) {
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
-        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        .back-link:hover { text-decoration: underline; }
         small { color: #666; font-size: 14px; }
         
         @media (max-width: 600px) {
@@ -156,8 +154,6 @@ if ($_POST) {
 </head>
 <body>
     <div class="container">
-        <a href="index.php" class="back-link">← Back to Topics</a>
-
         <div class="header">
             <h1>📺 YouTuber Profile Setup</h1>
             <p>Complete your YouTuber profile</p>
