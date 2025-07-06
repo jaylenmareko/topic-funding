@@ -117,6 +117,8 @@ $youtube_creators = $db->resultSet();
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header { text-align: center; margin-bottom: 30px; }
         .header h1 { margin: 0 0 10px 0; color: #333; }
+        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        .back-link:hover { text-decoration: underline; }
         .how-it-works { background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .how-it-works h4 { margin-top: 0; color: #2d5f2d; }
         .form-group { margin-bottom: 20px; }
@@ -132,8 +134,6 @@ $youtube_creators = $db->resultSet();
         .stat { text-align: center; padding: 15px; background: white; border-radius: 6px; }
         .stat-number { font-size: 18px; font-weight: bold; color: #28a745; }
         .stat-label { font-size: 12px; color: #666; }
-        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        .back-link:hover { text-decoration: underline; }
         small { color: #666; font-size: 14px; }
         
         @media (max-width: 600px) {
@@ -143,7 +143,7 @@ $youtube_creators = $db->resultSet();
 </head>
 <body>
     <div class="container">
-        <a href="index.php" class="back-link">← Back to Topics</a>
+        <a href="../creators/index.php" class="back-link">← Back to YouTubers</a>
 
         <div class="header">
             <h1>💡 Create New Topic</h1>
@@ -168,6 +168,7 @@ $youtube_creators = $db->resultSet();
             <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
                 <h3>No Creators Available</h3>
                 <p>We're onboarding YouTube creators. Check back soon!</p>
+                <a href="../creators/index.php" class="btn">Browse YouTubers</a>
             </div>
         <?php else: ?>
             <form method="POST" id="topicForm">
