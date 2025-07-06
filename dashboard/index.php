@@ -747,23 +747,11 @@ $recent_contributions = $db->resultSet();
                     <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                     <p>Fund topics and support your favorite creators</p>
                 </div>
-                <div class="welcome-actions">
-                    <a href="../topics/create.php" class="welcome-btn welcome-btn-primary">
-                        💡 Propose a Topic
-                    </a>
-                    <a href="../creators/index.php" class="welcome-btn">
-                        👥 Browse YouTubers
-                    </a>
-                </div>
             </div>
         </div>
 
         <!-- Stats Grid -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">$<?php echo number_format($user_stats->total_contributed, 0); ?></div>
-                <div class="stat-label">Total Contributed</div>
-            </div>
             <div class="stat-card">
                 <div class="stat-number"><?php echo $user_stats->total_contributions; ?></div>
                 <div class="stat-label">Contributions Made</div>
@@ -779,9 +767,8 @@ $recent_contributions = $db->resultSet();
             <h2>Recent Activity</h2>
             <?php if (empty($recent_contributions)): ?>
                 <div class="empty-state">
-                    <h4>Ready to start funding?</h4>
-                    <p>Browse YouTubers and fund topics you're interested in to see your activity here!</p>
-                    <a href="../creators/index.php" class="btn btn-success">Browse YouTubers</a>
+                    <h4>Your activity will appear here</h4>
+                    <p>Once you start funding topics, you'll see your recent activity here!</p>
                 </div>
             <?php else: ?>
                 <div class="activity-feed">
@@ -823,10 +810,13 @@ $recent_contributions = $db->resultSet();
                 </div>
                 <div style="text-align: center; margin-top: 30px;">
                     <a href="../creators/index.php" class="btn btn-success">Browse More YouTubers</a>
-                    <a href="../topics/index.php" class="btn" style="margin-left: 15px;">View All Topics</a>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </body>
-</html>
+</html>number">$<?php echo number_format($user_stats->total_contributed, 0); ?></div>
+                <div class="stat-label">Total Contributed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-
