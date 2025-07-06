@@ -8,13 +8,13 @@ $helper = new DatabaseHelper();
 $topic_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (!$topic_id) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
 $topic = $helper->getTopicById($topic_id);
 if (!$topic) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -37,6 +37,8 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        .back-link:hover { text-decoration: underline; }
         .topic-header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .topic-title { font-size: 28px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
         .topic-meta { color: #666; margin-bottom: 20px; }
@@ -100,9 +102,11 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     </style>
 </head>
 <body>
-    <?php renderNavigation('browse_topics'); ?>
+    <?php renderNavigation('browse_creators'); ?>
 
     <div class="container">
+        <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Profile</a>
+
         <div class="topic-header">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                 <span class="status-badge status-<?php echo str_replace('_', '-', $topic->status); ?>">
@@ -348,8 +352,8 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
             <h3>🎉 Success Story!</h3>
             <p>This topic was successfully funded by <?php echo count($contributions); ?> contributors and the creator delivered amazing content!</p>
             <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
-                <a href="../topics/index.php" class="action-button" style="display: inline-block; margin-top: 0;">
-                    🔍 Browse More Topics
+                <a href="../creators/index.php" class="action-button" style="display: inline-block; margin-top: 0;">
+                    🔍 Browse More YouTubers
                 </a>
                 <a href="../topics/create.php?creator_id=<?php echo $topic->creator_id; ?>" class="action-button" style="display: inline-block; margin-top: 0; background: #667eea;">
                     💡 Propose Another Topic
