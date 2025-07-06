@@ -16,13 +16,13 @@ $helper = new DatabaseHelper();
 $topic_id = isset($_GET['id']) ? InputSanitizer::sanitizeInt($_GET['id']) : 0;
 
 if (!$topic_id) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
 $topic = $helper->getTopicById($topic_id);
 if (!$topic) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -197,8 +197,8 @@ sort($suggested_amounts);
     <div class="container">
         <div class="nav">
             <a href="view.php?id=<?php echo $topic->id; ?>">← Back to Topic</a>
-            <a href="index.php">All Topics</a>
-            <a href="../index.php">Home</a>
+            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>">Creator Profile</a>
+            <a href="../dashboard/index.php">My Dashboard</a>
         </div>
 
         <div class="topic-summary">
