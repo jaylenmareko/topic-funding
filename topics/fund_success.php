@@ -16,7 +16,7 @@ $amount = isset($_GET['amount']) ? (float)$_GET['amount'] : 0;
 $session_id = isset($_GET['session_id']) ? $_GET['session_id'] : '';
 
 if (!$topic_id || !$amount) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -24,7 +24,7 @@ $helper = new DatabaseHelper();
 $topic = $helper->getTopicById($topic_id);
 
 if (!$topic) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -201,7 +201,7 @@ $contributions = $helper->getTopicContributions($topic_id);
                 <div style="margin-top: 30px;">
                     <a href="view.php?id=<?php echo $topic->id; ?>" class="btn btn-success">View Topic Details</a>
                     <a href="../dashboard/index.php" class="btn">My Dashboard</a>
-                    <a href="index.php" class="btn">Browse More Topics</a>
+                    <a href="../creators/index.php" class="btn">Browse YouTubers</a>
                 </div>
 
                 <div style="margin-top: 25px; color: #666; font-size: 14px;">
@@ -240,9 +240,9 @@ $contributions = $helper->getTopicContributions($topic_id);
     // Auto-redirect after a delay for non-funded topics
     <?php if (!isset($contribution_result['fully_funded']) || !$contribution_result['fully_funded']): ?>
     setTimeout(function() {
-        const redirectChoice = confirm('Would you like to browse more topics to fund?');
+        const redirectChoice = confirm('Would you like to browse more YouTubers to support?');
         if (redirectChoice) {
-            window.location.href = 'index.php';
+            window.location.href = '../creators/index.php';
         }
     }, 8000);
     <?php endif; ?>
