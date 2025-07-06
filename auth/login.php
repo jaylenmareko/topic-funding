@@ -1,13 +1,13 @@
 <?php
-// auth/login.php - Secured with CSRF protection
+// auth/login.php - Updated to always redirect to dashboard (never to landing page)
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Redirect if already logged in
+// Redirect if already logged in - ALWAYS go to dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../index.php');
+    header('Location: ../dashboard/index.php');
     exit;
 }
 
@@ -44,7 +44,7 @@ if ($_POST) {
             // Regenerate session ID for security
             session_regenerate_id(true);
             
-            // Redirect to dashboard after login
+            // ALWAYS redirect to dashboard after login (never to landing page)
             header('Location: ../dashboard/index.php');
             exit;
         } else {
@@ -102,8 +102,6 @@ if ($_POST) {
         <button type="submit" class="btn">Login</button>
     </form>
     
-    <div class="links">
-        <a href="../index.php">Back to Home</a>
-    </div>
+
 </body>
 </html>
