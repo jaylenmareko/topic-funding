@@ -1,5 +1,5 @@
 <?php
-// dashboard/index.php - Unified dashboard that shows creator view for YouTubers, fan view for regular users
+// dashboard/index.php - Simplified fan dashboard focused on driving transactions
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -427,7 +427,7 @@ if ($creator) {
 }
 
 // ==============================================================================
-// FAN DASHBOARD - Only for regular users (non-creators)
+// SIMPLIFIED FAN DASHBOARD - Focused on driving transactions
 // ==============================================================================
 
 // Get user's contribution statistics
@@ -442,7 +442,7 @@ $db->query('
 $db->bind(':user_id', $user_id);
 $user_stats = $db->single();
 
-// Get user's recent contributions with topic and creator info
+// Get user's recent contributions with topic and creator info (simplified)
 $db->query('
     SELECT c.*, t.title as topic_title, t.status as topic_status, 
            cr.display_name as creator_name, t.funding_threshold, t.current_funding
@@ -451,36 +451,10 @@ $db->query('
     JOIN creators cr ON t.creator_id = cr.id
     WHERE c.user_id = :user_id AND c.payment_status = "completed"
     ORDER BY c.contributed_at DESC
-    LIMIT 10
+    LIMIT 5
 ');
 $db->bind(':user_id', $user_id);
 $recent_contributions = $db->resultSet();
-
-// Get topics the user has created
-$db->query('
-    SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image
-    FROM topics t
-    JOIN creators c ON t.creator_id = c.id
-    WHERE t.initiator_user_id = :user_id
-    ORDER BY t.created_at DESC
-    LIMIT 5
-');
-$db->bind(':user_id', $user_id);
-$user_topics = $db->resultSet();
-
-// Get funding milestones reached
-$db->query('
-    SELECT t.title, t.funded_at, cr.display_name as creator_name
-    FROM topics t
-    JOIN creators cr ON t.creator_id = cr.id
-    JOIN contributions c ON t.id = c.topic_id
-    WHERE c.user_id = :user_id AND t.status IN ("funded", "completed")
-    GROUP BY t.id
-    ORDER BY t.funded_at DESC
-    LIMIT 5
-');
-$db->bind(':user_id', $user_id);
-$funded_topics = $db->resultSet();
 ?>
 <!DOCTYPE html>
 <html>
@@ -553,13 +527,14 @@ $funded_topics = $db->resultSet();
             text-decoration: none;
         }
         .welcome-btn-primary {
-            background: rgba(255, 255, 255, 0.9);
-            color: #667eea;
-            border-color: transparent;
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
         }
         .welcome-btn-primary:hover {
-            background: white;
-            color: #5a6fd8;
+            background: #218838;
+            color: white;
+            border-color: #218838;
         }
         
         /* Stats Grid */
@@ -597,43 +572,20 @@ $funded_topics = $db->resultSet();
             letter-spacing: 0.05em;
         }
         
-        /* Content Grid */
-        .content-grid { 
-            display: grid; 
-            grid-template-columns: 2fr 1fr; 
-            gap: 30px; 
-        }
+        /* Main Content */
         .main-content { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 25px; 
-        }
-        .sidebar { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 25px; 
-        }
-        
-        /* Section Cards */
-        .section { 
             background: white; 
             padding: 30px; 
             border-radius: 16px; 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
-        .section h2 { 
+        .main-content h2 { 
             margin: 0 0 24px 0; 
             color: #212529; 
             font-size: 1.5rem;
             font-weight: 600;
             letter-spacing: -0.01em;
-        }
-        .section h3 { 
-            margin: 0 0 20px 0; 
-            color: #212529; 
-            font-size: 1.25rem;
-            font-weight: 600;
         }
         
         /* Activity Items */
@@ -672,18 +624,7 @@ $funded_topics = $db->resultSet();
             font-size: 1.125rem;
         }
         
-        /* Topic Cards */
-        .topic-card { 
-            border: 1px solid #e9ecef; 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-bottom: 16px;
-            transition: all 0.2s ease;
-        }
-        .topic-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
-        }
+        /* Topic Status */
         .topic-status { 
             padding: 6px 12px; 
             border-radius: 20px; 
@@ -695,7 +636,6 @@ $funded_topics = $db->resultSet();
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
-        .status-pending-approval { background: #f8d7da; color: #721c24; }
         
         /* Funding Progress */
         .funding-bar { 
@@ -758,34 +698,6 @@ $funded_topics = $db->resultSet();
             background: #218838; 
         }
         
-        /* Milestone Items */
-        .milestone-item { 
-            padding: 16px 0; 
-            border-bottom: 1px solid #e9ecef; 
-        }
-        .milestone-item:last-child { border-bottom: none; }
-        .milestone-title {
-            font-weight: 600;
-            color: #212529;
-            margin-bottom: 6px;
-            font-size: 0.95rem;
-        }
-        .milestone-meta {
-            color: #6c757d;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .milestone-badge {
-            background: #28a745;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-        
         /* Activity Feed */
         .activity-feed { 
             max-height: 500px; 
@@ -794,7 +706,6 @@ $funded_topics = $db->resultSet();
         
         /* Responsive Design */
         @media (max-width: 768px) {
-            .content-grid { grid-template-columns: 1fr; }
             .welcome-content { 
                 flex-direction: column; 
                 text-align: center; 
@@ -834,14 +745,14 @@ $funded_topics = $db->resultSet();
             <div class="welcome-content">
                 <div class="welcome-text">
                     <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
-                    <p>Fund topics and track your impact on the creator community</p>
+                    <p>Fund topics and support your favorite creators</p>
                 </div>
                 <div class="welcome-actions">
                     <a href="../topics/create.php" class="welcome-btn welcome-btn-primary">
-                        💡 Propose New Topic
+                        💡 Propose a Topic
                     </a>
                     <a href="../creators/index.php" class="welcome-btn">
-                        👥 Browse Creators
+                        👥 Browse YouTubers
                     </a>
                 </div>
             </div>
@@ -861,144 +772,60 @@ $funded_topics = $db->resultSet();
                 <div class="stat-number"><?php echo $user_stats->topics_funded; ?></div>
                 <div class="stat-label">Topics Supported</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo count($funded_topics); ?></div>
-                <div class="stat-label">Topics Completed</div>
-            </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="content-grid">
-            <div class="main-content">
-                <!-- Recent Contributions -->
-                <div class="section">
-                    <h2>Recent Activity</h2>
-                    <?php if (empty($recent_contributions)): ?>
-                        <div class="empty-state">
-                            <h4>No contributions yet</h4>
-                            <p>Start supporting creators by funding topics you're interested in!</p>
-                            <a href="../topics/index.php" class="btn">Browse Active Topics</a>
-                        </div>
-                    <?php else: ?>
-                        <div class="activity-feed">
-                            <?php foreach ($recent_contributions as $contribution): ?>
-                                <div class="contribution-item">
-                                    <div class="contribution-details">
-                                        <div class="topic-title">
-                                            <a href="../topics/view.php?id=<?php echo $contribution->topic_id; ?>">
-                                                <?php echo htmlspecialchars($contribution->topic_title); ?>
-                                            </a>
-                                        </div>
-                                        <div class="topic-meta">
-                                            By <?php echo htmlspecialchars($contribution->creator_name); ?> • 
-                                            <?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?> •
-                                            <span class="topic-status status-<?php echo $contribution->topic_status; ?>">
-                                                <?php echo ucfirst($contribution->topic_status); ?>
-                                            </span>
-                                        </div>
-                                        <?php if ($contribution->topic_status === 'active'): ?>
-                                            <div class="funding-bar" style="width: 200px;">
-                                                <?php 
-                                                $progress = ($contribution->current_funding / $contribution->funding_threshold) * 100;
-                                                $progress = min($progress, 100);
-                                                ?>
-                                                <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
-                                            </div>
-                                            <div style="font-size: 0.8rem; color: #6c757d; margin-top: 4px;">
-                                                $<?php echo number_format($contribution->current_funding, 0); ?> / 
-                                                $<?php echo number_format($contribution->funding_threshold, 0); ?> 
-                                                (<?php echo round($progress); ?>%)
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="contribution-amount">
-                                        $<?php echo number_format($contribution->amount, 2); ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php if (count($recent_contributions) >= 10): ?>
-                            <div style="text-align: center; margin-top: 20px;">
-                                <a href="contributions.php" class="btn">View All Contributions</a>
-                            </div>
-                        <?php endif; ?>
-                    <?php endif; ?>
+        <!-- Recent Activity -->
+        <div class="main-content">
+            <h2>Recent Activity</h2>
+            <?php if (empty($recent_contributions)): ?>
+                <div class="empty-state">
+                    <h4>Ready to start funding?</h4>
+                    <p>Browse YouTubers and fund topics you're interested in to see your activity here!</p>
+                    <a href="../creators/index.php" class="btn btn-success">Browse YouTubers</a>
                 </div>
-
-                <!-- Topics You Created -->
-                <div class="section">
-                    <h2>Topics You Proposed</h2>
-                    <?php if (empty($user_topics)): ?>
-                        <div class="empty-state">
-                            <h4>No topics proposed yet</h4>
-                            <p>Have an idea for your favorite creator? Propose it and fund it to make it happen!</p>
-                            <a href="../topics/create.php" class="btn btn-success">Propose Your First Topic</a>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($user_topics as $topic): ?>
-                            <div class="topic-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">
-                                        <?php echo htmlspecialchars($topic->title); ?>
-                                    </h4>
-                                    <span class="topic-status status-<?php echo $topic->status; ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
+            <?php else: ?>
+                <div class="activity-feed">
+                    <?php foreach ($recent_contributions as $contribution): ?>
+                        <div class="contribution-item">
+                            <div class="contribution-details">
+                                <div class="topic-title">
+                                    <a href="../topics/view.php?id=<?php echo $contribution->topic_id; ?>">
+                                        <?php echo htmlspecialchars($contribution->topic_title); ?>
+                                    </a>
+                                </div>
+                                <div class="topic-meta">
+                                    By <?php echo htmlspecialchars($contribution->creator_name); ?> • 
+                                    <?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?> •
+                                    <span class="topic-status status-<?php echo $contribution->topic_status; ?>">
+                                        <?php echo ucfirst($contribution->topic_status); ?>
                                     </span>
                                 </div>
-                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 12px;">
-                                    For <?php echo htmlspecialchars($topic->creator_name); ?> • 
-                                    Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?>
-                                </div>
-                                <?php if ($topic->status === 'active'): ?>
-                                    <?php 
-                                    $progress = ($topic->current_funding / $topic->funding_threshold) * 100;
-                                    $progress = min($progress, 100);
-                                    ?>
-                                    <div class="funding-bar">
+                                <?php if ($contribution->topic_status === 'active'): ?>
+                                    <div class="funding-bar" style="width: 200px;">
+                                        <?php 
+                                        $progress = ($contribution->current_funding / $contribution->funding_threshold) * 100;
+                                        $progress = min($progress, 100);
+                                        ?>
                                         <div class="funding-progress" style="width: <?php echo $progress; ?>%"></div>
                                     </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-                                        <span style="font-size: 0.875rem; color: #6c757d;">
-                                            $<?php echo number_format($topic->current_funding, 0); ?> / 
-                                            $<?php echo number_format($topic->funding_threshold, 0); ?> 
-                                            (<?php echo round($progress); ?>%)
-                                        </span>
-                                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
-                                    </div>
-                                <?php else: ?>
-                                    <div style="margin-top: 12px;">
-                                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
+                                    <div style="font-size: 0.8rem; color: #6c757d; margin-top: 4px;">
+                                        $<?php echo number_format($contribution->current_funding, 0); ?> / 
+                                        $<?php echo number_format($contribution->funding_threshold, 0); ?> 
+                                        (<?php echo round($progress); ?>%)
                                     </div>
                                 <?php endif; ?>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="sidebar">
-                <!-- Milestones -->
-                <div class="section">
-                    <h3>Recent Milestones</h3>
-                    <?php if (empty($funded_topics)): ?>
-                        <div class="empty-state">
-                            <p style="font-size: 0.9rem;">No funded topics yet. Keep contributing to see your impact!</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($funded_topics as $milestone): ?>
-                            <div class="milestone-item">
-                                <div class="milestone-title">
-                                    <?php echo htmlspecialchars($milestone->title); ?>
-                                </div>
-                                <div class="milestone-meta">
-                                    <span><?php echo htmlspecialchars($milestone->creator_name); ?></span>
-                                    <span class="milestone-badge">Funded!</span>
-                                </div>
+                            <div class="contribution-amount">
+                                $<?php echo number_format($contribution->amount, 2); ?>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="../creators/index.php" class="btn btn-success">Browse More YouTubers</a>
+                    <a href="../topics/index.php" class="btn" style="margin-left: 15px;">View All Topics</a>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </body>
