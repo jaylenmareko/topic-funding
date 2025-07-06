@@ -1,13 +1,22 @@
 <?php
-// auth/login.php - Updated to always redirect to dashboard (never to landing page)
+// auth/login.php - Updated to redirect fans to creators page for faster transactions
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Redirect if already logged in - ALWAYS go to dashboard
+// Check if already logged in and redirect appropriately
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../dashboard/index.php');
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $is_creator = $db->single();
+    
+    if ($is_creator) {
+        header('Location: ../dashboard/index.php'); // Creators go to dashboard
+    } else {
+        header('Location: ../creators/index.php'); // Fans go to browse creators
+    }
     exit;
 }
 
@@ -44,8 +53,17 @@ if ($_POST) {
             // Regenerate session ID for security
             session_regenerate_id(true);
             
-            // ALWAYS redirect to dashboard after login (never to landing page)
-            header('Location: ../dashboard/index.php');
+            // Check if user is a creator or fan and redirect accordingly
+            $db = new Database();
+            $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+            $db->bind(':user_id', $user->id);
+            $is_creator = $db->single();
+            
+            if ($is_creator) {
+                header('Location: ../dashboard/index.php'); // Creators go to dashboard
+            } else {
+                header('Location: ../creators/index.php'); // Fans go to browse creators for faster transactions
+            }
             exit;
         } else {
             $errors[] = "Invalid email or password";
@@ -56,7 +74,7 @@ if ($_POST) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Topic Funding</title>
+    <title>Login - TopicLaunch</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
         .form-group { margin-bottom: 15px; }
@@ -72,7 +90,7 @@ if ($_POST) {
     </style>
 </head>
 <body>
-    <h2>Login to Topic Funding</h2>
+    <h2>Login to TopicLaunch</h2>
     
     <div class="security-note">
         🔒 Your login is protected with advanced security measures.
@@ -102,6 +120,8 @@ if ($_POST) {
         <button type="submit" class="btn">Login</button>
     </form>
     
-
+    <div class="links">
+        <a href="register.php">Don't have an account? Sign up here</a>
+    </div>
 </body>
 </html>
