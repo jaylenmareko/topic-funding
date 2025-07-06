@@ -6,7 +6,7 @@ require_once '../config/database.php';
 $topic_id = isset($_GET['topic_id']) ? (int)$_GET['topic_id'] : 0;
 
 if (!$topic_id) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -14,14 +14,14 @@ $helper = new DatabaseHelper();
 $topic = $helper->getTopicById($topic_id);
 
 if (!$topic) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Payment Cancelled - Topic Funding</title>
+    <title>Payment Cancelled - TopicLaunch</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 600px; margin: 50px auto; }
@@ -55,11 +55,11 @@ if (!$topic) {
             <div style="margin-top: 30px;">
                 <a href="fund.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">Try Payment Again</a>
                 <a href="view.php?id=<?php echo $topic->id; ?>" class="btn">View Topic Details</a>
-                <a href="index.php" class="btn">Browse Other Topics</a>
+                <a href="../creators/index.php" class="btn">Browse YouTubers</a>
             </div>
 
             <div style="margin-top: 20px; color: #666; font-size: 14px;">
-                <p>Need help? <a href="mailto:support@yoursite.com" style="color: #007bff;">Contact our support team</a></p>
+                <p>Need help? <a href="mailto:support@topiclaunch.com" style="color: #007bff;">Contact our support team</a></p>
             </div>
         </div>
     </div>
