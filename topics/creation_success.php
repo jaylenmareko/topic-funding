@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Check if this is a topic creation success
 if (!isset($_GET['topic_creation']) || !isset($_GET['session_id'])) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -23,7 +23,7 @@ $amount = isset($_GET['amount']) ? (float)$_GET['amount'] : 0;
 
 // Get pending topic data from session
 if (!isset($_SESSION['pending_topic'])) {
-    header('Location: index.php');
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -181,7 +181,7 @@ try {
                 <div style="margin-top: 30px;">
                     <a href="../dashboard/index.php" class="btn">📊 View My Dashboard</a>
                     <a href="create.php" class="btn btn-primary">💡 Create Another Topic</a>
-                    <a href="../creators/index.php" class="btn btn-primary">🔍 Browse More Creators</a>
+                    <a href="../creators/index.php" class="btn btn-primary">🔍 Browse More YouTubers</a>
                 </div>
 
                 <div style="margin-top: 25px; color: #666; font-size: 14px;">
@@ -204,7 +204,7 @@ try {
 
                 <div style="margin-top: 30px;">
                     <a href="create.php" class="btn">🔄 Try Again</a>
-                    <a href="../index.php" class="btn btn-primary">🏠 Back to Home</a>
+                    <a href="../creators/index.php" class="btn btn-primary">🏠 Browse YouTubers</a>
                 </div>
 
                 <div style="margin-top: 25px; color: #666; font-size: 14px;">
