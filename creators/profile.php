@@ -111,7 +111,7 @@ $completed_topics = $db->resultSet();
 
     <div class="container">
         <div class="creator-header">
-            <div class="creator-info">
+                            <div class="creator-info">
                 <div class="creator-avatar">
                     <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                         <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
