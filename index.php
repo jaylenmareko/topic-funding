@@ -1,11 +1,22 @@
 <?php
-// index.php - Updated to redirect logged in users directly to dashboard
+// index.php - Updated to redirect fans to creators page, creators to dashboard
 session_start();
 require_once 'config/database.php';
 
-// REDIRECT LOGGED IN USERS TO DASHBOARD IMMEDIATELY
+// REDIRECT LOGGED IN USERS BASED ON ROLE
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard/index.php');
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $is_creator = $db->single();
+    
+    if ($is_creator) {
+        // Creators go to dashboard
+        header('Location: dashboard/index.php');
+    } else {
+        // Fans go to browse YouTubers (main page for fans)
+        header('Location: creators/index.php');
+    }
     exit;
 }
 
@@ -32,8 +43,16 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $_SESSION['email'] = $user->email;
             session_regenerate_id(true);
             
-            // Redirect to dashboard after login
-            header('Location: dashboard/index.php');
+            // Check if user is creator or fan and redirect accordingly
+            $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+            $db->bind(':user_id', $user->id);
+            $is_creator = $db->single();
+            
+            if ($is_creator) {
+                header('Location: dashboard/index.php'); // Creators go to dashboard
+            } else {
+                header('Location: creators/index.php'); // Fans go to browse YouTubers
+            }
             exit;
         } else {
             $login_error = 'Invalid email or password';
@@ -233,7 +252,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     <!-- Navigation -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <a href="index.php" class="nav-logo">TopicLaunch</a>
+            <span class="nav-logo">TopicLaunch</span>
             
             <!-- Only show login form since logged in users are redirected -->
             <form method="POST" class="login-form">
