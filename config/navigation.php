@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation component with NO landing page access for logged in users
+// config/navigation.php - Updated navigation with YouTubers as main page for fans
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -46,8 +46,9 @@ function renderNavigation($current_page = '') {
         font-weight: bold;
         color: white;
         text-decoration: none;
+        cursor: default; /* Logo is not clickable */
     }
-    .nav-logo:hover { color: #f0f0f0; }
+    .nav-logo:hover { color: white; } /* No hover effect */
     .nav-links {
         display: flex;
         align-items: center;
@@ -139,31 +140,35 @@ function renderNavigation($current_page = '') {
     
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <!-- Logo - For logged in users, goes to dashboard, NOT landing page -->
-            <?php if ($is_logged_in): ?>
-                <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-logo">TopicLaunch</a>
-            <?php else: ?>
-                <span class="nav-logo">TopicLaunch</span>
-            <?php endif; ?>
+            <!-- Logo - NOT clickable, just text -->
+            <span class="nav-logo">TopicLaunch</span>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
                     <!-- Main Navigation for Logged In Users -->
-                    <?php if ($current_page !== 'dashboard'): ?>
-                        <!-- Only show dashboard link if NOT currently on dashboard -->
-                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                            Dashboard
-                        </a>
-                    <?php endif; ?>
                     
-                    <!-- Only show Browse Topics and Creators when NOT on dashboard -->
-                    <?php if ($current_page !== 'dashboard'): ?>
+                    <?php if ($is_creator): ?>
+                        <!-- Creator Navigation -->
+                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
+                            📺 Creator Dashboard
+                        </a>
+                        <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link">
+                            Browse Topics
+                        </a>
+                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link">
+                            Browse YouTubers
+                        </a>
+                    <?php else: ?>
+                        <!-- Fan Navigation - YouTubers is the main page -->
+                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
+                            Browse YouTubers
+                        </a>
                         <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link <?php echo $current_page === 'browse_topics' ? 'active' : ''; ?>">
                             Browse Topics
                         </a>
-                        
-                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link">
-                            Creators
+                        <!-- Dashboard button on the right for fans -->
+                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-btn">
+                            📊 Dashboard
                         </a>
                     <?php endif; ?>
                     
@@ -174,7 +179,7 @@ function renderNavigation($current_page = '') {
                         </a>
                     <?php endif; ?>
                     
-                    <!-- Just logout -->
+                    <!-- Logout -->
                     <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
                     
                 <?php else: ?>
