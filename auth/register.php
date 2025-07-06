@@ -1,13 +1,22 @@
 <?php
-// auth/register.php - Updated to always redirect to dashboard (never to landing page)
+// auth/register.php - Updated to redirect fans to creators page for faster transactions
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Redirect if already logged in - ALWAYS go to dashboard
+// Redirect if already logged in - Check if they're a creator first
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../dashboard/index.php');
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $is_creator = $db->single();
+    
+    if ($is_creator) {
+        header('Location: ../dashboard/index.php'); // Creators go to dashboard
+    } else {
+        header('Location: ../creators/index.php'); // Fans go to browse creators
+    }
     exit;
 }
 
@@ -82,8 +91,8 @@ if ($_POST) {
                 // Regenerate session ID for security
                 session_regenerate_id(true);
                 
-                // ALWAYS redirect to dashboard (never to landing page)
-                header('Location: ../dashboard/index.php');
+                // REDIRECT FANS TO BROWSE CREATORS FOR FASTER TRANSACTIONS
+                header('Location: ../creators/index.php');
                 exit;
             } else {
                 $errors[] = "Registration failed. Please try again.";
@@ -183,7 +192,7 @@ if ($_POST) {
             <?php if ($user_type === 'creator'): ?>
                 📺 Continue to YouTuber Setup
             <?php else: ?>
-                💰 Create Account & Start Funding
+                💰 Create Account & Browse YouTubers
             <?php endif; ?>
         </button>
     </form>
