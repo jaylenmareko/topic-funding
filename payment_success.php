@@ -46,7 +46,7 @@ if (!isset($_SESSION['user_id'])) {
         
         <div style="margin-top: 30px;">
             <a href="dashboard/index.php" class="btn">Go to Dashboard</a>
-            <a href="topics/index.php" class="btn">Browse Topics</a>
+            <a href="creators/index.php" class="btn">Browse YouTubers</a>
         </div>
         
         <div style="margin-top: 20px; color: #666; font-size: 14px;">
@@ -81,9 +81,9 @@ if (!isset($_SESSION['user_id'])) {
             return;
         }
         <?php else: ?>
-        // For contributions, redirect to topics page
+        // For contributions, redirect to creators page
         if (checkCount >= 8) {
-            window.location.href = 'topics/index.php?contributed=1';
+            window.location.href = 'creators/index.php?contributed=1';
             return;
         }
         <?php endif; ?>
