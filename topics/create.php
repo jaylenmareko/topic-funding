@@ -1,5 +1,5 @@
 <?php
-// topics/create.php - Simplified topic creation
+// topics/create.php - Simplified topic creation with pre-selected creator
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -14,15 +14,18 @@ if (!isset($_SESSION['user_id'])) {
 
 $helper = new DatabaseHelper();
 $creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
-$creator = null;
 
-// If creator_id provided, get creator info
-if ($creator_id) {
-    $creator = $helper->getCreatorById($creator_id);
-    if (!$creator || $creator->platform_type !== 'youtube') {
-        header('Location: ../creators/index.php');
-        exit;
-    }
+// Creator ID is required - redirect if not provided
+if (!$creator_id) {
+    header('Location: ../creators/index.php');
+    exit;
+}
+
+// Get creator info
+$creator = $helper->getCreatorById($creator_id);
+if (!$creator || $creator->platform_type !== 'youtube') {
+    header('Location: ../creators/index.php');
+    exit;
 }
 
 $errors = [];
@@ -32,17 +35,12 @@ if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
     
-    $selected_creator_id = (int)$_POST['creator_id'];
     $title = InputSanitizer::sanitizeString($_POST['title']);
     $description = InputSanitizer::sanitizeString($_POST['description']);
     $funding_threshold = (float)$_POST['funding_threshold'];
     $initial_contribution = (float)$_POST['initial_contribution'];
     
     // Validation
-    if (!$selected_creator_id) {
-        $errors[] = "Please select a creator";
-    }
-    
     if (empty($title) || strlen($title) < 10) {
         $errors[] = "Topic title required (10+ characters)";
     }
@@ -71,7 +69,7 @@ if ($_POST) {
                         'currency' => STRIPE_CURRENCY,
                         'product_data' => [
                             'name' => 'Create Topic: ' . $title,
-                            'description' => 'Fund this topic idea',
+                            'description' => 'Fund this topic idea for ' . $creator->display_name,
                         ],
                         'unit_amount' => $initial_contribution * 100,
                     ],
@@ -82,7 +80,7 @@ if ($_POST) {
                 'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
                 'metadata' => [
                     'type' => 'topic_creation',
-                    'creator_id' => $selected_creator_id,
+                    'creator_id' => $creator_id,
                     'user_id' => $_SESSION['user_id'],
                     'title' => $title,
                     'description' => $description,
@@ -101,16 +99,11 @@ if ($_POST) {
         }
     }
 }
-
-// Get all active YouTube creators
-$db = new Database();
-$db->query('SELECT * FROM creators WHERE is_active = 1 AND platform_type = "youtube" ORDER BY display_name');
-$youtube_creators = $db->resultSet();
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Create New Topic - TopicLaunch</title>
+    <title>Create New Topic for <?php echo htmlspecialchars($creator->display_name); ?> - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -119,6 +112,10 @@ $youtube_creators = $db->resultSet();
         .header h1 { margin: 0 0 10px 0; color: #333; }
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
+        .creator-info { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
+        .creator-details h3 { margin: 0 0 5px 0; color: #1976d2; }
+        .creator-details p { margin: 0; color: #666; font-size: 14px; }
         .how-it-works { background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .how-it-works h4 { margin-top: 0; color: #2d5f2d; }
         .form-group { margin-bottom: 20px; }
@@ -138,24 +135,41 @@ $youtube_creators = $db->resultSet();
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
+            .creator-info { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="../creators/index.php" class="back-link">← Back to YouTubers</a>
+        <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" class="back-link">← Back to <?php echo htmlspecialchars($creator->display_name); ?></a>
 
         <div class="header">
             <h1>💡 Create New Topic</h1>
-            <p>Suggest a topic and fund it to make it happen!</p>
+            <p>Suggest a topic for this YouTuber and fund it to make it happen!</p>
+        </div>
+        
+        <!-- Creator Info -->
+        <div class="creator-info">
+            <div class="creator-avatar">
+                <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
+                    <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                         alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <?php else: ?>
+                    <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
+                <?php endif; ?>
+            </div>
+            <div class="creator-details">
+                <h3>Creating topic for: <?php echo htmlspecialchars($creator->display_name); ?></h3>
+                <p><?php echo number_format($creator->subscriber_count); ?> subscribers • <?php echo ucfirst($creator->platform_type); ?></p>
+            </div>
         </div>
         
         <div class="how-it-works">
             <h4>🚀 How it works:</h4>
-            1. Choose a creator and topic<br>
-            2. Make initial payment (topic goes live immediately)<br>
-            3. Community funds the rest<br>
-            4. Creator makes content within 48 hours
+            1. Create your topic and make initial payment<br>
+            2. Topic goes live immediately for community funding<br>
+            3. Once fully funded, creator has 48 hours to deliver content<br>
+            4. You get refunded if content isn't delivered on time
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -164,100 +178,70 @@ $youtube_creators = $db->resultSet();
             <?php endforeach; ?>
         <?php endif; ?>
 
-        <?php if (empty($youtube_creators)): ?>
-            <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
-                <h3>No Creators Available</h3>
-                <p>We're onboarding YouTube creators. Check back soon!</p>
-                <a href="../creators/index.php" class="btn">Browse YouTubers</a>
+        <form method="POST" id="topicForm">
+            <?php echo CSRFProtection::getTokenField(); ?>
+            
+            <!-- Hidden creator ID -->
+            <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+
+            <div class="form-group">
+                <label>Topic Title:</label>
+                <input type="text" name="title" required minlength="10" maxlength="100" 
+                       placeholder="What should they make a video about?"
+                       value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
+                <small>Be specific! Example: "How to edit like MrBeast"</small>
             </div>
-        <?php else: ?>
-            <form method="POST" id="topicForm">
-                <?php echo CSRFProtection::getTokenField(); ?>
-                
-                <div class="form-group">
-                    <label>Choose Creator:</label>
-                    <select name="creator_id" id="creator_id" required>
-                        <option value="">Select a YouTube creator</option>
-                        <?php foreach ($youtube_creators as $c): ?>
-                            <option value="<?php echo $c->id; ?>" 
-                                    data-threshold="<?php echo $c->default_funding_threshold; ?>"
-                                    <?php echo ($creator && $c->id == $creator->id) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($c->display_name); ?> 
-                                (<?php echo number_format($c->subscriber_count); ?> subs)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
 
-                <div class="form-group">
-                    <label>Topic Title:</label>
-                    <input type="text" name="title" required minlength="10" maxlength="100" 
-                           placeholder="What should they make a video about?"
-                           value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-                    <small>Be specific! Example: "How to edit like MrBeast"</small>
-                </div>
+            <div class="form-group">
+                <label>Description:</label>
+                <textarea name="description" required minlength="30" 
+                          placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
+                <small>What exactly do you want to see in this video?</small>
+            </div>
 
-                <div class="form-group">
-                    <label>Description:</label>
-                    <textarea name="description" required minlength="30" 
-                              placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-                    <small>What exactly do you want to see?</small>
-                </div>
+            <div class="form-group">
+                <label>Funding Goal ($):</label>
+                <input type="number" name="funding_threshold" id="funding_threshold" 
+                       value="<?php echo $creator->default_funding_threshold; ?>" min="10" max="1000" step="0.01" required>
+                <small>How much should the community raise for this topic?</small>
+            </div>
 
-                <div class="form-group">
-                    <label>Funding Goal ($):</label>
-                    <input type="number" name="funding_threshold" id="funding_threshold" 
-                           value="50" min="10" max="1000" step="0.01" required>
-                    <small>How much should the community raise?</small>
-                </div>
+            <div class="form-group">
+                <label>Your Payment ($):</label>
+                <input type="number" name="initial_contribution" id="initial_contribution" 
+                       min="5" step="0.01" required placeholder="25">
+                <small>Minimum $5 and at least 10% of goal</small>
+            </div>
 
-                <div class="form-group">
-                    <label>Your Payment ($):</label>
-                    <input type="number" name="initial_contribution" id="initial_contribution" 
-                           min="5" step="0.01" required placeholder="25">
-                    <small>Minimum $5 and at least 10% of goal</small>
-                </div>
-
-                <div class="funding-preview" id="fundingPreview" style="display: none;">
-                    <h4>💰 Funding Summary</h4>
-                    <div class="funding-stats">
-                        <div class="stat">
-                            <div class="stat-number" id="goalAmount">$0</div>
-                            <div class="stat-label">Goal</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="yourPayment">$0</div>
-                            <div class="stat-label">Your Payment</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="remaining">$0</div>
-                            <div class="stat-label">Community Funds</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="percentage">0%</div>
-                            <div class="stat-label">Initially Funded</div>
-                        </div>
+            <div class="funding-preview" id="fundingPreview" style="display: none;">
+                <h4>💰 Funding Summary</h4>
+                <div class="funding-stats">
+                    <div class="stat">
+                        <div class="stat-number" id="goalAmount">$0</div>
+                        <div class="stat-label">Goal</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="yourPayment">$0</div>
+                        <div class="stat-label">Your Payment</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="remaining">$0</div>
+                        <div class="stat-label">Community Funds</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="percentage">0%</div>
+                        <div class="stat-label">Initially Funded</div>
                     </div>
                 </div>
+            </div>
 
-                <button type="submit" class="btn" id="submitBtn">
-                    💳 Create Topic & Pay
-                </button>
-            </form>
-        <?php endif; ?>
+            <button type="submit" class="btn" id="submitBtn">
+                💳 Create Topic & Pay
+            </button>
+        </form>
     </div>
 
     <script>
-    // Auto-fill funding threshold when creator selected
-    document.getElementById('creator_id').addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.value) {
-            const threshold = selectedOption.getAttribute('data-threshold');
-            document.getElementById('funding_threshold').value = threshold;
-            updatePreview();
-        }
-    });
-
     // Update preview in real-time
     function updatePreview() {
         const goal = parseFloat(document.getElementById('funding_threshold').value) || 0;
@@ -296,7 +280,7 @@ $youtube_creators = $db->resultSet();
         const payment = parseFloat(document.getElementById('initial_contribution').value);
         const goal = parseFloat(document.getElementById('funding_threshold').value);
 
-        if (!confirm(`Create topic with $${payment.toFixed(2)} payment?\n\nTopic will go live immediately!`)) {
+        if (!confirm(`Create topic for <?php echo addslashes($creator->display_name); ?> with ${payment.toFixed(2)} payment?\n\nTopic will go live immediately!`)) {
             e.preventDefault();
             return;
         }
