@@ -238,10 +238,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                                 <div class="stat-number"><?php echo number_format($creator->subscriber_count); ?></div>
                                 <div class="stat-label">Subscribers</div>
                             </div>
-                            <div class="stat">
-                                <div class="stat-number">$<?php echo number_format($creator->default_funding_threshold); ?></div>
-                                <div class="stat-label">Default Goal</div>
-                            </div>
                         </div>
                         
                         <div class="creator-bio">
@@ -262,17 +258,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                         </div>
                     </div>
                 <?php endforeach; ?>
-            </div>
-
-            <!-- Call to Action -->
-            <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px;">
-                <h3>Are you a YouTuber?</h3>
-                <p>Join TopicLaunch and let your audience fund the content they want to see!</p>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="apply.php" class="btn btn-green">Apply to be a YouTuber</a>
-                <?php else: ?>
-                    <a href="../auth/register.php" class="btn btn-green">Get Started</a>
-                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
