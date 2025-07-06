@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation component with YouTuber terminology
+// config/navigation.php - Updated navigation component with NO landing page access for logged in users
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -139,9 +139,12 @@ function renderNavigation($current_page = '') {
     
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <span class="nav-logo">
-                TopicLaunch
-            </span>
+            <!-- Logo - For logged in users, goes to dashboard, NOT landing page -->
+            <?php if ($is_logged_in): ?>
+                <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-logo">TopicLaunch</a>
+            <?php else: ?>
+                <span class="nav-logo">TopicLaunch</span>
+            <?php endif; ?>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
