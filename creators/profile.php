@@ -41,18 +41,6 @@ $funded_topics = $db->resultSet();
 $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
 $db->bind(':creator_id', $creator_id);
 $completed_topics = $db->resultSet();
-
-// Get creator statistics
-$db->query('
-    SELECT 
-        COUNT(*) as total_topics,
-        COUNT(CASE WHEN status = "completed" THEN 1 END) as completed_count,
-        COALESCE(SUM(CASE WHEN status IN ("funded", "completed") THEN current_funding ELSE 0 END), 0) as total_earned
-    FROM topics 
-    WHERE creator_id = :creator_id
-');
-$db->bind(':creator_id', $creator_id);
-$creator_stats = $db->single();
 ?>
 <!DOCTYPE html>
 <html>
@@ -151,18 +139,6 @@ $creator_stats = $db->single();
                             <div class="stat-number"><?php echo number_format($creator->subscriber_count); ?></div>
                             <div class="stat-label">Subscribers</div>
                         </div>
-                        <div class="stat">
-                            <div class="stat-number"><?php echo $creator_stats->total_topics; ?></div>
-                            <div class="stat-label">Total Topics</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number"><?php echo $creator_stats->completed_count; ?></div>
-                            <div class="stat-label">Completed</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number">$<?php echo number_format($creator_stats->total_earned, 0); ?></div>
-                            <div class="stat-label">Total Earned</div>
-                        </div>
                     </div>
                     
                     <div class="creator-actions">
@@ -204,7 +180,6 @@ $creator_stats = $db->single();
                 <div class="empty-state">
                     <h3>No active topics</h3>
                     <p>This creator doesn't have any topics seeking funding right now.</p>
-                    <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">Propose a Topic</a>
                 </div>
             <?php else: ?>
                 <div class="topic-grid">
@@ -323,13 +298,6 @@ $creator_stats = $db->single();
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Call to Action -->
-        <div style="text-align: center; margin-top: 40px; padding: 30px; background: white; border-radius: 12px;">
-            <h3>Like this creator's work?</h3>
-            <p>Propose a topic you'd like to see them cover and help fund it to make it happen!</p>
-            <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Propose New Topic</a>
         </div>
     </div>
 
