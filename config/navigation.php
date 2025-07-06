@@ -152,9 +152,6 @@ function renderNavigation($current_page = '') {
                         <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
                             📺 Creator Dashboard
                         </a>
-                        <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link">
-                            Browse Topics
-                        </a>
                         <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link">
                             Browse YouTubers
                         </a>
@@ -162,9 +159,6 @@ function renderNavigation($current_page = '') {
                         <!-- Fan Navigation - YouTubers is the main page -->
                         <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
                             Browse YouTubers
-                        </a>
-                        <a href="<?php echo $base_path; ?>topics/index.php" class="nav-link <?php echo $current_page === 'browse_topics' ? 'active' : ''; ?>">
-                            Browse Topics
                         </a>
                         <!-- Dashboard button on the right for fans -->
                         <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-btn">
