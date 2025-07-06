@@ -1,7 +1,25 @@
 <?php
-// creators/apply.php - Exact match for your database structure
+// creators/apply.php - Updated to redirect existing logged-in users appropriately
 session_start();
 require_once '../config/database.php';
+
+// If user is already logged in, check if they're already a creator
+if (isset($_SESSION['user_id'])) {
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $existing_creator = $db->single();
+    
+    if ($existing_creator) {
+        // User is already a creator, redirect to their dashboard
+        header('Location: ../dashboard/index.php');
+        exit;
+    } else {
+        // User is logged in but not a creator, redirect to dashboard
+        header('Location: ../dashboard/index.php');
+        exit;
+    }
+}
 
 // Check if user has pending creator registration
 if (!isset($_SESSION['pending_creator_registration'])) {
@@ -14,17 +32,22 @@ $success = '';
 $pending_registration = $_SESSION['pending_creator_registration'];
 
 if ($_POST) {
-    // Simple validation
+    // URL validation
     $platform_url = trim($_POST['platform_url'] ?? '');
-    $subscriber_count = (int)($_POST['subscriber_count'] ?? 0);
     
-    // Basic validation
-    if (empty($platform_url) || !filter_var($platform_url, FILTER_VALIDATE_URL)) {
-        $errors[] = "Valid YouTube channel URL required";
-    }
-    
-    if ($subscriber_count < 100) {
-        $errors[] = "Minimum 100 subscribers required";
+    // Validate URL format and check if it's a real YouTube channel
+    if (empty($platform_url)) {
+        $errors[] = "YouTube channel URL is required";
+    } elseif (!filter_var($platform_url, FILTER_VALIDATE_URL)) {
+        $errors[] = "Please enter a valid URL";
+    } elseif (!preg_match('/youtube\.com\/(c\/|channel\/|user\/|@)/', $platform_url)) {
+        $errors[] = "Please enter a valid YouTube channel URL (youtube.com/@channel or youtube.com/c/channel)";
+    } else {
+        // Check if the URL actually exists (real channel check)
+        $headers = @get_headers($platform_url);
+        if (!$headers || strpos($headers[0], '200') === false) {
+            $errors[] = "This YouTube channel URL doesn't seem to exist. Please check the URL and try again.";
+        }
     }
     
     // Create both user account and creator profile atomically
@@ -88,7 +111,7 @@ if ($_POST) {
             $db->bind(':bio', 'YouTube Creator');
             $db->bind(':platform_type', 'youtube');
             $db->bind(':platform_url', $platform_url);
-            $db->bind(':subscriber_count', $subscriber_count);
+            $db->bind(':subscriber_count', 1000); // Default subscriber count
             $db->bind(':default_funding_threshold', 50.00);
             $db->bind(':commission_rate', 5.00);
             $db->bind(':is_verified', 1);
@@ -116,7 +139,9 @@ if ($_POST) {
             
             error_log("Creator profile created successfully for new user " . $user_id . " with creator ID " . $creator_id);
             
-            header("refresh:3;url=../dashboard/index.php");
+            // Redirect to dashboard instead of showing success message
+            header('Location: ../dashboard/index.php');
+            exit;
             
         } catch (Exception $e) {
             $db->cancelTransaction();
@@ -143,7 +168,7 @@ if ($_POST) {
         .btn { background: #ff0000; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { background: #cc0000; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
+        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
         small { color: #666; font-size: 14px; }
         
@@ -174,24 +199,14 @@ if ($_POST) {
                 <?php echo htmlspecialchars($success); ?><br><br>
                 <strong>Redirecting to your dashboard...</strong>
             </div>
-        <?php endif; ?>
-
-        <?php if (!$success): ?>
+        <?php else: ?>
             <form method="POST" id="creatorForm">
                 <div class="form-group">
                     <label>YouTube Channel URL:</label>
                     <input type="url" name="platform_url" required 
                            placeholder="https://youtube.com/@yourchannel"
                            value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>">
-                    <small>Your main YouTube channel URL</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Subscriber Count:</label>
-                    <input type="number" name="subscriber_count" min="100" max="100000000" required
-                           placeholder="1000"
-                           value="<?php echo isset($_POST['subscriber_count']) ? htmlspecialchars($_POST['subscriber_count']) : ''; ?>">
-                    <small>Must have at least 100 subscribers</small>
+                    <small>Your main YouTube channel URL - we'll verify it's a real, working channel</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -199,7 +214,7 @@ if ($_POST) {
                 </button>
                 
                 <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-                    By completing setup, you agree to create content within 48 hours of funding
+                    We'll verify your channel exists before completing setup
                 </div>
             </form>
         <?php endif; ?>
@@ -208,24 +223,17 @@ if ($_POST) {
     <script>
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
         const youtubeUrl = document.querySelector('input[name="platform_url"]').value.trim();
-        const subscribers = parseInt(document.querySelector('input[name="subscriber_count"]').value);
         
         // Validation
-        if (!youtubeUrl || !youtubeUrl.includes('youtube.com')) {
+        if (!youtubeUrl || (!youtubeUrl.includes('youtube.com/@') && !youtubeUrl.includes('youtube.com/c/') && !youtubeUrl.includes('youtube.com/channel/') && !youtubeUrl.includes('youtube.com/user/'))) {
             e.preventDefault();
-            alert('Please enter a valid YouTube channel URL');
-            return;
-        }
-        
-        if (subscribers < 100) {
-            e.preventDefault();
-            alert('Minimum 100 subscribers required');
+            alert('Please enter a valid YouTube channel URL (youtube.com/@channel, youtube.com/c/channel, etc.)');
             return;
         }
         
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = '⏳ Completing Setup...';
+        submitBtn.innerHTML = '⏳ Verifying Channel & Completing Setup...';
         submitBtn.disabled = true;
     });
     </script>
