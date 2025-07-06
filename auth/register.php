@@ -1,13 +1,13 @@
 <?php
-// auth/register.php - Updated with creator flow that delays account creation
+// auth/register.php - Updated to always redirect to dashboard (never to landing page)
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Redirect if already logged in
+// Redirect if already logged in - ALWAYS go to dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../index.php');
+    header('Location: ../dashboard/index.php');
     exit;
 }
 
@@ -82,6 +82,7 @@ if ($_POST) {
                 // Regenerate session ID for security
                 session_regenerate_id(true);
                 
+                // ALWAYS redirect to dashboard (never to landing page)
                 header('Location: ../dashboard/index.php');
                 exit;
             } else {
@@ -188,10 +189,7 @@ if ($_POST) {
     </form>
 
     <div class="links">
-        <?php if (!isset($_GET['type'])): ?>
-            <a href="login.php">Already have an account? Login here</a><br>
-        <?php endif; ?>
-        <a href="../index.php">Back to Home</a>
+        <a href="login.php">Already have an account? Login here</a>
     </div>
 
     <script>
