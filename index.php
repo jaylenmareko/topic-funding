@@ -11,8 +11,8 @@ if (isset($_SESSION['user_id'])) {
     $is_creator = $db->single();
     
     if ($is_creator) {
-        // Creators go to dashboard
-        header('Location: dashboard/index.php');
+        // Creators go to browse creators (same as fans)
+        header('Location: creators/index.php');
     } else {
         // Fans go to browse YouTubers (main page for fans)
         header('Location: creators/index.php');
@@ -49,7 +49,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $is_creator = $db->single();
             
             if ($is_creator) {
-                header('Location: dashboard/index.php'); // Creators go to dashboard
+                header('Location: creators/index.php'); // Creators go to browse creators
             } else {
                 header('Location: creators/index.php'); // Fans go to browse YouTubers
             }
