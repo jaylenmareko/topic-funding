@@ -1,7 +1,21 @@
 <?php
-// creators/index.php - Simplified browse creators page
+// creators/index.php - Simplified browse creators page with creator access control
 session_start();
 require_once '../config/database.php';
+
+// Check if logged in user is a creator - redirect them to dashboard
+if (isset($_SESSION['user_id'])) {
+    $db = new Database();
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $is_creator = $db->single();
+    
+    if ($is_creator) {
+        // Creators should not access this page - redirect to dashboard
+        header('Location: ../dashboard/index.php');
+        exit;
+    }
+}
 
 try {
     $helper = new DatabaseHelper();
@@ -38,7 +52,17 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $_SESSION['full_name'] = $user->full_name;
             $_SESSION['email'] = $user->email;
             session_regenerate_id(true);
-            header('Location: ' . $_SERVER['REQUEST_URI']);
+            
+            // Check if user is a creator - redirect to dashboard
+            $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+            $db->bind(':user_id', $user->id);
+            $is_creator = $db->single();
+            
+            if ($is_creator) {
+                header('Location: ../dashboard/index.php'); // Creators go to dashboard
+            } else {
+                header('Location: ' . $_SERVER['REQUEST_URI']); // Fans stay here
+            }
             exit;
         } else {
             $login_error = 'Invalid email or password';
