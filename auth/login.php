@@ -121,7 +121,7 @@ if ($_POST) {
     </form>
     
     <div class="links">
-        <a href="register.php">Don't have an account? Sign up here</a>
+        <a href="../index.php">← Back to Home</a>
     </div>
 </body>
 </html>
