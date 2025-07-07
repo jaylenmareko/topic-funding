@@ -1,5 +1,5 @@
 <?php
-// index.php - Updated to redirect fans to creators page, creators to dashboard
+// index.php - Updated to redirect creators to creators/index.php
 session_start();
 require_once 'config/database.php';
 
