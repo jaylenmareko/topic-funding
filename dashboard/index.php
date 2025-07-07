@@ -434,7 +434,6 @@ if ($creator) {
 $db->query('
     SELECT 
         COUNT(*) as total_contributions,
-        COALESCE(SUM(amount), 0) as total_contributed,
         COUNT(DISTINCT topic_id) as topics_funded
     FROM contributions 
     WHERE user_id = :user_id AND payment_status = "completed"
@@ -747,6 +746,11 @@ $recent_contributions = $db->resultSet();
                     <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                     <p>Fund topics and support your favorite creators</p>
                 </div>
+                <div class="welcome-actions">
+                    <a href="../creators/index.php" class="welcome-btn welcome-btn-primary">
+                        🔍 Browse YouTubers
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -815,8 +819,4 @@ $recent_contributions = $db->resultSet();
         </div>
     </div>
 </body>
-</html>number">$<?php echo number_format($user_stats->total_contributed, 0); ?></div>
-                <div class="stat-label">Total Contributed</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-
+</html>
