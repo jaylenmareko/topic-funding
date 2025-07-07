@@ -281,7 +281,7 @@ if ($creator) {
         <div class="stripe-alert">
             <h3>⚠️ Payment Setup Required</h3>
             <p>You need to connect your Stripe account to receive payments when you complete topics.</p>
-            <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
+            <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
                 💳 Setup Instant Payments
             </a>
         </div>
@@ -308,7 +308,7 @@ if ($creator) {
                     <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
                 </p>
                 <div style="margin-top: 15px;">
-                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
+                    <a href="upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
                         🎬 Upload Content Now
                     </a>
                     <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
@@ -381,7 +381,7 @@ if ($creator) {
                 
                 <?php if ($stripe_connected): ?>
                 <div style="margin-top: 20px; text-align: center;">
-                    <a href="../creators/stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">
+                    <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">
                         💳 View Payouts
                     </a>
                 </div>
@@ -470,7 +470,7 @@ $recent_contributions = $db->resultSet();
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
-        /* Welcome Header */
+        /* Welcome Header - REMOVED Browse YouTubers button */
         .welcome-header { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             color: white; 
@@ -480,11 +480,7 @@ $recent_contributions = $db->resultSet();
             box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
         }
         .welcome-content { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            flex-wrap: wrap; 
-            gap: 20px; 
+            text-align: center;
         }
         .welcome-text h1 { 
             font-size: 2.5rem; 
@@ -497,43 +493,6 @@ $recent_contributions = $db->resultSet();
             margin: 0; 
             opacity: 0.9; 
             font-weight: 400;
-        }
-        .welcome-actions {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .welcome-btn {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .welcome-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-            color: white;
-            text-decoration: none;
-        }
-        .welcome-btn-primary {
-            background: #28a745;
-            color: white;
-            border-color: #28a745;
-        }
-        .welcome-btn-primary:hover {
-            background: #218838;
-            color: white;
-            border-color: #218838;
         }
         
         /* Stats Grid */
@@ -705,33 +664,12 @@ $recent_contributions = $db->resultSet();
         
         /* Responsive Design */
         @media (max-width: 768px) {
-            .welcome-content { 
-                flex-direction: column; 
-                text-align: center; 
-                gap: 20px;
-            }
-            .welcome-text h1 { font-size: 2rem; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .welcome-actions {
-                justify-content: center;
-                width: 100%;
-            }
-            .welcome-btn {
-                flex: 1;
-                justify-content: center;
-                min-width: 140px;
-            }
         }
         
         @media (max-width: 480px) {
             .container { padding: 15px; }
             .stats-grid { grid-template-columns: 1fr; }
-            .welcome-actions {
-                flex-direction: column;
-            }
-            .welcome-btn {
-                width: 100%;
-            }
         }
     </style>
 </head>
@@ -739,17 +677,12 @@ $recent_contributions = $db->resultSet();
     <?php renderNavigation('dashboard'); ?>
 
     <div class="container">
-        <!-- Welcome Header -->
+        <!-- Welcome Header - REMOVED Browse YouTubers button -->
         <div class="welcome-header">
             <div class="welcome-content">
                 <div class="welcome-text">
                     <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                     <p>Fund topics and support your favorite creators</p>
-                </div>
-                <div class="welcome-actions">
-                    <a href="../creators/index.php" class="welcome-btn welcome-btn-primary">
-                        🔍 Browse YouTubers
-                    </a>
                 </div>
             </div>
         </div>
@@ -811,9 +744,6 @@ $recent_contributions = $db->resultSet();
                             </div>
                         </div>
                     <?php endforeach; ?>
-                </div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="../creators/index.php" class="btn btn-success">Browse More YouTubers</a>
                 </div>
             <?php endif; ?>
         </div>
