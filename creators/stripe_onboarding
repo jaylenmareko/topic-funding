@@ -1,8 +1,7 @@
 <?php
-// creators/stripe_onboarding.php - Simplified version with removed sections
+// creators/stripe_onboarding.php - Fixed version without redirect loops
 session_start();
 require_once '../config/database.php';
-require_once '../config/stripe_connect.php';
 require_once '../config/navigation.php';
 
 // Check if user is logged in
@@ -13,7 +12,16 @@ if (!isset($_SESSION['user_id'])) {
 
 $creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
 $db = new Database();
-$stripeConnect = new StripeConnectManager();
+
+// If no creator_id provided, find it from session
+if (!$creator_id) {
+    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $creator_check = $db->single();
+    if ($creator_check) {
+        $creator_id = $creator_check->id;
+    }
+}
 
 // Get creator info and verify ownership
 $db->query('
@@ -27,51 +35,60 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
 if (!$creator) {
-    header('Location: ../index.php');
+    header('Location: ../dashboard/index.php');
     exit;
 }
 
 $errors = [];
 $success = '';
 
+// Simple status check without external API calls to prevent redirect loops
+$stripe_connected = !empty($creator->stripe_account_id);
+$stripe_ready = ($creator->stripe_payouts_enabled == 1);
+
 // Handle Stripe account creation or onboarding
-if ($_POST && isset($_POST['start_onboarding'])) {
-    // Check if creator already has Stripe account
-    if (!$creator->stripe_account_id) {
-        // Create new Stripe Connect account
-        $account_result = $stripeConnect->createConnectAccount(
-            $creator_id, 
-            $creator->email, 
-            $creator->display_name
-        );
-        
-        if (!$account_result['success']) {
-            $errors[] = $account_result['error'];
-        } else {
-            // Refresh creator data
-            $db->query('SELECT * FROM creators WHERE id = :creator_id');
-            $db->bind(':creator_id', $creator_id);
-            $creator = $db->single();
+if ($_POST && isset($_POST['start_onboarding']) && empty($errors)) {
+    try {
+        // Check if creator already has Stripe account
+        if (!$creator->stripe_account_id) {
+            // Create new Stripe Connect account
+            $account_result = $stripeConnect->createConnectAccount(
+                $creator_id, 
+                $creator->email, 
+                $creator->display_name
+            );
+            
+            if (!$account_result['success']) {
+                $errors[] = "Failed to create Stripe account: " . $account_result['error'];
+            } else {
+                // Refresh creator data
+                $db->query('SELECT * FROM creators WHERE id = :creator_id');
+                $db->bind(':creator_id', $creator_id);
+                $creator = $db->single();
+                $stripe_account_created = true;
+            }
         }
-    }
-    
-    // Create onboarding link
-    if (empty($errors) && $creator->stripe_account_id) {
-        $onboarding_result = $stripeConnect->createOnboardingLink($creator_id);
         
-        if ($onboarding_result['success']) {
-            // Redirect to Stripe onboarding
-            header('Location: ' . $onboarding_result['onboarding_url']);
-            exit;
-        } else {
-            $errors[] = $onboarding_result['error'];
+        // Create onboarding link if no errors
+        if (empty($errors) && $creator->stripe_account_id) {
+            $onboarding_result = $stripeConnect->createOnboardingLink($creator_id);
+            
+            if ($onboarding_result['success']) {
+                $onboarding_url = $onboarding_result['onboarding_url'];
+                // Don't redirect immediately, show the link to user
+            } else {
+                $errors[] = "Failed to create onboarding link: " . $onboarding_result['error'];
+            }
         }
+        
+    } catch (Exception $e) {
+        $errors[] = "An error occurred while setting up Stripe. Please try again.";
+        error_log("Stripe onboarding error: " . $e->getMessage());
     }
 }
 
-// Check current onboarding status
-$account_ready = $stripeConnect->isAccountReady($creator_id);
-$has_stripe_account = !empty($creator->stripe_account_id);
+// Check current status without external API calls to prevent redirects
+$account_ready = $stripe_ready;
 
 // Get pending topics count
 $db->query('
@@ -111,6 +128,10 @@ $pending_topics = $db->single()->count;
         .requirement-list ul { margin: 0; padding-left: 20px; }
         .requirement-list li { margin: 8px 0; color: #666; }
         .security-note { background: #e8f5e8; padding: 15px; border-radius: 6px; margin: 15px 0; font-size: 14px; }
+        .onboarding-link { background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+        .nav-links { margin-bottom: 20px; }
+        .nav-links a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        .nav-links a:hover { text-decoration: underline; }
         
         @media (max-width: 768px) {
             .container { padding: 15px; }
@@ -122,6 +143,11 @@ $pending_topics = $db->single()->count;
     <?php renderNavigation('creator_dashboard'); ?>
 
     <div class="container">
+        <div class="nav-links">
+            <a href="../dashboard/index.php">← Back to Dashboard</a>
+            <a href="../creators/profile.php?id=<?php echo $creator_id; ?>">View My Profile</a>
+        </div>
+
         <div class="header">
             <h1>💳 Payment Setup for <?php echo htmlspecialchars($creator->display_name); ?></h1>
             <p>Set up instant payments to receive your earnings automatically when you complete topics</p>
@@ -146,7 +172,7 @@ $pending_topics = $db->single()->count;
                     <p>Your Stripe account is active and ready to receive automatic payouts when you complete topics.</p>
                 </div>
             </div>
-        <?php elseif ($has_stripe_account): ?>
+        <?php elseif ($stripe_connected): ?>
             <div class="status-indicator status-pending">
                 <div class="status-icon">⏳</div>
                 <div class="status-content">
@@ -187,7 +213,7 @@ $pending_topics = $db->single()->count;
             <div style="text-align: center; margin-top: 30px;">
                 <form method="POST">
                     <button type="submit" name="start_onboarding" class="btn btn-success btn-large">
-                        <?php echo $has_stripe_account ? '📝 Continue Setup' : '🚀 Start Payment Setup'; ?>
+                        <?php echo $stripe_connected ? '📝 Continue Setup' : '🚀 Start Payment Setup'; ?>
                     </button>
                 </form>
                 <p style="margin-top: 15px; color: #666; font-size: 14px;">
@@ -201,6 +227,16 @@ $pending_topics = $db->single()->count;
         <div class="setup-card">
             <h2>💸 How You Get Paid</h2>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">1️⃣</div>
+                    <h4>Topic Gets Funded</h4>
+                    <p style="color: #666; font-size: 14px;">Community funds your topic to the goal amount</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">2️⃣</div>
+                    <h4>You Create Content</h4>
+                    <p style="color: #666; font-size: 14px;">You have 48 hours to create and upload content</p>
+                </div>
                 <div style="text-align: center; padding: 20px;">
                     <div style="font-size: 48px; margin-bottom: 15px;">3️⃣</div>
                     <h4>Instant Payment</h4>
@@ -216,26 +252,44 @@ $pending_topics = $db->single()->count;
             <p>Your payment setup is complete. You'll now receive automatic payouts when you complete funded topics.</p>
             
             <div style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
-                <a href="dashboard.php" class="btn">📊 Creator Dashboard</a>
+                <a href="../dashboard/index.php" class="btn">📊 Creator Dashboard</a>
                 <a href="../topics/create.php" class="btn btn-success">💡 Create New Topic</a>
                 <?php if ($pending_topics > 0): ?>
-                    <a href="dashboard.php#funded-topics" class="btn" style="background: #ffc107; color: #212529;">
+                    <a href="../dashboard/index.php#funded-topics" class="btn" style="background: #ffc107; color: #212529;">
                         ⚡ Complete Funded Topics (<?php echo $pending_topics; ?>)
                     </a>
                 <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Debug Information (remove in production) -->
+        <?php if (true): // Set to false in production ?>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>Debug Info:</strong><br>
+            Creator ID: <?php echo $creator_id; ?><br>
+            Has Stripe Account: <?php echo $stripe_connected ? 'Yes' : 'No'; ?><br>
+            Account Ready: <?php echo $account_ready ? 'Yes' : 'No'; ?><br>
+            Stripe Account ID: <?php echo $creator->stripe_account_id ?? 'None'; ?><br>
+            Onboarding Status: <?php echo $creator->stripe_onboarding_status ?? 'None'; ?><br>
+            Payouts Enabled: <?php echo $creator->stripe_payouts_enabled ?? 'No'; ?><br>
+        </div>
+        <?php endif; ?>
     </div>
+
+    <script>
+    // Handle external link clicks
+    document.addEventListener('DOMContentLoaded', function() {
+        const externalLinks = document.querySelectorAll('a[target="_blank"]');
+        externalLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Add small delay to ensure link opens
+                setTimeout(() => {
+                    console.log('External link clicked:', this.href);
+                }, 100);
+            });
+        });
+    });
+    </script>
 </body>
-</html> margin-bottom: 15px;">1️⃣</div>
-                    <h4>Topic Gets Funded</h4>
-                    <p style="color: #666; font-size: 14px;">Community funds your topic to the goal amount</p>
-                </div>
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 48px; margin-bottom: 15px;">2️⃣</div>
-                    <h4>You Create Content</h4>
-                    <p style="color: #666; font-size: 14px;">You have 48 hours to create and upload content</p>
-                </div>
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 48px;
+</html>
