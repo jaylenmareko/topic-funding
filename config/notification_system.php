@@ -1,5 +1,5 @@
 <?php
-// config/notification_system.php - Updated with direct topic creation notifications
+// config/notification_system.php - Updated with 90% partial refund system
 require_once 'database.php';
 require_once 'refund_helper.php';
 require_once 'platform_fee_helper.php';
@@ -133,7 +133,7 @@ class NotificationSystem {
             • Post on social media to get more supporters
             • The more funding, the faster content gets created!
             
-            🛡️ Protection: If the creator doesn't deliver content within 48 hours of funding, you'll get a full refund automatically.
+            🛡️ Protection: If the creator doesn't deliver content within 48 hours of funding, you'll get a 90% refund automatically (10% covers platform fees and delivery guarantee).
             
             Track progress in your dashboard: https://topiclaunch.com/dashboard/index.php
             
@@ -252,7 +252,7 @@ class NotificationSystem {
             3. Update the topic with your content URL before the deadline
             
             ⚠️ CRITICAL: If you don't upload content within 48 hours:
-            - All contributors will be automatically refunded
+            - All contributors will be automatically refunded 90% of their contributions
             - The topic will be marked as failed
             - This may affect your creator status
             
@@ -321,7 +321,7 @@ class NotificationSystem {
                 ✅ You can access the content immediately
                 
                 ⚠️ Protection Policy:
-                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded the full amount ($" . number_format($contributor->amount, 2) . ") to your original payment method.
+                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded 90% of your contribution ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs and delivery guarantee services.
                 
                 💡 Platform Info:
                 TopicLaunch operates on a 10% platform fee model - creators receive 90% of funding to ensure sustainable content creation.
@@ -424,7 +424,7 @@ class NotificationSystem {
     }
     
     /**
-     * Process auto-refunds for overdue topics (run via cron job)
+     * Process auto-refunds for overdue topics (run via cron job) - 90% PARTIAL REFUND
      */
     public function processAutoRefunds() {
         // Get topics past deadline without content
@@ -444,10 +444,10 @@ class NotificationSystem {
             try {
                 $this->db->beginTransaction();
                 
-                // Process refunds for all contributions
-                $refund_result = $this->refundManager->refundAllTopicContributions(
+                // Process 90% refunds for all contributions
+                $refund_result = $this->refundManager->refundAllTopicContributions90Percent(
                     $topic->id, 
-                    'Creator failed to deliver content within 48 hours'
+                    'Creator failed to deliver content within 48 hours - 90% refund (10% platform fee retained)'
                 );
                 
                 // Update topic status
@@ -455,25 +455,25 @@ class NotificationSystem {
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
                 
-                // Reset platform fee processing since topic failed
+                // Keep platform fee as revenue since topic failed
                 $this->db->query('
-                    UPDATE topics 
-                    SET fee_processed = 0, platform_fee_amount = 0, creator_payout_amount = 0 
-                    WHERE id = :id
+                    UPDATE platform_fees 
+                    SET status = "retained_failed_delivery", processed_at = NOW()
+                    WHERE topic_id = :id
                 ');
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
                 
-                // Mark platform fee as failed
-                $this->db->query('UPDATE platform_fees SET status = "failed" WHERE topic_id = :id');
+                // Mark creator payout as failed
+                $this->db->query('UPDATE creator_payouts SET status = "failed" WHERE topic_id = :id');
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
                 
                 // Notify creator of failure
                 $this->sendCreatorFailureNotification($topic, $refund_result);
                 
-                // Notify contributors of refund
-                $this->sendContributorRefundNotifications($topic->id, $topic, $refund_result);
+                // Notify contributors of 90% refund
+                $this->sendContributor90PercentRefundNotifications($topic->id, $topic, $refund_result);
                 
                 $this->db->endTransaction();
                 
@@ -481,7 +481,8 @@ class NotificationSystem {
                     'topic_id' => $topic->id,
                     'topic_title' => $topic->title,
                     'refunds_processed' => $refund_result['refunds_processed'],
-                    'total_refunded' => $refund_result['total_refunded']
+                    'total_refunded' => $refund_result['total_refunded'],
+                    'platform_revenue_retained' => $refund_result['total_refunded'] * 0.111 // ~10% of original
                 ];
                 
             } catch (Exception $e) {
@@ -518,14 +519,14 @@ class NotificationSystem {
                 📅 Deadline was: " . date('M j, Y g:i A', strtotime($topic->content_deadline)) . "
                 
                 ⚠️ Actions Taken:
-                • All contributors have been automatically refunded
+                • All contributors have been automatically refunded 90% of their contributions
                 • " . $refund_result['refunds_processed'] . " refunds processed
-                • Total refunded: $" . number_format($refund_result['total_refunded'], 2) . "
+                • Total refunded to users: $" . number_format($refund_result['total_refunded'], 2) . "
                 • Topic status changed to 'Failed'
                 • No creator payout will be processed
                 
                 💰 Financial Impact:
-                Since the content deadline was missed, the platform fee has been reversed and no payout will be issued.
+                Since the content deadline was missed, no payout will be issued. The 10% platform fee has been retained to cover processing costs and delivery guarantee services.
                 
                 📋 This affects your creator performance:
                 • Failed deliveries may impact future topic approvals
@@ -547,30 +548,39 @@ class NotificationSystem {
     }
     
     /**
-     * Send refund notifications to contributors
+     * Send 90% refund notifications to contributors
      */
-    private function sendContributorRefundNotifications($topic_id, $topic, $refund_result) {
+    private function sendContributor90PercentRefundNotifications($topic_id, $topic, $refund_result) {
         foreach ($refund_result['details'] as $detail) {
             if ($detail['success']) {
-                $subject = "💰 Automatic Refund Processed - " . $topic->title;
+                $original_amount = $detail['original_amount'];
+                $refund_amount = $detail['refund_amount'];
+                $platform_fee_kept = $original_amount - $refund_amount;
+                
+                $subject = "💰 90% Refund Processed - " . $topic->title;
                 $message = "
                     Hi,
                     
-                    A refund has been automatically processed for your contribution.
+                    A 90% refund has been automatically processed for your contribution.
                     
                     📺 Topic: " . $topic->title . "
                     👥 Creator: " . $topic->creator_name . "
-                    💰 Refund Amount: $" . number_format($detail['amount'], 2) . "
+                    💰 Original Contribution: $" . number_format($original_amount, 2) . "
+                    💰 Refund Amount: $" . number_format($refund_amount, 2) . " (90%)
+                    💰 Platform Fee Retained: $" . number_format($platform_fee_kept, 2) . " (10%)
                     
                     🔄 Reason for Refund:
-                    The creator did not deliver the requested content within the 48-hour deadline. As per our protection policy, all contributors have been automatically refunded.
+                    The creator did not deliver the requested content within the 48-hour deadline. As per our delivery guarantee policy, you receive a 90% refund.
                     
                     💳 Refund Details:
-                    • Amount: $" . number_format($detail['amount'], 2) . "
-                    • Will appear in your original payment method within 5-10 business days
+                    • Refund: $" . number_format($refund_amount, 2) . " will appear in your original payment method within 5-10 business days
+                    • Platform fee: $" . number_format($platform_fee_kept, 2) . " retained to cover processing costs and delivery guarantee services
                     • No action required from you
                     
-                    We apologize for this inconvenience. Our 48-hour delivery guarantee ensures you only pay for content that gets created.
+                    📋 Our Policy:
+                    The 10% platform fee covers payment processing, hosting, customer support, and our delivery guarantee system. This ensures we can continue providing reliable service and protection for all users.
+                    
+                    We apologize for this inconvenience. Our delivery guarantee system ensures accountability while maintaining platform sustainability.
                     
                     🔍 Browse more topics: https://topiclaunch.com/topics/
                     
