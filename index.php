@@ -1,9 +1,9 @@
 <?php
-// index.php - Updated to redirect creators to creators/index.php
+// index.php - Fixed to prevent redirect loops
 session_start();
 require_once 'config/database.php';
 
-// REDIRECT LOGGED IN USERS BASED ON ROLE
+// REDIRECT LOGGED IN USERS BASED ON ROLE - FIXED
 if (isset($_SESSION['user_id'])) {
     $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
@@ -11,11 +11,11 @@ if (isset($_SESSION['user_id'])) {
     $is_creator = $db->single();
     
     if ($is_creator) {
-        // Creators go to browse creators (same as fans)
-        header('Location: creators/index.php');
+        // FIXED: Creators go to their creator dashboard
+        header('Location: creators/dashboard.php');
     } else {
-        // Fans go to browse YouTubers (main page for fans)
-        header('Location: creators/index.php');
+        // FIXED: Fans go to main dashboard (not creators/index.php)
+        header('Location: dashboard/index.php');
     }
     exit;
 }
@@ -49,9 +49,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $is_creator = $db->single();
             
             if ($is_creator) {
-                header('Location: creators/index.php'); // Creators go to browse creators
+                header('Location: creators/dashboard.php'); // FIXED: Creators go to creator dashboard
             } else {
-                header('Location: creators/index.php'); // Fans go to browse YouTubers
+                header('Location: dashboard/index.php'); // FIXED: Fans go to fan dashboard
             }
             exit;
         } else {
