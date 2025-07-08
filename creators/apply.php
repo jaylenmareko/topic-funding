@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Updated to redirect existing logged-in users appropriately
+// creators/apply.php - Simplified with @username and CSRF fix
 session_start();
 require_once '../config/database.php';
 
@@ -32,22 +32,33 @@ $success = '';
 $pending_registration = $_SESSION['pending_creator_registration'];
 
 if ($_POST) {
-    // URL validation
-    $platform_url = trim($_POST['platform_url'] ?? '');
+    // Add CSRF token generation if not exists
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
     
-    // Validate URL format and check if it's a real YouTube channel
-    if (empty($platform_url)) {
-        $errors[] = "YouTube channel URL is required";
-    } elseif (!filter_var($platform_url, FILTER_VALIDATE_URL)) {
-        $errors[] = "Please enter a valid URL";
-    } elseif (!preg_match('/youtube\.com\/(c\/|channel\/|user\/|@)/', $platform_url)) {
-        $errors[] = "Please enter a valid YouTube channel URL (youtube.com/@channel or youtube.com/c/channel)";
-    } else {
-        // Check if the URL actually exists (real channel check)
-        $headers = @get_headers($platform_url);
-        if (!$headers || strpos($headers[0], '200') === false) {
-            $errors[] = "This YouTube channel URL doesn't seem to exist. Please check the URL and try again.";
-        }
+    // CSRF Protection - simplified
+    $token = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $token)) {
+        $errors[] = "Security token expired. Please try again.";
+    }
+    
+    $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+    $paypal_email = trim($_POST['paypal_email'] ?? '');
+    
+    // Validation
+    if (empty($youtube_handle)) {
+        $errors[] = "YouTube handle is required";
+    } elseif (strlen($youtube_handle) < 3) {
+        $errors[] = "YouTube handle must be at least 3 characters";
+    } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
+        $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+    }
+    
+    if (empty($paypal_email)) {
+        $errors[] = "PayPal email is required for payouts";
+    } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Please enter a valid PayPal email address";
     }
     
     // Create both user account and creator profile atomically
@@ -72,7 +83,10 @@ if ($_POST) {
             // Generate creator username from user username
             $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $pending_registration['username'])) . '_' . $user_id;
             
-            // Create creator profile
+            // Construct YouTube URL
+            $platform_url = 'https://youtube.com/@' . $youtube_handle;
+            
+            // Create creator profile with manual payout system
             $db->query('
                 INSERT INTO creators (
                     username, 
@@ -87,7 +101,9 @@ if ($_POST) {
                     is_verified, 
                     is_active, 
                     applicant_user_id, 
-                    application_status
+                    application_status,
+                    paypal_email,
+                    manual_payout_threshold
                 ) VALUES (
                     :username, 
                     :display_name, 
@@ -101,14 +117,16 @@ if ($_POST) {
                     :is_verified, 
                     :is_active, 
                     :applicant_user_id, 
-                    :application_status
+                    :application_status,
+                    :paypal_email,
+                    :manual_payout_threshold
                 )
             ');
             
             $db->bind(':username', $username);
             $db->bind(':display_name', $pending_registration['username']); // Use username as display name
             $db->bind(':email', $pending_registration['email']);
-            $db->bind(':bio', 'YouTube Creator');
+            $db->bind(':bio', 'YouTube Creator on TopicLaunch');
             $db->bind(':platform_type', 'youtube');
             $db->bind(':platform_url', $platform_url);
             $db->bind(':subscriber_count', 1000); // Default subscriber count
@@ -118,6 +136,8 @@ if ($_POST) {
             $db->bind(':is_active', 1);
             $db->bind(':applicant_user_id', $user_id);
             $db->bind(':application_status', 'approved');
+            $db->bind(':paypal_email', $paypal_email);
+            $db->bind(':manual_payout_threshold', 50.00); // $50 minimum payout
             $db->execute();
             
             $creator_id = $db->lastInsertId();
@@ -150,11 +170,16 @@ if ($_POST) {
         }
     }
 }
+
+// Generate CSRF token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Join as Creator - TopicLaunch</title>
+    <title>Join as YouTuber - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -164,13 +189,18 @@ if ($_POST) {
         .header p { margin: 0; color: #666; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .input-group { position: relative; display: flex; align-items: center; }
+        .input-prefix { background: #e9ecef; border: 1px solid #ddd; border-right: none; padding: 12px 15px; border-radius: 6px 0 0 6px; color: #666; font-weight: bold; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        .input-group input { border-left: none; border-radius: 0 6px 6px 0; }
         .btn { background: #ff0000; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { background: #cc0000; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
         small { color: #666; font-size: 14px; }
+        .info-box { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .payout-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -181,9 +211,9 @@ if ($_POST) {
     <div class="container">
         <div class="header">
             <h1>📺 YouTuber Profile Setup</h1>
-            <p>Complete your YouTuber profile</p>
+            <p>Complete your YouTuber profile to start earning</p>
             <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
-                <strong>Username:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
+                <strong>Account:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
                 <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
             </div>
         </div>
@@ -200,13 +230,42 @@ if ($_POST) {
                 <strong>Redirecting to your dashboard...</strong>
             </div>
         <?php else: ?>
+            <div class="info-box">
+                <h4 style="margin-top: 0;">📋 What you need:</h4>
+                • Your YouTube channel handle (@username)<br>
+                • PayPal email for receiving payments<br>
+                • Takes less than 2 minutes to complete
+            </div>
+
+            <div class="payout-info">
+                <h4 style="margin-top: 0;">💰 Payout System:</h4>
+                • Earn 90% of funded topics (10% platform fee)<br>
+                • $50 minimum payout threshold<br>
+                • Manual PayPal payouts within 3-5 business days<br>
+                • Request payouts from your dashboard
+            </div>
+
             <form method="POST" id="creatorForm">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                
                 <div class="form-group">
-                    <label>YouTube Channel URL:</label>
-                    <input type="url" name="platform_url" required 
-                           placeholder="https://youtube.com/@yourchannel"
-                           value="<?php echo isset($_POST['platform_url']) ? htmlspecialchars($_POST['platform_url']) : ''; ?>">
-                    <small>Your main YouTube channel URL - we'll verify it's a real, working channel</small>
+                    <label for="youtube_handle">YouTube Handle: *</label>
+                    <div class="input-group">
+                        <span class="input-prefix">youtube.com/@</span>
+                        <input type="text" id="youtube_handle" name="youtube_handle" required 
+                               placeholder="yourchannelname"
+                               pattern="[a-zA-Z0-9_.-]{3,}"
+                               value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>">
+                    </div>
+                    <small>Example: MrBeast, PewDiePie, etc. (Your @username without the @)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="paypal_email">PayPal Email for Payouts: *</label>
+                    <input type="email" id="paypal_email" name="paypal_email" required 
+                           placeholder="your-paypal@email.com"
+                           value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>">
+                    <small>This is where you'll receive your earnings via PayPal</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -214,7 +273,7 @@ if ($_POST) {
                 </button>
                 
                 <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-                    We'll verify your channel exists before completing setup
+                    We'll create your YouTube URL automatically
                 </div>
             </form>
         <?php endif; ?>
@@ -222,19 +281,47 @@ if ($_POST) {
 
     <script>
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
-        const youtubeUrl = document.querySelector('input[name="platform_url"]').value.trim();
+        const youtubeHandle = document.querySelector('input[name="youtube_handle"]').value.trim();
+        const paypalEmail = document.querySelector('input[name="paypal_email"]').value.trim();
         
         // Validation
-        if (!youtubeUrl || (!youtubeUrl.includes('youtube.com/@') && !youtubeUrl.includes('youtube.com/c/') && !youtubeUrl.includes('youtube.com/channel/') && !youtubeUrl.includes('youtube.com/user/'))) {
+        if (!youtubeHandle || youtubeHandle.length < 3) {
             e.preventDefault();
-            alert('Please enter a valid YouTube channel URL (youtube.com/@channel, youtube.com/c/channel, etc.)');
+            alert('Please enter a valid YouTube handle (3+ characters)');
             return;
+        }
+        
+        if (!paypalEmail || !paypalEmail.includes('@')) {
+            e.preventDefault();
+            alert('Please enter a valid PayPal email address');
+            return;
+        }
+        
+        // Remove @ if user accidentally included it
+        if (youtubeHandle.startsWith('@')) {
+            document.querySelector('input[name="youtube_handle"]').value = youtubeHandle.substring(1);
         }
         
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = '⏳ Verifying Channel & Completing Setup...';
+        submitBtn.innerHTML = '⏳ Creating Your Profile...';
         submitBtn.disabled = true;
+    });
+
+    // Auto-format YouTube handle
+    document.getElementById('youtube_handle').addEventListener('input', function() {
+        let value = this.value;
+        // Remove @ if user types it
+        if (value.startsWith('@')) {
+            this.value = value.substring(1);
+        }
+        // Remove youtube.com/ if user pastes full URL
+        if (value.includes('youtube.com/')) {
+            const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
+            if (match) {
+                this.value = match[1];
+            }
+        }
     });
     </script>
 </body>
