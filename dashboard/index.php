@@ -1,5 +1,5 @@
 <?php
-// dashboard/index.php - Simplified fan dashboard focused on driving transactions
+// dashboard/index.php - Fixed to remove Browse YouTubers button for creators
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -124,36 +124,6 @@ if ($creator) {
             font-weight: bold;
         }
         
-        .stripe-alert {
-            background: #f8d7da;
-            border: 2px solid #dc3545;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .stripe-alert h3 {
-            color: #721c24;
-            margin: 0 0 10px 0;
-        }
-        .stripe-setup-btn {
-            background: #28a745;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 16px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-        .stripe-setup-btn:hover {
-            background: #218838;
-            color: white;
-            text-decoration: none;
-        }
-        
         /* Cards */
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
         .dashboard-card { 
@@ -276,17 +246,6 @@ if ($creator) {
             </div>
         </div>
         
-        <!-- Stripe Setup Alert -->
-        <?php if (!$stripe_connected): ?>
-        <div class="stripe-alert">
-            <h3>⚠️ Payment Setup Required</h3>
-            <p>You need to connect your Stripe account to receive payments when you complete topics.</p>
-            <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
-                💳 Setup Instant Payments
-            </a>
-        </div>
-        <?php endif; ?>
-        
         <!-- Urgent: Funded Topics Awaiting Content -->
         <?php if (!empty($urgent_topics)): ?>
         <div class="urgent-section">
@@ -308,7 +267,7 @@ if ($creator) {
                     <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
                 </p>
                 <div style="margin-top: 15px;">
-                    <a href="upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
+                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
                         🎬 Upload Content Now
                     </a>
                     <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
@@ -353,71 +312,37 @@ if ($creator) {
                 <?php endif; ?>
             </div>
             
-            <!-- Earnings & Stats -->
+            <!-- Quick Actions - REMOVED Browse YouTubers button for creators -->
             <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">💵 Earnings</h2>
-                    <span class="card-icon">📊</span>
+                <h3>⚡ Quick Actions</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Propose New Topic</a>
+                    <a href="../topics/index.php" class="btn">🔍 Browse All Topics</a>
+                    <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn">✏️ Edit Profile</a>
+                    <a href="../creators/request_payout.php" class="btn btn-success">💰 Request Payout</a>
                 </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <p class="stat-value">$<?php echo number_format($earnings->total_earned ?? 0, 2); ?></p>
-                        <p class="stat-label">Total Earned</p>
-                    </div>
-                    <div class="stat-item">
-                        <p class="stat-value">$<?php echo number_format($earnings->pending_earnings ?? 0, 2); ?></p>
-                        <p class="stat-label">Pending</p>
-                    </div>
-                    <div class="stat-item">
-                        <p class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></p>
-                        <p class="stat-label">Completed</p>
-                    </div>
-                    <div class="stat-item">
-                        <p class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></p>
-                        <p class="stat-label">Due Soon</p>
-                    </div>
-                </div>
-                
-                <?php if ($stripe_connected): ?>
-                <div style="margin-top: 20px; text-align: center;">
-                    <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">
-                        💳 View Payouts
-                    </a>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
-        
-        <!-- Recently Completed Topics -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h2 class="card-title">✅ Recent Completed Topics</h2>
-                <span class="card-icon">🎉</span>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></div>
+                <div class="stat-label">Due Soon</div>
             </div>
-            
-            <?php if (!empty($completed_topics)): ?>
-                <?php foreach (array_slice($completed_topics, 0, 5) as $topic): ?>
-                <div class="topic-item">
-                    <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                    <div class="topic-meta">
-                        <span><strong>$<?php echo number_format($topic->current_funding * 0.9, 2); ?></strong> earned</span>
-                        <span>Completed <?php echo date('M j, Y', strtotime($topic->completed_at)); ?></span>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" class="btn btn-primary">
-                            🎬 View Content
-                        </a>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">
-                    <p>No completed topics yet.</p>
-                    <p>Complete your first funded topic to see it here!</p>
-                </div>
-            <?php endif; ?>
         </div>
+
+        <!-- No Topics State -->
+        <?php if (empty($live_topics) && empty($urgent_topics) && empty($completed_topics)): ?>
+        <div style="text-align: center; margin-top: 40px; padding: 40px; background: white; border-radius: 12px;">
+            <h3>🚀 Ready to Start Creating?</h3>
+            <p>You don't have any topics yet. Wait for proposals or create your own!</p>
+            <div style="margin-top: 20px;">
+                <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Create First Topic</a>
+                <a href="../topics/index.php" class="btn">🔍 Browse Community Topics</a>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </body>
 </html>
@@ -470,7 +395,7 @@ $recent_contributions = $db->resultSet();
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
-        /* Welcome Header - REMOVED Browse YouTubers button */
+        /* Welcome Header */
         .welcome-header { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             color: white; 
@@ -677,7 +602,7 @@ $recent_contributions = $db->resultSet();
     <?php renderNavigation('dashboard'); ?>
 
     <div class="container">
-        <!-- Welcome Header - REMOVED Browse YouTubers button -->
+        <!-- Welcome Header -->
         <div class="welcome-header">
             <div class="welcome-content">
                 <div class="welcome-text">
@@ -749,4 +674,16 @@ $recent_contributions = $db->resultSet();
         </div>
     </div>
 </body>
-</html>
+</html>-value">$<?php echo number_format($earnings->total_earned ?? 0, 0); ?></div>
+                <div class="stat-label">Total Earnings</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">$<?php echo number_format($earnings->pending_earnings ?? 0, 0); ?></div>
+                <div class="stat-label">Pending Earnings</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></div>
+                <div class="stat-label">Completed Topics</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat
