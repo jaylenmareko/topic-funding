@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Simplified with @username and CSRF fix
+// creators/apply.php - Fixed CSRF and simplified with @username format
 session_start();
 require_once '../config/database.php';
 
@@ -31,149 +31,151 @@ $errors = [];
 $success = '';
 $pending_registration = $_SESSION['pending_creator_registration'];
 
-if ($_POST) {
-    // Add CSRF token generation if not exists
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    
-    // CSRF Protection - simplified
-    $token = $_POST['csrf_token'] ?? '';
-    if (!hash_equals($_SESSION['csrf_token'], $token)) {
-        $errors[] = "Security token expired. Please try again.";
-    }
-    
-    $youtube_handle = trim($_POST['youtube_handle'] ?? '');
-    $paypal_email = trim($_POST['paypal_email'] ?? '');
-    
-    // Validation
-    if (empty($youtube_handle)) {
-        $errors[] = "YouTube handle is required";
-    } elseif (strlen($youtube_handle) < 3) {
-        $errors[] = "YouTube handle must be at least 3 characters";
-    } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
-        $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
-    }
-    
-    if (empty($paypal_email)) {
-        $errors[] = "PayPal email is required for payouts";
-    } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = "Please enter a valid PayPal email address";
-    }
-    
-    // Create both user account and creator profile atomically
-    if (empty($errors)) {
-        try {
-            $db = new Database();
-            $db->beginTransaction();
-            
-            // Create user account from pending registration data
-            $db->query('
-                INSERT INTO users (username, email, password_hash, full_name) 
-                VALUES (:username, :email, :password_hash, :full_name)
-            ');
-            $db->bind(':username', $pending_registration['username']);
-            $db->bind(':email', $pending_registration['email']);
-            $db->bind(':password_hash', $pending_registration['password_hash']);
-            $db->bind(':full_name', $pending_registration['full_name']);
-            $db->execute();
-            
-            $user_id = $db->lastInsertId();
-            
-            // Generate creator username from user username
-            $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $pending_registration['username'])) . '_' . $user_id;
-            
-            // Construct YouTube URL
-            $platform_url = 'https://youtube.com/@' . $youtube_handle;
-            
-            // Create creator profile with manual payout system
-            $db->query('
-                INSERT INTO creators (
-                    username, 
-                    display_name, 
-                    email, 
-                    bio, 
-                    platform_type, 
-                    platform_url, 
-                    subscriber_count, 
-                    default_funding_threshold, 
-                    commission_rate, 
-                    is_verified, 
-                    is_active, 
-                    applicant_user_id, 
-                    application_status,
-                    paypal_email,
-                    manual_payout_threshold
-                ) VALUES (
-                    :username, 
-                    :display_name, 
-                    :email, 
-                    :bio, 
-                    :platform_type, 
-                    :platform_url, 
-                    :subscriber_count, 
-                    :default_funding_threshold, 
-                    :commission_rate, 
-                    :is_verified, 
-                    :is_active, 
-                    :applicant_user_id, 
-                    :application_status,
-                    :paypal_email,
-                    :manual_payout_threshold
-                )
-            ');
-            
-            $db->bind(':username', $username);
-            $db->bind(':display_name', $pending_registration['username']); // Use username as display name
-            $db->bind(':email', $pending_registration['email']);
-            $db->bind(':bio', 'YouTube Creator on TopicLaunch');
-            $db->bind(':platform_type', 'youtube');
-            $db->bind(':platform_url', $platform_url);
-            $db->bind(':subscriber_count', 1000); // Default subscriber count
-            $db->bind(':default_funding_threshold', 50.00);
-            $db->bind(':commission_rate', 5.00);
-            $db->bind(':is_verified', 1);
-            $db->bind(':is_active', 1);
-            $db->bind(':applicant_user_id', $user_id);
-            $db->bind(':application_status', 'approved');
-            $db->bind(':paypal_email', $paypal_email);
-            $db->bind(':manual_payout_threshold', 50.00); // $50 minimum payout
-            $db->execute();
-            
-            $creator_id = $db->lastInsertId();
-            
-            // Commit transaction
-            $db->endTransaction();
-            
-            // Clear pending registration and log user in
-            unset($_SESSION['pending_creator_registration']);
-            $_SESSION['user_id'] = $user_id;
-            $_SESSION['username'] = $pending_registration['username'];
-            $_SESSION['full_name'] = $pending_registration['full_name'];
-            $_SESSION['email'] = $pending_registration['email'];
-            
-            // Regenerate session ID for security
-            session_regenerate_id(true);
-            
-            $success = "🎉 YouTuber profile created successfully! Welcome to TopicLaunch.";
-            
-            error_log("Creator profile created successfully for new user " . $user_id . " with creator ID " . $creator_id);
-            
-            // Redirect to dashboard instead of showing success message
-            header('Location: ../dashboard/index.php');
-            exit;
-            
-        } catch (Exception $e) {
-            $db->cancelTransaction();
-            $errors[] = "Registration failed: " . $e->getMessage();
-            error_log("Creator application error: " . $e->getMessage());
-        }
-    }
-}
-
-// Generate CSRF token
+// Generate CSRF token if not exists
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if ($_POST) {
+    // CSRF Protection - fixed validation
+    $token = $_POST['csrf_token'] ?? '';
+    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        $errors[] = "Security token expired. Please refresh the page and try again.";
+        // Regenerate token
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    } else {
+        $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+        $paypal_email = trim($_POST['paypal_email'] ?? '');
+        
+        // Remove @ if user included it
+        if (strpos($youtube_handle, '@') === 0) {
+            $youtube_handle = substr($youtube_handle, 1);
+        }
+        
+        // Validation
+        if (empty($youtube_handle)) {
+            $errors[] = "YouTube handle is required";
+        } elseif (strlen($youtube_handle) < 3) {
+            $errors[] = "YouTube handle must be at least 3 characters";
+        } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
+            $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+        }
+        
+        if (empty($paypal_email)) {
+            $errors[] = "PayPal email is required for payouts";
+        } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Please enter a valid PayPal email address";
+        }
+        
+        // Create both user account and creator profile atomically
+        if (empty($errors)) {
+            try {
+                $db = new Database();
+                $db->beginTransaction();
+                
+                // Create user account from pending registration data
+                $db->query('
+                    INSERT INTO users (username, email, password_hash, full_name) 
+                    VALUES (:username, :email, :password_hash, :full_name)
+                ');
+                $db->bind(':username', $pending_registration['username']);
+                $db->bind(':email', $pending_registration['email']);
+                $db->bind(':password_hash', $pending_registration['password_hash']);
+                $db->bind(':full_name', $pending_registration['full_name']);
+                $db->execute();
+                
+                $user_id = $db->lastInsertId();
+                
+                // Generate creator username from user username
+                $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $pending_registration['username'])) . '_' . $user_id;
+                
+                // Construct YouTube URL with @username format
+                $platform_url = 'https://youtube.com/@' . $youtube_handle;
+                
+                // Create creator profile with manual payout system
+                $db->query('
+                    INSERT INTO creators (
+                        username, 
+                        display_name, 
+                        email, 
+                        bio, 
+                        platform_type, 
+                        platform_url, 
+                        subscriber_count, 
+                        default_funding_threshold, 
+                        commission_rate, 
+                        is_verified, 
+                        is_active, 
+                        applicant_user_id, 
+                        application_status,
+                        paypal_email,
+                        manual_payout_threshold
+                    ) VALUES (
+                        :username, 
+                        :display_name, 
+                        :email, 
+                        :bio, 
+                        :platform_type, 
+                        :platform_url, 
+                        :subscriber_count, 
+                        :default_funding_threshold, 
+                        :commission_rate, 
+                        :is_verified, 
+                        :is_active, 
+                        :applicant_user_id, 
+                        :application_status,
+                        :paypal_email,
+                        :manual_payout_threshold
+                    )
+                ');
+                
+                $db->bind(':username', $username);
+                $db->bind(':display_name', $pending_registration['username']); // Use username as display name
+                $db->bind(':email', $pending_registration['email']);
+                $db->bind(':bio', 'YouTube Creator on TopicLaunch');
+                $db->bind(':platform_type', 'youtube');
+                $db->bind(':platform_url', $platform_url);
+                $db->bind(':subscriber_count', 1000); // Default subscriber count
+                $db->bind(':default_funding_threshold', 50.00);
+                $db->bind(':commission_rate', 5.00);
+                $db->bind(':is_verified', 1);
+                $db->bind(':is_active', 1);
+                $db->bind(':applicant_user_id', $user_id);
+                $db->bind(':application_status', 'approved');
+                $db->bind(':paypal_email', $paypal_email);
+                $db->bind(':manual_payout_threshold', 50.00); // $50 minimum payout
+                $db->execute();
+                
+                $creator_id = $db->lastInsertId();
+                
+                // Commit transaction
+                $db->endTransaction();
+                
+                // Clear pending registration and log user in
+                unset($_SESSION['pending_creator_registration']);
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $pending_registration['username'];
+                $_SESSION['full_name'] = $pending_registration['full_name'];
+                $_SESSION['email'] = $pending_registration['email'];
+                
+                // Regenerate session ID for security
+                session_regenerate_id(true);
+                
+                $success = "🎉 YouTuber profile created successfully! Welcome to TopicLaunch.";
+                
+                error_log("Creator profile created successfully for new user " . $user_id . " with creator ID " . $creator_id);
+                
+                // Redirect to dashboard instead of showing success message
+                header('Location: ../dashboard/index.php');
+                exit;
+                
+            } catch (Exception $e) {
+                $db->cancelTransaction();
+                $errors[] = "Registration failed: " . $e->getMessage();
+                error_log("Creator application error: " . $e->getMessage());
+            }
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -201,6 +203,7 @@ if (!isset($_SESSION['csrf_token'])) {
         small { color: #666; font-size: 14px; }
         .info-box { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         .payout-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .account-info { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #dee2e6; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -212,10 +215,12 @@ if (!isset($_SESSION['csrf_token'])) {
         <div class="header">
             <h1>📺 YouTuber Profile Setup</h1>
             <p>Complete your YouTuber profile to start earning</p>
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
-                <strong>Account:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
-                <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
-            </div>
+        </div>
+        
+        <div class="account-info">
+            <strong>Account Details:</strong><br>
+            <strong>Username:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
+            <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -251,13 +256,13 @@ if (!isset($_SESSION['csrf_token'])) {
                 <div class="form-group">
                     <label for="youtube_handle">YouTube Handle: *</label>
                     <div class="input-group">
-                        <span class="input-prefix">youtube.com/@</span>
+                        <span class="input-prefix">@</span>
                         <input type="text" id="youtube_handle" name="youtube_handle" required 
-                               placeholder="yourchannelname"
+                               placeholder="MrBeast"
                                pattern="[a-zA-Z0-9_.-]{3,}"
                                value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>">
                     </div>
-                    <small>Example: MrBeast, PewDiePie, etc. (Your @username without the @)</small>
+                    <small>Example: MrBeast, PewDiePie, etc. (Just your @username without the @)</small>
                 </div>
 
                 <div class="form-group">
@@ -265,7 +270,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     <input type="email" id="paypal_email" name="paypal_email" required 
                            placeholder="your-paypal@email.com"
                            value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>">
-                    <small>This is where you'll receive your earnings via PayPal</small>
+                    <small>This is where you'll receive your earnings via PayPal (90% of topic funding)</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -273,7 +278,7 @@ if (!isset($_SESSION['csrf_token'])) {
                 </button>
                 
                 <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-                    We'll create your YouTube URL automatically
+                    Your YouTube URL will be: youtube.com/@<span id="urlPreview">yourhandle</span>
                 </div>
             </form>
         <?php endif; ?>
@@ -297,31 +302,33 @@ if (!isset($_SESSION['csrf_token'])) {
             return;
         }
         
-        // Remove @ if user accidentally included it
-        if (youtubeHandle.startsWith('@')) {
-            document.querySelector('input[name="youtube_handle"]').value = youtubeHandle.substring(1);
-        }
-        
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerHTML = '⏳ Creating Your Profile...';
         submitBtn.disabled = true;
     });
 
-    // Auto-format YouTube handle
+    // Auto-format YouTube handle and show URL preview
     document.getElementById('youtube_handle').addEventListener('input', function() {
         let value = this.value;
+        
         // Remove @ if user types it
         if (value.startsWith('@')) {
             this.value = value.substring(1);
+            value = this.value;
         }
+        
         // Remove youtube.com/ if user pastes full URL
         if (value.includes('youtube.com/')) {
             const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
             if (match) {
                 this.value = match[1];
+                value = this.value;
             }
         }
+        
+        // Update URL preview
+        document.getElementById('urlPreview').textContent = value || 'yourhandle';
     });
     </script>
 </body>
