@@ -257,8 +257,8 @@ class NotificationSystem {
             - This may affect your creator status
             
             💳 Payment Information:
-            Your earnings of $" . number_format($fee_info['creator_amount'], 2) . " will be processed after successful content delivery.
-            Payment processing may take 3-5 business days after content approval.
+            Your earnings of $" . number_format($fee_info['creator_amount'], 2) . " will be processed as manual PayPal payout.
+            Request your payout from your dashboard after successful content delivery.
             
             📝 To upload your content:
             1. Go to: https://topiclaunch.com/creators/upload_content.php?topic=" . $topic->id . "
@@ -266,8 +266,7 @@ class NotificationSystem {
             3. Mark the topic as completed
             
             💡 Platform Fee Policy:
-            TopicLaunch charges a 10% platform fee to cover payment processing, hosting, and platform maintenance.
-            This industry-standard fee helps us keep the platform running and secure for all creators.
+            TopicLaunch charges a 10% platform fee to cover payment processing, hosting, platform maintenance, and delivery guarantee services.
             
             Thank you for being part of TopicLaunch! Your supporters are excited to see your content.
             
@@ -321,10 +320,10 @@ class NotificationSystem {
                 ✅ You can access the content immediately
                 
                 ⚠️ Protection Policy:
-                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded 90% of your contribution ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs and delivery guarantee services.
+                If the creator doesn't deliver content within 48 hours, you'll be automatically refunded 90% of your contribution ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs, delivery guarantee services, and platform operations.
                 
                 💡 Platform Info:
-                TopicLaunch operates on a 10% platform fee model - creators receive 90% of funding to ensure sustainable content creation.
+                TopicLaunch operates on a 10% platform fee model to ensure sustainable content creation and reliable delivery guarantees.
                 
                 📱 Track Progress:
                 View topic status: https://topiclaunch.com/topics/view.php?id=" . $topic_id . "
@@ -482,7 +481,7 @@ class NotificationSystem {
                     'topic_title' => $topic->title,
                     'refunds_processed' => $refund_result['refunds_processed'],
                     'total_refunded' => $refund_result['total_refunded'],
-                    'platform_revenue_retained' => $refund_result['total_refunded'] * 0.111 // ~10% of original
+                    'platform_revenue_retained' => $refund_result['total_platform_revenue']
                 ];
                 
             } catch (Exception $e) {
@@ -522,11 +521,12 @@ class NotificationSystem {
                 • All contributors have been automatically refunded 90% of their contributions
                 • " . $refund_result['refunds_processed'] . " refunds processed
                 • Total refunded to users: $" . number_format($refund_result['total_refunded'], 2) . "
+                • Platform revenue retained: $" . number_format($refund_result['total_platform_revenue'], 2) . "
                 • Topic status changed to 'Failed'
                 • No creator payout will be processed
                 
                 💰 Financial Impact:
-                Since the content deadline was missed, no payout will be issued. The 10% platform fee has been retained to cover processing costs and delivery guarantee services.
+                Since the content deadline was missed, no payout will be issued. The 10% platform fee has been retained to cover processing costs, delivery guarantee services, and platform operations.
                 
                 📋 This affects your creator performance:
                 • Failed deliveries may impact future topic approvals
@@ -555,7 +555,7 @@ class NotificationSystem {
             if ($detail['success']) {
                 $original_amount = $detail['original_amount'];
                 $refund_amount = $detail['refund_amount'];
-                $platform_fee_kept = $original_amount - $refund_amount;
+                $platform_fee_kept = $detail['platform_fee_kept'];
                 
                 $subject = "💰 90% Refund Processed - " . $topic->title;
                 $message = "
@@ -574,11 +574,11 @@ class NotificationSystem {
                     
                     💳 Refund Details:
                     • Refund: $" . number_format($refund_amount, 2) . " will appear in your original payment method within 5-10 business days
-                    • Platform fee: $" . number_format($platform_fee_kept, 2) . " retained to cover processing costs and delivery guarantee services
+                    • Platform fee: $" . number_format($platform_fee_kept, 2) . " retained to cover processing costs, delivery guarantee services, and platform operations
                     • No action required from you
                     
                     📋 Our Policy:
-                    The 10% platform fee covers payment processing, hosting, customer support, and our delivery guarantee system. This ensures we can continue providing reliable service and protection for all users.
+                    The 10% platform fee covers payment processing, hosting, customer support, delivery guarantee system, and platform maintenance. This ensures we can continue providing reliable service and protection for all users while maintaining business sustainability.
                     
                     We apologize for this inconvenience. Our delivery guarantee system ensures accountability while maintaining platform sustainability.
                     
