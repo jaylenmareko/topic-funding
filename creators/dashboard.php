@@ -425,7 +425,7 @@ $share_url = 'https://topiclaunch.com/';
                         <p>No topics currently being funded.</p>
                         <div class="payout-message">
                             <strong>💡 How it works:</strong><br>
-                            Fans create topics for you automatically. Once you earn $<?php echo number_format($creator->manual_payout_threshold ?? 100, 0); ?>, you can enter your PayPal email to receive payments.
+                            Fans create topics for you automatically. Once you earn $100, you can enter your PayPal email to receive payments.
                         </div>
                     </div>
                 <?php endif; ?>
