@@ -116,8 +116,6 @@ if ($_POST) {
         .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
         .creator-details h3 { margin: 0 0 5px 0; color: #1976d2; }
         .creator-details p { margin: 0; color: #666; font-size: 14px; }
-        .how-it-works { background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .how-it-works h4 { margin-top: 0; color: #2d5f2d; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
@@ -145,7 +143,6 @@ if ($_POST) {
 
         <div class="header">
             <h1>💡 Create New Topic</h1>
-            <p>Suggest a topic for this YouTuber and fund it to make it happen!</p>
         </div>
         
         <!-- Creator Info -->
@@ -160,16 +157,7 @@ if ($_POST) {
             </div>
             <div class="creator-details">
                 <h3>Creating topic for: <?php echo htmlspecialchars($creator->display_name); ?></h3>
-                <p><?php echo number_format($creator->subscriber_count); ?> subscribers • <?php echo ucfirst($creator->platform_type); ?></p>
             </div>
-        </div>
-        
-        <div class="how-it-works">
-            <h4>🚀 How it works:</h4>
-            1. Create your topic and make initial payment<br>
-            2. Topic goes live immediately for community funding<br>
-            3. Once fully funded, creator has 48 hours to deliver content<br>
-            4. You get refunded if content isn't delivered on time
         </div>
 
         <?php if (!empty($errors)): ?>
