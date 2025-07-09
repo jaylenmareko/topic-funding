@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Fixed with proper @ validation and PayPal email validation
+// creators/apply.php - Removed PayPal email requirement
 session_start();
 require_once '../config/database.php';
 
@@ -42,7 +42,6 @@ if ($_POST) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     } else {
         $youtube_handle = trim($_POST['youtube_handle'] ?? '');
-        $paypal_email = trim($_POST['paypal_email'] ?? '');
         
         // Remove @ if user included it
         if (strpos($youtube_handle, '@') === 0) {
@@ -91,17 +90,6 @@ if ($_POST) {
             $errors[] = "YouTube handle must contain at least one letter";
         }
         
-        // Enhanced PayPal email validation
-        if (empty($paypal_email)) {
-            $errors[] = "PayPal email is required for payouts";
-        } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Please enter a valid PayPal email address";
-        } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $paypal_email)) {
-            $errors[] = "Please enter a properly formatted email address";
-        } elseif (strlen($paypal_email) < 6) {
-            $errors[] = "PayPal email is too short";
-        }
-        
         // Create both user account and creator profile atomically
         if (empty($errors)) {
             try {
@@ -127,7 +115,7 @@ if ($_POST) {
                 // Construct YouTube URL with @username format
                 $platform_url = 'https://youtube.com/@' . $youtube_handle;
                 
-                // Create creator profile
+                // Create creator profile (NO PAYPAL EMAIL REQUIRED)
                 $db->query('
                     INSERT INTO creators (
                         username, 
@@ -143,7 +131,6 @@ if ($_POST) {
                         is_active, 
                         applicant_user_id, 
                         application_status,
-                        paypal_email,
                         manual_payout_threshold
                     ) VALUES (
                         :username, 
@@ -159,7 +146,6 @@ if ($_POST) {
                         :is_active, 
                         :applicant_user_id, 
                         :application_status,
-                        :paypal_email,
                         :manual_payout_threshold
                     )
                 ');
@@ -177,8 +163,7 @@ if ($_POST) {
                 $db->bind(':is_active', 1);
                 $db->bind(':applicant_user_id', $user_id);
                 $db->bind(':application_status', 'approved');
-                $db->bind(':paypal_email', $paypal_email);
-                $db->bind(':manual_payout_threshold', 50.00);
+                $db->bind(':manual_payout_threshold', 100.00); // $100 minimum for payouts
                 $db->execute();
                 
                 $creator_id = $db->lastInsertId();
@@ -232,106 +217,90 @@ if ($_POST) {
     <title>Join as YouTuber - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { margin: 0 0 10px 0; color: #333; }
-        .header p { margin: 0; color: #666; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        .input-group { position: relative; display: flex; align-items: center; }
-        .input-prefix { background: #e9ecef; border: 1px solid #ddd; border-right: none; padding: 12px 15px; border-radius: 6px 0 0 6px; color: #666; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        .input-group input { border-left: none; border-radius: 0 6px 6px 0; }
-        .btn { background: #ff0000; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
-        .btn:hover { background: #cc0000; }
-        .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
-        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
-        small { color: #666; font-size: 14px; }
-        .account-info { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #dee2e6; }
-        .validation-note { background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #ffeaa7; }
-        
-        @media (max-width: 600px) {
-            .container { margin: 10px; padding: 20px; }
+        .header h2 { margin: 0 0 10px 0; color: #333; }
+        .user-type-indicator { 
+            background: #ff0000; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+            font-weight: bold; 
         }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="file"] { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        }
+        .btn { background: #ff0000; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        .error { color: red; margin-bottom: 10px; }
+        .requirement { color: #666; font-size: 12px; }
+        .requirement.valid { color: #28a745; }
+        .requirement.invalid { color: #dc3545; }
+        .simplified-note { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📺 YouTuber Profile Setup</h1>
-            <p>Complete your YouTuber profile to start earning</p>
-        </div>
+    <div class="header">
+        <h2>Join as YouTuber</h2>
         
-        <div class="account-info">
-            <strong>Account Details:</strong><br>
-            <strong>Username:</strong> <?php echo htmlspecialchars($pending_registration['username']); ?><br>
-            <strong>Email:</strong> <?php echo htmlspecialchars($pending_registration['email']); ?>
+        <div class="user-type-indicator">
+            📺 YouTuber Registration
         </div>
-
-        <?php if (!empty($errors)): ?>
+    </div>
+    
+    <div class="simplified-note">
+        <strong>💡 Simplified Setup:</strong> Just add your YouTube handle! You'll provide PayPal info later when you want to withdraw earnings (minimum $100).
+    </div>
+    
+    <?php if (!empty($errors)): ?>
+        <div class="errors">
             <?php foreach ($errors as $error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
-        <?php endif; ?>
+        </div>
+    <?php endif; ?>
+    
+    <form method="POST" id="registrationForm" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+        
+        <div class="form-group">
+            <label for="profile_image">Profile Image (Optional):</label>
+            <input type="file" id="profile_image" name="profile_image" accept="image/*">
+            <div class="requirement">JPG, PNG, or GIF. Max 2MB. Can add later.</div>
+        </div>
 
-        <?php if ($success): ?>
-            <div class="success">
-                <?php echo htmlspecialchars($success); ?><br><br>
-                <strong>Redirecting to your dashboard...</strong>
+        <div class="form-group">
+            <label for="youtube_handle">YouTube Handle: *</label>
+            <div style="position: relative; display: flex; align-items: center;">
+                <span style="background: #e9ecef; border: 1px solid #ddd; border-right: none; padding: 8px 12px; border-radius: 4px 0 0 4px; color: #666; font-weight: bold;">@</span>
+                <input type="text" id="youtube_handle" name="youtube_handle" required 
+                       style="border-left: none; border-radius: 0 4px 4px 0;"
+                       placeholder="MrBeast"
+                       pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
+                       title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
+                       value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>">
             </div>
-        <?php else: ?>
+            <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+        </div>
 
-
-            <form method="POST" id="creatorForm">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                
-                <div class="form-group">
-                    <label for="profile_image">Profile Image:</label>
-                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
-                    <small>JPG, PNG, or GIF. Max 2MB. Optional - you can add this later.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="youtube_handle">YouTube Handle: *</label>
-                    <div class="input-group">
-                        <span class="input-prefix">@</span>
-                        <input type="text" id="youtube_handle" name="youtube_handle" required 
-                               placeholder="MrBeast"
-                               pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
-                               title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
-                               value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>">
-                    </div>
-                    <small>Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="paypal_email">PayPal Email for Payouts: *</label>
-                    <input type="email" id="paypal_email" name="paypal_email" required 
-                           placeholder="your-paypal@email.com"
-                           pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-                           title="Must be a valid email address"
-                           value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>">
-                    <small>Must be a valid PayPal email address (90% of topic funding goes here)</small>
-                </div>
-
-                <button type="submit" class="btn" id="submitBtn">
-                    📺 Complete YouTuber Setup
-                </button>
-                
-                <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-                    Your YouTube URL will be: youtube.com/@<span id="urlPreview">yourhandle</span>
-                </div>
-            </form>
-        <?php endif; ?>
-    </div>
+        <button type="submit" class="btn" id="submitBtn">
+            📺 Complete YouTuber Setup
+        </button>
+        
+        <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
+            Your YouTube URL will be: youtube.com/@<span id="urlPreview">yourhandle</span>
+        </div>
+    </form>
 
     <script>
     // Enhanced validation
-    document.getElementById('creatorForm').addEventListener('submit', function(e) {
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
         const youtubeHandle = document.querySelector('input[name="youtube_handle"]').value.trim();
-        const paypalEmail = document.querySelector('input[name="paypal_email"]').value.trim();
         
         // YouTube handle validation
         if (!youtubeHandle || youtubeHandle.length < 3) {
@@ -351,21 +320,6 @@ if ($_POST) {
         if (!/^[a-zA-Z0-9_.-]+$/.test(youtubeHandle)) {
             e.preventDefault();
             alert('YouTube handle can only contain letters, numbers, dots, dashes, and underscores');
-            return;
-        }
-        
-        // PayPal email validation
-        if (!paypalEmail || paypalEmail.length < 6) {
-            e.preventDefault();
-            alert('Please enter a valid PayPal email address');
-            return;
-        }
-        
-        // Enhanced email format check
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!emailRegex.test(paypalEmail)) {
-            e.preventDefault();
-            alert('Please enter a properly formatted email address');
             return;
         }
         
@@ -399,14 +353,6 @@ if ($_POST) {
         
         // Real-time validation feedback
         const isValid = value.length >= 3 && /[a-zA-Z]/.test(value) && /^[a-zA-Z0-9_.-]+$/.test(value);
-        this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
-    });
-
-    // Real-time email validation
-    document.getElementById('paypal_email').addEventListener('input', function() {
-        const value = this.value;
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        const isValid = emailRegex.test(value);
         this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
     });
     </script>
