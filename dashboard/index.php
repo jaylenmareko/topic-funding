@@ -306,7 +306,6 @@ $recent_contributions = $db->resultSet();
                 <div class="empty-state">
                     <h4>Your activity will appear here</h4>
                     <p>Once you start funding topics, you'll see your recent activity here!</p>
-                    <a href="../creators/index.php" class="btn btn-success">Browse YouTubers</a>
                 </div>
             <?php else: ?>
                 <div class="activity-feed">
