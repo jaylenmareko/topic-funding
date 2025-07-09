@@ -148,10 +148,7 @@ function renderNavigation($current_page = '') {
                     <!-- Main Navigation for Logged In Users -->
                     
                     <?php if ($is_creator): ?>
-                        <!-- Creator Navigation - NO Browse YouTubers button -->
-                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                            📺 Creator Dashboard
-                        </a>
+                        <!-- Creator Navigation - NO Browse YouTubers button and NO Creator Dashboard button -->
                     <?php else: ?>
                         <!-- Fan Navigation - YouTubers is the main page -->
                         <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
