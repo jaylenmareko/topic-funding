@@ -11,11 +11,11 @@ if (!is_dir(__DIR__ . '/../logs')) {
 // config/database.php
 // Database configuration and connection with enhanced funding logic
 
-// Database credentials
+// Database credentials - PRODUCTION
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Empty for default XAMPP
-define('DB_NAME', 'crowdfunding'); // Change this to your database name
+define('DB_USER', 'uunppite_topiclaunch_user');
+define('DB_PASS', '***REMOVED***');
+define('DB_NAME', 'uunppite_topiclaunch');
 
 class Database {
     private $host = DB_HOST;
