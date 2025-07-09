@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Fixed creator dashboard without Browse YouTubers button
+// creators/dashboard.php - Improved creator dashboard
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -26,6 +26,22 @@ if (!$creator) {
     header('Location: ../dashboard/index.php');
     exit;
 }
+
+// Calculate earnings
+$db->query('
+    SELECT 
+        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned,
+        COUNT(CASE WHEN t.status = "completed" THEN 1 END) as topics_completed,
+        COUNT(CASE WHEN t.status = "funded" AND t.content_url IS NULL THEN 1 END) as topics_pending
+    FROM topics t 
+    WHERE t.creator_id = :creator_id
+');
+$db->bind(':creator_id', $creator->id);
+$earnings = $db->single();
+
+// Check if PayPal email is set
+$has_paypal = !empty($creator->paypal_email);
+$needs_paypal_setup = $earnings->total_earned >= ($creator->manual_payout_threshold ?? 100) && !$has_paypal;
 
 // Get urgent funded topics awaiting content (48-hour deadline)
 $db->query('
@@ -69,18 +85,8 @@ $db->query('
 $db->bind(':creator_id', $creator->id);
 $completed_topics = $db->resultSet();
 
-// Get earnings summary
-$db->query('
-    SELECT 
-        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned,
-        COALESCE(SUM(CASE WHEN t.status = "funded" AND t.content_url IS NULL THEN t.current_funding * 0.9 END), 0) as pending_earnings,
-        COUNT(CASE WHEN t.status = "completed" THEN 1 END) as topics_completed,
-        COUNT(CASE WHEN t.status = "funded" AND t.content_url IS NULL THEN 1 END) as topics_pending
-    FROM topics t 
-    WHERE t.creator_id = :creator_id
-');
-$db->bind(':creator_id', $creator->id);
-$earnings = $db->single();
+// Generate share URL - link to landing page
+$share_url = 'https://topiclaunch.com/';
 ?>
 <!DOCTYPE html>
 <html>
@@ -101,7 +107,62 @@ $earnings = $db->single();
         }
         .header-content { max-width: 1200px; margin: 0 auto; }
         .header-title { font-size: 32px; margin: 0 0 10px 0; font-weight: bold; }
-        .header-subtitle { font-size: 18px; margin: 0; opacity: 0.9; }
+        .header-subtitle { font-size: 18px; margin: 0 0 20px 0; opacity: 0.9; }
+        
+        /* Share Section */
+        .share-section { 
+            background: rgba(255,255,255,0.1); 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .share-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .share-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .share-url { 
+            background: rgba(255,255,255,0.2); 
+            padding: 12px 15px; 
+            border-radius: 8px; 
+            font-family: monospace; 
+            font-size: 14px; 
+            flex: 1; 
+            min-width: 300px;
+            word-break: break-all;
+        }
+        .share-btn { 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .share-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        /* PayPal Setup Alert */
+        .paypal-alert { 
+            background: #fff3cd; 
+            border: 2px solid #ffc107; 
+            color: #856404;
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .paypal-alert-content h3 { margin: 0 0 10px 0; }
+        .paypal-alert-btn { 
+            background: #ffc107; 
+            color: #212529; 
+            padding: 12px 20px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            font-weight: bold;
+            white-space: nowrap;
+        }
         
         /* Alert Sections */
         .urgent-section { 
@@ -230,11 +291,22 @@ $earnings = $db->single();
             border-radius: 8px;
         }
         
+        .payout-message { 
+            background: #e3f2fd; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
         @media (max-width: 768px) {
             .dashboard-grid { grid-template-columns: 1fr; }
             .container { padding: 10px; }
             .dashboard-header { margin: 10px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .share-controls { flex-direction: column; align-items: stretch; }
+            .share-url { min-width: auto; }
+            .paypal-alert { flex-direction: column; gap: 15px; text-align: center; }
         }
     </style>
 </head>
@@ -242,13 +314,34 @@ $earnings = $db->single();
     <?php renderNavigation('dashboard'); ?>
     
     <div class="container">
-        <!-- Header -->
+        <!-- Header with Share Section -->
         <div class="dashboard-header">
             <div class="header-content">
                 <h1 class="header-title">📺 YouTuber Dashboard</h1>
                 <p class="header-subtitle">Welcome, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
+                
+                <!-- Share Your Profile -->
+                <div class="share-section">
+                    <div class="share-title">🔗 Share TopicLaunch with Your Fans</div>
+                    <p style="margin: 0 0 15px 0; opacity: 0.9;">Send this link to your fans so they can find you and propose topics!</p>
+                    <div class="share-controls">
+                        <div class="share-url" id="shareUrl"><?php echo $share_url; ?></div>
+                        <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
+                    </div>
+                </div>
             </div>
         </div>
+        
+        <!-- PayPal Setup Alert -->
+        <?php if ($needs_paypal_setup): ?>
+        <div class="paypal-alert">
+            <div class="paypal-alert-content">
+                <h3>💰 Ready to Withdraw $<?php echo number_format($earnings->total_earned, 2); ?>!</h3>
+                <p>You've reached the $<?php echo number_format($creator->manual_payout_threshold ?? 100, 0); ?> minimum. Enter your PayPal email to receive payments.</p>
+            </div>
+            <a href="../creators/setup_paypal.php" class="paypal-alert-btn">Enter PayPal Email</a>
+        </div>
+        <?php endif; ?>
         
         <!-- Urgent: Funded Topics Awaiting Content -->
         <?php if (!empty($urgent_topics)): ?>
@@ -290,16 +383,16 @@ $earnings = $db->single();
                 <div class="stat-label">Total Earnings</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value">$<?php echo number_format($earnings->pending_earnings ?? 0, 0); ?></div>
-                <div class="stat-label">Pending Earnings</div>
-            </div>
-            <div class="stat-item">
                 <div class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></div>
                 <div class="stat-label">Completed Topics</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></div>
                 <div class="stat-label">Due Soon</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value"><?php echo count($live_topics); ?></div>
+                <div class="stat-label">Live Topics</div>
             </div>
         </div>
 
@@ -330,7 +423,10 @@ $earnings = $db->single();
                 <?php else: ?>
                     <div class="empty-state">
                         <p>No topics currently being funded.</p>
-                        <p>Fans will create topics for you - just wait for them to reach the funding goal!</p>
+                        <div class="payout-message">
+                            <strong>💡 How it works:</strong><br>
+                            Fans create topics for you automatically. Once you earn $<?php echo number_format($creator->manual_payout_threshold ?? 100, 0); ?>, you can enter your PayPal email to receive payments.
+                        </div>
                     </div>
                 <?php endif; ?>
             </div>
@@ -347,7 +443,7 @@ $earnings = $db->single();
                     <div class="topic-item" style="border-left-color: #28a745;">
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <div class="topic-meta">
-                            <span>$<?php echo number_format($topic->current_funding, 2); ?> earned</span>
+                            <span>$<?php echo number_format($topic->current_funding * 0.9, 2); ?> earned</span>
                             <span><?php echo date('M j', strtotime($topic->completed_at)); ?></span>
                         </div>
                         <div style="margin-top: 10px;">
@@ -365,5 +461,40 @@ $earnings = $db->single();
             </div>
         </div>
     </div>
+
+    <script>
+    function copyShareLink() {
+        const shareUrl = document.getElementById('shareUrl').textContent;
+        navigator.clipboard.writeText(shareUrl).then(function() {
+            // Show success feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Copied!';
+            button.style.background = 'rgba(40, 167, 69, 0.3)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = 'rgba(255,255,255,0.2)';
+            }, 2000);
+        }).catch(function() {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            alert('Link copied to clipboard!');
+        });
+    }
+
+    function shareOnTwitter() {
+        const shareUrl = document.getElementById('shareUrl').textContent;
+        const tweetText = encodeURIComponent('🎬 I\'m on TopicLaunch! Propose topics you want me to cover and help fund them. Check out my profile:');
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
+    }
+    </script>
 </body>
 </html>
