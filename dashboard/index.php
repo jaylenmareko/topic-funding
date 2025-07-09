@@ -281,7 +281,7 @@ $recent_contributions = $db->resultSet();
         <div class="welcome-header">
             <div class="welcome-content">
                 <div class="welcome-text">
-                    <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
+                    <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                     <p>Fund topics and support your favorite creators</p>
                 </div>
             </div>
@@ -306,7 +306,6 @@ $recent_contributions = $db->resultSet();
                 <div class="empty-state">
                     <h4>Your activity will appear here</h4>
                     <p>Once you start funding topics, you'll see your recent activity here!</p>
-                    <a href="../creators/index.php" class="btn btn-success">Browse YouTubers</a>
                 </div>
             <?php else: ?>
                 <div class="activity-feed">
@@ -348,7 +347,6 @@ $recent_contributions = $db->resultSet();
                 </div>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="../creators/index.php" class="btn btn-success">Browse More YouTubers</a>
                     <a href="contributions.php" class="btn" style="margin-left: 15px;">View All Contributions</a>
                 </div>
             <?php endif; ?>
