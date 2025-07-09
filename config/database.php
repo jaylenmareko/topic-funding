@@ -492,124 +492,122 @@ function renderFundingWidget($topic, $contributions = [], $analytics = null) {
     }
     
     $milestones = [25, 50, 75, 90];
-    ?>
     
-    <div class="enhanced-funding-widget" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin: 0; color: #333;">Funding Progress</h3>
-            <?php if ($topic->status === 'active' && count($recent_contributions) > 0): ?>
-                <div style="background: #e8f5e8; color: #2d5f2d; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                    🔥 <?php echo count($recent_contributions); ?> recent contributions
-                </div>
-            <?php endif; ?>
-        </div>
+    echo '<div class="enhanced-funding-widget" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    echo '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">';
+    echo '<h3 style="margin: 0; color: #333;">Funding Progress</h3>';
+    
+    if ($topic->status === 'active' && count($recent_contributions) > 0) {
+        echo '<div style="background: #e8f5e8; color: #2d5f2d; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">';
+        echo '🔥 ' . count($recent_contributions) . ' recent contributions';
+        echo '</div>';
+    }
+    
+    echo '</div>';
 
-        <!-- Main Progress Bar -->
-                    <div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: <?php echo $progress_percent; ?>%;"></div>
-            
-            <!-- Milestone markers -->
-            <?php foreach ($milestones as $milestone): ?>
-                <div style="position: absolute; top: 0; left: <?php echo $milestone; ?>%; width: 2px; height: 100%; background: #fff; opacity: 0.7;"></div>
-                <div style="position: absolute; top: -25px; left: <?php echo $milestone; %>%; transform: translateX(-50%); font-size: 10px; color: #666;">
-                    <?php echo $milestone; ?>%
-                </div>
-            <?php endforeach; ?>
-        </div>
+    // Main Progress Bar
+    echo '<div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">';
+    echo '<div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: ' . $progress_percent . '%;"></div>';
+    
+    // Milestone markers
+    foreach ($milestones as $milestone) {
+        echo '<div style="position: absolute; top: 0; left: ' . $milestone . '%; width: 2px; height: 100%; background: #fff; opacity: 0.7;"></div>';
+        echo '<div style="position: absolute; top: -25px; left: ' . $milestone . '%; transform: translateX(-50%); font-size: 10px; color: #666;">';
+        echo $milestone . '%';
+        echo '</div>';
+    }
+    
+    echo '</div>';
 
-        <!-- Funding Stats Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0;">
-            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 18px; font-weight: bold; color: #28a745;">
-                    $<?php echo number_format($topic->current_funding, 0); ?>
-                </div>
-                <div style="font-size: 12px; color: #666;">Raised</div>
-            </div>
-            
-            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 18px; font-weight: bold; color: #dc3545;">
-                    $<?php echo number_format($remaining, 0); ?>
-                </div>
-                <div style="font-size: 12px; color: #666;">Remaining</div>
-            </div>
-            
-            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 18px; font-weight: bold; color: #007bff;">
-                    <?php echo count($contributions); ?>
-                </div>
-                <div style="font-size: 12px; color: #666;">Backers</div>
-            </div>
-            
-            <?php if ($analytics && $analytics->average_contribution): ?>
-            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 18px; font-weight: bold; color: #6f42c1;">
-                    $<?php echo number_format($analytics->average_contribution, 0); ?>
-                </div>
-                <div style="font-size: 12px; color: #666;">Average</div>
-            </div>
-            <?php endif; ?>
-        </div>
+    // Funding Stats Grid
+    echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0;">';
+    
+    echo '<div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">';
+    echo '<div style="font-size: 18px; font-weight: bold; color: #28a745;">$' . number_format($topic->current_funding, 0) . '</div>';
+    echo '<div style="font-size: 12px; color: #666;">Raised</div>';
+    echo '</div>';
+    
+    echo '<div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">';
+    echo '<div style="font-size: 18px; font-weight: bold; color: #dc3545;">$' . number_format($remaining, 0) . '</div>';
+    echo '<div style="font-size: 12px; color: #666;">Remaining</div>';
+    echo '</div>';
+    
+    echo '<div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">';
+    echo '<div style="font-size: 18px; font-weight: bold; color: #007bff;">' . count($contributions) . '</div>';
+    echo '<div style="font-size: 12px; color: #666;">Backers</div>';
+    echo '</div>';
+    
+    if ($analytics && $analytics->average_contribution) {
+        echo '<div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">';
+        echo '<div style="font-size: 18px; font-weight: bold; color: #6f42c1;">$' . number_format($analytics->average_contribution, 0) . '</div>';
+        echo '<div style="font-size: 12px; color: #666;">Average</div>';
+        echo '</div>';
+    }
+    
+    echo '</div>';
 
-        <!-- Velocity and Time Estimate -->
-        <?php if ($topic->status === 'active'): ?>
-            <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
-                    <span>
-                        Last 24h: <strong style="color: #28a745;">$<?php echo number_format($recent_funding, 0); ?></strong>
-                    </span>
-                    <?php if ($days_to_funding && $days_to_funding <= 30): ?>
-                        <span>
-                            Est. funding: <strong><?php echo $days_to_funding; ?> days</strong>
-                        </span>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+    // Velocity and Time Estimate
+    if ($topic->status === 'active') {
+        echo '<div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">';
+        echo '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">';
+        echo '<span>Last 24h: <strong style="color: #28a745;">$' . number_format($recent_funding, 0) . '</strong></span>';
+        
+        if ($days_to_funding && $days_to_funding <= 30) {
+            echo '<span>Est. funding: <strong>' . $days_to_funding . ' days</strong></span>';
+        }
+        
+        echo '</div>';
+        echo '</div>';
+    }
 
-        <!-- Milestone Badges -->
-        <div style="margin-top: 15px;">
-            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Milestones Reached:</div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <?php foreach ($milestones as $milestone): ?>
-                    <?php if ($progress_percent >= $milestone): ?>
-                        <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
-                            <?php echo $milestone; ?>% ✓
-                        </span>
-                    <?php else: ?>
-                        <span style="background: #e9ecef; color: #666; padding: 4px 8px; border-radius: 12px; font-size: 11px;">
-                            <?php echo $milestone; ?>%
-                        </span>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
+    // Milestone Badges
+    echo '<div style="margin-top: 15px;">';
+    echo '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">Milestones Reached:</div>';
+    echo '<div style="display: flex; gap: 8px; flex-wrap: wrap;">';
+    
+    foreach ($milestones as $milestone) {
+        if ($progress_percent >= $milestone) {
+            echo '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">';
+            echo $milestone . '% ✓';
+            echo '</span>';
+        } else {
+            echo '<span style="background: #e9ecef; color: #666; padding: 4px 8px; border-radius: 12px; font-size: 11px;">';
+            echo $milestone . '%';
+            echo '</span>';
+        }
+    }
+    
+    echo '</div>';
+    echo '</div>';
 
-        <!-- Action Button -->
-        <div style="margin-top: 20px;">
-            <?php if ($topic->status === 'active'): ?>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/topics/') !== false) ? '' : '../topics/'; ?>fund.php?id=<?php echo $topic->id; ?>" 
-                       style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">
-                        Fund This Topic
-                    </a>
-                <?php else: ?>
-                    <a href="<?php echo (strpos($_SERVER['REQUEST_URI'], '/auth/') !== false) ? '' : '../auth/'; ?>login.php" 
-                       style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">
-                        Login to Fund
-                    </a>
-                <?php endif; ?>
-            <?php elseif ($topic->status === 'funded'): ?>
-                <div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">
-                    ✅ Fully Funded! Content coming soon...
-                </div>
-            <?php elseif ($topic->status === 'completed'): ?>
-                <div style="background: #cce5ff; color: #004085; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">
-                    ✅ Completed!
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <?php
+    // Action Button
+    echo '<div style="margin-top: 20px;">';
+    
+    if ($topic->status === 'active') {
+        if (isset($_SESSION['user_id'])) {
+            $fund_url = (strpos($_SERVER['REQUEST_URI'], '/topics/') !== false) ? '' : '../topics/';
+            echo '<a href="' . $fund_url . 'fund.php?id=' . $topic->id . '" ';
+            echo 'style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">';
+            echo 'Fund This Topic';
+            echo '</a>';
+        } else {
+            $login_url = (strpos($_SERVER['REQUEST_URI'], '/auth/') !== false) ? '' : '../auth/';
+            echo '<a href="' . $login_url . 'login.php" ';
+            echo 'style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold;">';
+            echo 'Login to Fund';
+            echo '</a>';
+        }
+    } elseif ($topic->status === 'funded') {
+        echo '<div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">';
+        echo '✅ Fully Funded! Content coming soon...';
+        echo '</div>';
+    } elseif ($topic->status === 'completed') {
+        echo '<div style="background: #cce5ff; color: #004085; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;">';
+        echo '✅ Completed!';
+        echo '</div>';
+    }
+    
+    echo '</div>';
+    echo '</div>';
 }
 ?>
