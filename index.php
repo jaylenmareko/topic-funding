@@ -1,5 +1,5 @@
 <?php
-// index.php - Fixed to prevent redirect loops
+// index.php - Fixed to redirect fans to browse creators
 session_start();
 require_once 'config/database.php';
 
@@ -11,11 +11,11 @@ if (isset($_SESSION['user_id'])) {
     $is_creator = $db->single();
     
     if ($is_creator) {
-        // FIXED: Creators go to their creator dashboard
+        // Creators go to their creator dashboard
         header('Location: creators/dashboard.php');
     } else {
-        // FIXED: Fans go to main dashboard (not creators/index.php)
-        header('Location: dashboard/index.php');
+        // FIXED: Fans go to browse creators (not dashboard)
+        header('Location: creators/index.php');
     }
     exit;
 }
@@ -49,9 +49,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $is_creator = $db->single();
             
             if ($is_creator) {
-                header('Location: creators/dashboard.php'); // FIXED: Creators go to creator dashboard
+                header('Location: creators/dashboard.php'); // Creators go to creator dashboard
             } else {
-                header('Location: dashboard/index.php'); // FIXED: Fans go to fan dashboard
+                header('Location: creators/index.php'); // FIXED: Fans go to browse creators
             }
             exit;
         } else {
