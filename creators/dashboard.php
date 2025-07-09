@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Fixed to prevent redirect loops
+// creators/dashboard.php - Fixed creator dashboard without Browse YouTubers button
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $db = new Database();
 
-// Get creator info - FIXED: Don't redirect creators away from dashboard
+// Get creator info
 $db->query('
     SELECT c.*, u.email 
     FROM creators c 
@@ -22,13 +22,11 @@ $db->query('
 $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
-// If not a creator, redirect to fan dashboard instead of creators/index.php
 if (!$creator) {
     header('Location: ../dashboard/index.php');
     exit;
 }
 
-// CREATOR DASHBOARD CONTINUES HERE - No more redirects
 // Get urgent funded topics awaiting content (48-hour deadline)
 $db->query('
     SELECT t.*, 
@@ -83,9 +81,6 @@ $db->query('
 ');
 $db->bind(':creator_id', $creator->id);
 $earnings = $db->single();
-
-// Check Stripe Connect status
-$stripe_connected = !empty($creator->stripe_account_id);
 ?>
 <!DOCTYPE html>
 <html>
@@ -109,37 +104,30 @@ $stripe_connected = !empty($creator->stripe_account_id);
         .header-subtitle { font-size: 18px; margin: 0; opacity: 0.9; }
         
         /* Alert Sections */
-        .stripe-alert {
-            background: #f8d7da;
-            border: 2px solid #dc3545;
-            border-radius: 12px;
-            padding: 20px;
+        .urgent-section { 
+            background: #fff3cd; 
+            border: 2px solid #ffc107; 
+            border-radius: 12px; 
+            padding: 25px; 
             margin-bottom: 30px;
-            text-align: center;
         }
-        .stripe-alert h3 {
-            color: #721c24;
-            margin: 0 0 10px 0;
+        .urgent-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 20px; 
         }
-        .stripe-setup-btn {
-            background: #28a745;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 6px;
-            text-decoration: none;
+        .urgent-icon { 
+            font-size: 28px; 
+            margin-right: 15px; 
+        }
+        .urgent-title { 
+            font-size: 24px; 
+            color: #856404; 
+            margin: 0; 
             font-weight: bold;
-            font-size: 16px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-        .stripe-setup-btn:hover {
-            background: #218838;
-            color: white;
-            text-decoration: none;
         }
         
-        /* Cards */
+        /* Main Grid */
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
         .dashboard-card { 
             background: white; 
@@ -229,8 +217,8 @@ $stripe_connected = !empty($creator->stripe_account_id);
         .btn-danger:hover { background: #c82333; color: white; text-decoration: none; }
         
         /* Stats */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; }
-        .stat-item { text-align: center; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-item { text-align: center; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .stat-value { font-size: 32px; font-weight: bold; color: #007bff; margin: 0; }
         .stat-label { font-size: 14px; color: #666; margin: 5px 0 0 0; }
         
@@ -246,6 +234,7 @@ $stripe_connected = !empty($creator->stripe_account_id);
             .dashboard-grid { grid-template-columns: 1fr; }
             .container { padding: 10px; }
             .dashboard-header { margin: 10px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -257,18 +246,40 @@ $stripe_connected = !empty($creator->stripe_account_id);
         <div class="dashboard-header">
             <div class="header-content">
                 <h1 class="header-title">📺 YouTuber Dashboard</h1>
-                <p class="header-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
+                <p class="header-subtitle">Welcome, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
             </div>
         </div>
         
-        <!-- Stripe Setup Alert -->
-        <?php if (!$stripe_connected): ?>
-        <div class="stripe-alert">
-            <h3>⚠️ Payment Setup Required</h3>
-            <p>You need to connect your Stripe account to receive payments when you complete topics.</p>
-            <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="stripe-setup-btn">
-                💳 Setup Instant Payments
-            </a>
+        <!-- Urgent: Funded Topics Awaiting Content -->
+        <?php if (!empty($urgent_topics)): ?>
+        <div class="urgent-section">
+            <div class="urgent-header">
+                <span class="urgent-icon">🔥</span>
+                <h2 class="urgent-title">Action Required - Deliver Content</h2>
+            </div>
+            
+            <?php foreach ($urgent_topics as $topic): ?>
+            <div class="topic-item urgent-topic">
+                <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                <div class="topic-meta">
+                    <span><strong>$<?php echo number_format($topic->current_funding, 2); ?></strong> funded</span>
+                    <span class="countdown">
+                        ⏰ <?php echo max(0, $topic->hours_remaining); ?> hours left
+                    </span>
+                </div>
+                <p style="margin: 10px 0; color: #666;">
+                    <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
+                </p>
+                <div style="margin-top: 15px;">
+                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
+                        🎬 Upload Content Now
+                    </a>
+                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
+                        👁️ View Details
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
         <?php endif; ?>
         
@@ -293,66 +304,66 @@ $stripe_connected = !empty($creator->stripe_account_id);
         </div>
 
         <div class="dashboard-grid">
-            <div>
-                <!-- Live Topics Being Funded -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h2 class="card-title">📈 Topics Being Funded</h2>
-                        <span class="card-icon">💰</span>
-                    </div>
-                    
-                    <?php if (!empty($live_topics)): ?>
-                        <?php foreach ($live_topics as $topic): ?>
-                        <div class="topic-item">
-                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                            <div class="topic-meta">
-                                <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
-                                <span><?php echo $topic->contributor_count; ?> contributors</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
-                            </div>
-                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
-                                View Topic
-                            </a>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <p>No topics currently being funded.</p>
-                            <p>Fans will create topics for you - just wait for them to reach the funding goal!</p>
-                        </div>
-                    <?php endif; ?>
+            <!-- Topics Being Funded -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">📈 Topics Being Funded</h2>
+                    <span class="card-icon">💰</span>
                 </div>
+                
+                <?php if (!empty($live_topics)): ?>
+                    <?php foreach ($live_topics as $topic): ?>
+                    <div class="topic-item">
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <div class="topic-meta">
+                            <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
+                            <span><?php echo $topic->contributor_count; ?> contributors</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
+                        </div>
+                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
+                            View Topic
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <p>No topics currently being funded.</p>
+                        <p>Fans will create topics for you - just wait for them to reach the funding goal!</p>
+                    </div>
+                <?php endif; ?>
             </div>
             
-            <div>
-                <!-- Quick Actions -->
-                <div class="dashboard-card">
-                    <h3>⚡ Quick Actions</h3>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Propose New Topic</a>
-                        <a href="../topics/index.php" class="btn">🔍 Browse All Topics</a>
-                        <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn">✏️ Edit Profile</a>
-                        <?php if (!$stripe_connected): ?>
-                            <a href="stripe_onboarding.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💳 Setup Payments</a>
-                        <?php endif; ?>
-                    </div>
+            <!-- Recent Completed Topics -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">✅ Recent Completed</h2>
+                    <span class="card-icon">🎬</span>
                 </div>
+                
+                <?php if (!empty($completed_topics)): ?>
+                    <?php foreach ($completed_topics as $topic): ?>
+                    <div class="topic-item" style="border-left-color: #28a745;">
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <div class="topic-meta">
+                            <span>$<?php echo number_format($topic->current_funding, 2); ?> earned</span>
+                            <span><?php echo date('M j', strtotime($topic->completed_at)); ?></span>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">View</a>
+                            <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn" style="background: #6c757d; color: white; margin-left: 10px;">Edit Profile</a>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <p>No completed topics yet.</p>
+                        <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn" style="background: #6c757d; color: white;">Edit Profile</a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-
-        <!-- No Topics State -->
-        <?php if (empty($live_topics) && empty($urgent_topics) && empty($completed_topics)): ?>
-        <div style="text-align: center; margin-top: 40px; padding: 40px; background: white; border-radius: 12px;">
-            <h3>🚀 Ready to Start Creating?</h3>
-            <p>You don't have any topics yet. Wait for proposals or create your own!</p>
-            <div style="margin-top: 20px;">
-                <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Create First Topic</a>
-                <a href="../topics/index.php" class="btn">🔍 Browse Community Topics</a>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
 </body>
 </html>
