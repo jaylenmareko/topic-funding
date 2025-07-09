@@ -1,5 +1,5 @@
 <?php
-// creators/apply.php - Fixed CSRF and simplified with @username format
+// creators/apply.php - Fixed with proper @ validation and PayPal email validation
 session_start();
 require_once '../config/database.php';
 
@@ -11,11 +11,9 @@ if (isset($_SESSION['user_id'])) {
     $existing_creator = $db->single();
     
     if ($existing_creator) {
-        // User is already a creator, redirect to their dashboard
         header('Location: ../dashboard/index.php');
         exit;
     } else {
-        // User is logged in but not a creator, redirect to dashboard
         header('Location: ../dashboard/index.php');
         exit;
     }
@@ -37,11 +35,10 @@ if (!isset($_SESSION['csrf_token'])) {
 }
 
 if ($_POST) {
-    // CSRF Protection - fixed validation
+    // CSRF Protection
     $token = $_POST['csrf_token'] ?? '';
     if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
         $errors[] = "Security token expired. Please refresh the page and try again.";
-        // Regenerate token
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     } else {
         $youtube_handle = trim($_POST['youtube_handle'] ?? '');
@@ -52,19 +49,57 @@ if ($_POST) {
             $youtube_handle = substr($youtube_handle, 1);
         }
         
-        // Validation
+        // Handle profile image upload
+        $profile_image = null;
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/creators/';
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+            $file_type = $_FILES['profile_image']['type'];
+            $file_size = $_FILES['profile_image']['size'];
+            
+            if (!in_array($file_type, $allowed_types)) {
+                $errors[] = "Only JPG, PNG, and GIF images are allowed";
+            } elseif ($file_size > 2 * 1024 * 1024) { // 2MB limit
+                $errors[] = "Image must be less than 2MB";
+            } else {
+                $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
+                $temp_filename = 'creator_temp_' . time() . '.' . $file_extension;
+                $upload_path = $upload_dir . $temp_filename;
+                
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
+                    $profile_image = $temp_filename;
+                } else {
+                    $errors[] = "Failed to upload image";
+                }
+            }
+        }
+        
+        // Enhanced validation
         if (empty($youtube_handle)) {
             $errors[] = "YouTube handle is required";
         } elseif (strlen($youtube_handle) < 3) {
             $errors[] = "YouTube handle must be at least 3 characters";
         } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
             $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+        } elseif (preg_match('/^[0-9._-]+$/', $youtube_handle)) {
+            $errors[] = "YouTube handle must contain at least one letter";
         }
         
+        // Enhanced PayPal email validation
         if (empty($paypal_email)) {
             $errors[] = "PayPal email is required for payouts";
         } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = "Please enter a valid PayPal email address";
+        } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $paypal_email)) {
+            $errors[] = "Please enter a properly formatted email address";
+        } elseif (strlen($paypal_email) < 6) {
+            $errors[] = "PayPal email is too short";
         }
         
         // Create both user account and creator profile atomically
@@ -92,7 +127,7 @@ if ($_POST) {
                 // Construct YouTube URL with @username format
                 $platform_url = 'https://youtube.com/@' . $youtube_handle;
                 
-                // Create creator profile with manual payout system
+                // Create creator profile
                 $db->query('
                     INSERT INTO creators (
                         username, 
@@ -130,12 +165,12 @@ if ($_POST) {
                 ');
                 
                 $db->bind(':username', $username);
-                $db->bind(':display_name', $pending_registration['username']); // Use username as display name
+                $db->bind(':display_name', $pending_registration['username']);
                 $db->bind(':email', $pending_registration['email']);
                 $db->bind(':bio', 'YouTube Creator on TopicLaunch');
                 $db->bind(':platform_type', 'youtube');
                 $db->bind(':platform_url', $platform_url);
-                $db->bind(':subscriber_count', 1000); // Default subscriber count
+                $db->bind(':subscriber_count', 1000);
                 $db->bind(':default_funding_threshold', 50.00);
                 $db->bind(':commission_rate', 5.00);
                 $db->bind(':is_verified', 1);
@@ -143,12 +178,27 @@ if ($_POST) {
                 $db->bind(':applicant_user_id', $user_id);
                 $db->bind(':application_status', 'approved');
                 $db->bind(':paypal_email', $paypal_email);
-                $db->bind(':manual_payout_threshold', 50.00); // $50 minimum payout
+                $db->bind(':manual_payout_threshold', 50.00);
                 $db->execute();
                 
                 $creator_id = $db->lastInsertId();
                 
-                // Commit transaction
+                // Update profile image filename with actual creator ID
+                if ($profile_image) {
+                    $file_extension = pathinfo($profile_image, PATHINFO_EXTENSION);
+                    $final_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
+                    $old_path = $upload_dir . $profile_image;
+                    $new_path = $upload_dir . $final_filename;
+                    
+                    if (rename($old_path, $new_path)) {
+                        // Update creator with final image filename
+                        $db->query('UPDATE creators SET profile_image = :profile_image WHERE id = :id');
+                        $db->bind(':profile_image', $final_filename);
+                        $db->bind(':id', $creator_id);
+                        $db->execute();
+                    }
+                }
+                
                 $db->endTransaction();
                 
                 // Clear pending registration and log user in
@@ -158,14 +208,12 @@ if ($_POST) {
                 $_SESSION['full_name'] = $pending_registration['full_name'];
                 $_SESSION['email'] = $pending_registration['email'];
                 
-                // Regenerate session ID for security
                 session_regenerate_id(true);
                 
                 $success = "🎉 YouTuber profile created successfully! Welcome to TopicLaunch.";
                 
                 error_log("Creator profile created successfully for new user " . $user_id . " with creator ID " . $creator_id);
                 
-                // Redirect to dashboard instead of showing success message
                 header('Location: ../dashboard/index.php');
                 exit;
                 
@@ -201,9 +249,8 @@ if ($_POST) {
         .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; text-align: center; }
         small { color: #666; font-size: 14px; }
-        .info-box { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
-        .payout-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         .account-info { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #dee2e6; }
+        .validation-note { background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #ffeaa7; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
@@ -235,42 +282,38 @@ if ($_POST) {
                 <strong>Redirecting to your dashboard...</strong>
             </div>
         <?php else: ?>
-            <div class="info-box">
-                <h4 style="margin-top: 0;">📋 What you need:</h4>
-                • Your YouTube channel handle (@username)<br>
-                • PayPal email for receiving payments<br>
-                • Takes less than 2 minutes to complete
-            </div>
 
-            <div class="payout-info">
-                <h4 style="margin-top: 0;">💰 Payout System:</h4>
-                • Earn 90% of funded topics (10% platform fee)<br>
-                • $50 minimum payout threshold<br>
-                • Manual PayPal payouts within 3-5 business days<br>
-                • Request payouts from your dashboard
-            </div>
 
             <form method="POST" id="creatorForm">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                 
+                <div class="form-group">
+                    <label for="profile_image">Profile Image:</label>
+                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                    <small>JPG, PNG, or GIF. Max 2MB. Optional - you can add this later.</small>
+                </div>
+
                 <div class="form-group">
                     <label for="youtube_handle">YouTube Handle: *</label>
                     <div class="input-group">
                         <span class="input-prefix">@</span>
                         <input type="text" id="youtube_handle" name="youtube_handle" required 
                                placeholder="MrBeast"
-                               pattern="[a-zA-Z0-9_.-]{3,}"
+                               pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
+                               title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
                                value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>">
                     </div>
-                    <small>Example: MrBeast, PewDiePie, etc. (Just your @username without the @)</small>
+                    <small>Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="paypal_email">PayPal Email for Payouts: *</label>
                     <input type="email" id="paypal_email" name="paypal_email" required 
                            placeholder="your-paypal@email.com"
+                           pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                           title="Must be a valid email address"
                            value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>">
-                    <small>This is where you'll receive your earnings via PayPal (90% of topic funding)</small>
+                    <small>Must be a valid PayPal email address (90% of topic funding goes here)</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -285,20 +328,44 @@ if ($_POST) {
     </div>
 
     <script>
+    // Enhanced validation
     document.getElementById('creatorForm').addEventListener('submit', function(e) {
         const youtubeHandle = document.querySelector('input[name="youtube_handle"]').value.trim();
         const paypalEmail = document.querySelector('input[name="paypal_email"]').value.trim();
         
-        // Validation
+        // YouTube handle validation
         if (!youtubeHandle || youtubeHandle.length < 3) {
             e.preventDefault();
             alert('Please enter a valid YouTube handle (3+ characters)');
             return;
         }
         
-        if (!paypalEmail || !paypalEmail.includes('@')) {
+        // Check if handle contains at least one letter
+        if (!/[a-zA-Z]/.test(youtubeHandle)) {
+            e.preventDefault();
+            alert('YouTube handle must contain at least one letter');
+            return;
+        }
+        
+        // Check for invalid characters
+        if (!/^[a-zA-Z0-9_.-]+$/.test(youtubeHandle)) {
+            e.preventDefault();
+            alert('YouTube handle can only contain letters, numbers, dots, dashes, and underscores');
+            return;
+        }
+        
+        // PayPal email validation
+        if (!paypalEmail || paypalEmail.length < 6) {
             e.preventDefault();
             alert('Please enter a valid PayPal email address');
+            return;
+        }
+        
+        // Enhanced email format check
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(paypalEmail)) {
+            e.preventDefault();
+            alert('Please enter a properly formatted email address');
             return;
         }
         
@@ -308,7 +375,7 @@ if ($_POST) {
         submitBtn.disabled = true;
     });
 
-    // Auto-format YouTube handle and show URL preview
+    // Real-time validation and URL preview
     document.getElementById('youtube_handle').addEventListener('input', function() {
         let value = this.value;
         
@@ -329,6 +396,18 @@ if ($_POST) {
         
         // Update URL preview
         document.getElementById('urlPreview').textContent = value || 'yourhandle';
+        
+        // Real-time validation feedback
+        const isValid = value.length >= 3 && /[a-zA-Z]/.test(value) && /^[a-zA-Z0-9_.-]+$/.test(value);
+        this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
+    });
+
+    // Real-time email validation
+    document.getElementById('paypal_email').addEventListener('input', function() {
+        const value = this.value;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const isValid = emailRegex.test(value);
+        this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
     });
     </script>
 </body>
