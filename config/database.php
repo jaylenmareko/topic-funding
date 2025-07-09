@@ -1,5 +1,6 @@
 <?php
-// Enhanced error logging
+// Production configuration - disable error display, enable logging
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 
@@ -504,13 +505,13 @@ function renderFundingWidget($topic, $contributions = [], $analytics = null) {
         </div>
 
         <!-- Main Progress Bar -->
-        <div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">
+                    <div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">
             <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: <?php echo $progress_percent; ?>%;"></div>
             
             <!-- Milestone markers -->
             <?php foreach ($milestones as $milestone): ?>
                 <div style="position: absolute; top: 0; left: <?php echo $milestone; ?>%; width: 2px; height: 100%; background: #fff; opacity: 0.7;"></div>
-                <div style="position: absolute; top: -25px; left: <?php echo $milestone; ?>%; transform: translateX(-50%); font-size: 10px; color: #666;">
+                <div style="position: absolute; top: -25px; left: <?php echo $milestone; %>%; transform: translateX(-50%); font-size: 10px; color: #666;">
                     <?php echo $milestone; ?>%
                 </div>
             <?php endforeach; ?>
