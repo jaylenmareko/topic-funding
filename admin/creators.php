@@ -1,466 +1,442 @@
 <?php
-// admin/creators.php - Enhanced admin interface with delete and refund features
+// admin/creators.php - Secure admin creator management
+
 session_start();
 require_once '../config/database.php';
-require_once '../config/stripe.php';
 
-// Admin access check - allow user IDs 1, 2, and 9
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], [1, 2, 9])) {
-    header('Location: ../index.php');
+// Enhanced admin authorization
+function isAdmin($user_id) {
+    if (!$user_id) return false;
+    
+    $db = new Database();
+    $db->query('SELECT is_admin, is_active FROM users WHERE id = :user_id');
+    $db->bind(':user_id', $user_id);
+    $user = $db->single();
+    
+    return $user && $user->is_admin == 1 && $user->is_active == 1;
+}
+
+// Rate limiting for admin actions
+function checkAdminRateLimit($user_id, $action) {
+    $key = "admin_action_{$action}_{$user_id}";
+    $attempts = $_SESSION[$key] ?? 0;
+    $last_attempt = $_SESSION[$key . '_time'] ?? 0;
+    
+    // Reset counter after 5 minutes
+    if (time() - $last_attempt > 300) {
+        $attempts = 0;
+    }
+    
+    if ($attempts >= 10) { // Allow more actions for admin
+        throw new Exception("Too many admin actions. Please wait 5 minutes.");
+    }
+    
+    $_SESSION[$key] = $attempts + 1;
+    $_SESSION[$key . '_time'] = time();
+    
+    return true;
+}
+
+// Enhanced logging
+function logAdminAction($user_id, $action, $target_id, $details = '') {
+    $db = new Database();
+    $db->query('INSERT INTO admin_log (admin_user_id, action, target_id, details, ip_address, user_agent, created_at) 
+                VALUES (:user_id, :action, :target_id, :details, :ip, :user_agent, NOW())');
+    $db->bind(':user_id', $user_id);
+    $db->bind(':action', $action);
+    $db->bind(':target_id', $target_id);
+    $db->bind(':details', $details);
+    $db->bind(':ip', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    $db->bind(':user_agent', $_SERVER['HTTP_USER_AGENT'] ?? 'unknown');
+    $db->execute();
+}
+
+// Check if user is logged in and is admin
+if (!isset($_SESSION['user_id']) || !isAdmin($_SESSION['user_id'])) {
+    header('Location: /login.php');
     exit;
 }
 
-$db = new Database();
+// CSRF protection
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $message = '';
 $error = '';
 
-// Handle actions
-if ($_POST && isset($_POST['action']) && isset($_POST['creator_id'])) {
-    $creator_id = (int)$_POST['creator_id'];
-    $action = $_POST['action'];
-    
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $db->beginTransaction();
-        
-        if ($action === 'approve') {
-            $db->query('UPDATE creators SET is_active = 1, application_status = "approved" WHERE id = :id');
-            $db->bind(':id', $creator_id);
-            if ($db->execute()) {
-                $message = "Creator approved successfully!";
-            }
-            
-        } elseif ($action === 'reject') {
-            $db->query('UPDATE creators SET application_status = "rejected" WHERE id = :id');
-            $db->bind(':id', $creator_id);
-            if ($db->execute()) {
-                $message = "Creator application rejected.";
-            }
-            
-        } elseif ($action === 'delete') {
-            // Get creator info first
-            $db->query('SELECT * FROM creators WHERE id = :id');
-            $db->bind(':id', $creator_id);
-            $creator = $db->single();
-            
-            if ($creator) {
-                // Get all active topics for this creator
-                $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status IN ("active", "funded")');
-                $db->bind(':creator_id', $creator_id);
-                $active_topics = $db->resultSet();
-                
-                $refund_count = 0;
-                $refund_amount = 0;
-                
-                // Process refunds for each active topic
-                foreach ($active_topics as $topic) {
-                    // Get all completed contributions for this topic
-                    $db->query('
-                        SELECT c.*, u.email 
-                        FROM contributions c 
-                        JOIN users u ON c.user_id = u.id 
-                        WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-                    ');
-                    $db->bind(':topic_id', $topic->id);
-                    $contributions = $db->resultSet();
-                    
-                    // Process Stripe refunds
-                    foreach ($contributions as $contribution) {
-                        if ($contribution->payment_id) {
-                            try {
-                                // Create refund in Stripe
-                                $refund = \Stripe\Refund::create([
-                                    'payment_intent' => $contribution->payment_id,
-                                    'reason' => 'requested_by_customer',
-                                    'metadata' => [
-                                        'reason' => 'Creator deleted - automatic refund',
-                                        'topic_id' => $topic->id,
-                                        'creator_id' => $creator_id
-                                    ]
-                                ]);
-                                
-                                // Update contribution status
-                                $db->query('UPDATE contributions SET payment_status = "refunded" WHERE id = :id');
-                                $db->bind(':id', $contribution->id);
-                                $db->execute();
-                                
-                                $refund_count++;
-                                $refund_amount += $contribution->amount;
-                                
-                            } catch (Exception $e) {
-                                error_log("Refund failed for contribution " . $contribution->id . ": " . $e->getMessage());
-                            }
-                        }
-                    }
-                    
-                    // Cancel the topic
-                    $db->query('UPDATE topics SET status = "cancelled" WHERE id = :id');
-                    $db->bind(':id', $topic->id);
-                    $db->execute();
-                }
-                
-                // Delete the creator
-                $db->query('DELETE FROM creators WHERE id = :id');
-                $db->bind(':id', $creator_id);
-                $db->execute();
-                
-                $message = "Creator deleted successfully! Cancelled " . count($active_topics) . " topics and processed " . $refund_count . " refunds totaling $" . number_format($refund_amount, 2) . ".";
-            }
+        // CSRF protection
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            throw new Exception("Invalid request. Please try again.");
         }
         
-        $db->endTransaction();
+        $action = $_POST['action'] ?? '';
+        $application_id = intval($_POST['application_id'] ?? 0);
+        
+        if (!$application_id) {
+            throw new Exception("Invalid application ID.");
+        }
+        
+        // Rate limiting
+        checkAdminRateLimit($_SESSION['user_id'], $action);
+        
+        $db = new Database();
+        
+        switch ($action) {
+            case 'approve':
+                // Get application details
+                $db->query('SELECT * FROM creator_applications WHERE id = :id');
+                $db->bind(':id', $application_id);
+                $application = $db->single();
+                
+                if (!$application) {
+                    throw new Exception("Application not found.");
+                }
+                
+                if ($application->status !== 'pending') {
+                    throw new Exception("Application has already been processed.");
+                }
+                
+                // Begin transaction
+                $db->beginTransaction();
+                
+                try {
+                    // Update application status
+                    $db->query('UPDATE creator_applications SET status = :status, reviewed_by = :admin_id, reviewed_at = NOW() WHERE id = :id');
+                    $db->bind(':status', 'approved');
+                    $db->bind(':admin_id', $_SESSION['user_id']);
+                    $db->bind(':id', $application_id);
+                    $db->execute();
+                    
+                    // Create user account for approved creator
+                    $password = bin2hex(random_bytes(8)); // Generate temporary password
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    
+                    $db->query('INSERT INTO users (name, email, password, role, is_active, created_at) 
+                                VALUES (:name, :email, :password, :role, 1, NOW())');
+                    $db->bind(':name', $application->name);
+                    $db->bind(':email', $application->email);
+                    $db->bind(':password', $hashed_password);
+                    $db->bind(':role', 'creator');
+                    $db->execute();
+                    
+                    $user_id = $db->lastInsertId();
+                    
+                    // Create creator profile
+                    $db->query('INSERT INTO creator_profiles (user_id, bio, social_media, content_type, profile_image, created_at) 
+                                VALUES (:user_id, :bio, :social_media, :content_type, :profile_image, NOW())');
+                    $db->bind(':user_id', $user_id);
+                    $db->bind(':bio', $application->bio);
+                    $db->bind(':social_media', $application->social_media);
+                    $db->bind(':content_type', $application->content_type);
+                    $db->bind(':profile_image', $application->profile_image);
+                    $db->execute();
+                    
+                    $db->commit();
+                    
+                    // Log admin action
+                    logAdminAction($_SESSION['user_id'], 'approve_creator', $application_id, "Approved creator: {$application->name}");
+                    
+                    $message = "Creator application approved successfully. User account created.";
+                    
+                    // Send welcome email (optional)
+                    // mail($application->email, "Welcome to Our Platform", "Your temporary password is: $password");
+                    
+                } catch (Exception $e) {
+                    $db->rollback();
+                    throw $e;
+                }
+                break;
+                
+            case 'reject':
+                $rejection_reason = trim($_POST['rejection_reason'] ?? '');
+                
+                if (empty($rejection_reason)) {
+                    throw new Exception("Please provide a rejection reason.");
+                }
+                
+                $db->query('UPDATE creator_applications SET status = :status, reviewed_by = :admin_id, reviewed_at = NOW(), rejection_reason = :reason WHERE id = :id');
+                $db->bind(':status', 'rejected');
+                $db->bind(':admin_id', $_SESSION['user_id']);
+                $db->bind(':reason', $rejection_reason);
+                $db->bind(':id', $application_id);
+                $db->execute();
+                
+                if ($db->rowCount() > 0) {
+                    logAdminAction($_SESSION['user_id'], 'reject_creator', $application_id, "Rejected creator. Reason: {$rejection_reason}");
+                    $message = "Creator application rejected.";
+                } else {
+                    throw new Exception("Application not found or already processed.");
+                }
+                break;
+                
+            case 'delete':
+                $db->query('DELETE FROM creator_applications WHERE id = :id');
+                $db->bind(':id', $application_id);
+                $db->execute();
+                
+                if ($db->rowCount() > 0) {
+                    logAdminAction($_SESSION['user_id'], 'delete_creator_application', $application_id, "Deleted creator application");
+                    $message = "Creator application deleted.";
+                } else {
+                    throw new Exception("Application not found.");
+                }
+                break;
+                
+            default:
+                throw new Exception("Invalid action.");
+        }
         
     } catch (Exception $e) {
-        $db->cancelTransaction();
-        $error = "Error processing request: " . $e->getMessage();
+        $error = $e->getMessage();
         error_log("Admin action error: " . $e->getMessage());
     }
 }
 
-// Handle topic actions
-if ($_POST && isset($_POST['topic_action']) && isset($_POST['topic_id'])) {
-    $topic_id = (int)$_POST['topic_id'];
-    $action = $_POST['topic_action'];
-    
-    try {
-        $db->beginTransaction();
-        
-        if ($action === 'cancel_topic') {
-            // Get topic info
-            $db->query('SELECT * FROM topics WHERE id = :id');
-            $db->bind(':id', $topic_id);
-            $topic = $db->single();
-            
-            if ($topic && $topic->status !== 'completed') {
-                // Get all completed contributions
-                $db->query('
-                    SELECT c.*, u.email 
-                    FROM contributions c 
-                    JOIN users u ON c.user_id = u.id 
-                    WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-                ');
-                $db->bind(':topic_id', $topic_id);
-                $contributions = $db->resultSet();
-                
-                $refund_count = 0;
-                $refund_amount = 0;
-                
-                // Process Stripe refunds
-                foreach ($contributions as $contribution) {
-                    if ($contribution->payment_id) {
-                        try {
-                            $refund = \Stripe\Refund::create([
-                                'payment_intent' => $contribution->payment_id,
-                                'reason' => 'requested_by_customer',
-                                'metadata' => [
-                                    'reason' => 'Topic cancelled by admin',
-                                    'topic_id' => $topic_id
-                                ]
-                            ]);
-                            
-                            $db->query('UPDATE contributions SET payment_status = "refunded" WHERE id = :id');
-                            $db->bind(':id', $contribution->id);
-                            $db->execute();
-                            
-                            $refund_count++;
-                            $refund_amount += $contribution->amount;
-                            
-                        } catch (Exception $e) {
-                            error_log("Refund failed for contribution " . $contribution->id . ": " . $e->getMessage());
-                        }
-                    }
-                }
-                
-                // Cancel the topic
-                $db->query('UPDATE topics SET status = "cancelled" WHERE id = :id');
-                $db->bind(':id', $topic_id);
-                $db->execute();
-                
-                $message = "Topic cancelled successfully! Processed " . $refund_count . " refunds totaling $" . number_format($refund_amount, 2) . ".";
-            }
-        }
-        
-        $db->endTransaction();
-        
-    } catch (Exception $e) {
-        $db->cancelTransaction();
-        $error = "Error cancelling topic: " . $e->getMessage();
-    }
-}
-
-// Get all creator applications
-$db->query('
-    SELECT c.*, u.username, u.email,
-           (SELECT COUNT(*) FROM topics WHERE creator_id = c.id) as topic_count,
-           (SELECT COUNT(*) FROM topics WHERE creator_id = c.id AND status = "active") as active_topics,
-           (SELECT COALESCE(SUM(current_funding), 0) FROM topics WHERE creator_id = c.id) as total_funding
-    FROM creators c 
-    LEFT JOIN users u ON c.applicant_user_id = u.id 
-    ORDER BY c.created_at DESC
-');
+// Fetch all creator applications
+$db = new Database();
+$db->query('SELECT ca.*, u.name as reviewed_by_name 
+            FROM creator_applications ca 
+            LEFT JOIN users u ON ca.reviewed_by = u.id 
+            ORDER BY ca.applied_at DESC');
 $applications = $db->resultSet();
 
-// Get recent topics for admin review
-$db->query('
-    SELECT t.*, c.display_name as creator_name,
-           (SELECT COUNT(*) FROM contributions WHERE topic_id = t.id AND payment_status = "completed") as contributor_count
-    FROM topics t
-    JOIN creators c ON t.creator_id = c.id
-    WHERE t.status IN ("active", "funded")
-    ORDER BY t.created_at DESC
-    LIMIT 10
-');
-$recent_topics = $db->resultSet();
+// Get statistics
+$db->query('SELECT 
+    COUNT(*) as total,
+    SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
+    SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as approved,
+    SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as rejected
+    FROM creator_applications');
+$stats = $db->single();
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin - Creator & Topic Management</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Applications - Admin</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
-        .message { padding: 10px; margin-bottom: 20px; border-radius: 4px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .error { padding: 10px; margin-bottom: 20px; border-radius: 4px; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-        .admin-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .application-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .app-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; }
-        .app-info { flex: 1; }
-        .app-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .status-badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-rejected { background: #f8d7da; color: #721c24; }
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-size: 12px; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-warning { background: #ffc107; color: #212529; }
-        .btn-info { background: #17a2b8; color: white; }
-        .creator-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
-        .detail-label { font-weight: bold; color: #666; font-size: 12px; }
-        .profile-image { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
-        .stats-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .stat-number { font-size: 20px; font-weight: bold; color: #007bff; }
-        .stat-label { color: #666; font-size: 12px; }
-        .topic-item { padding: 15px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; }
-        .topic-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
-        .topic-title { font-weight: bold; font-size: 14px; }
-        .topic-meta { font-size: 12px; color: #666; }
-        .danger-zone { border: 2px solid #dc3545; border-radius: 8px; padding: 15px; margin-top: 20px; background: #fff5f5; }
-        .warning-text { color: #dc3545; font-weight: bold; margin-bottom: 10px; }
-        
-        @media (max-width: 768px) {
-            .admin-grid { grid-template-columns: 1fr; }
-            .app-header { flex-direction: column; gap: 15px; }
-            .app-actions { justify-content: center; }
-            .creator-details { grid-template-columns: 1fr; }
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; margin-bottom: 20px; }
+        .stats { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-box { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        .status { padding: 4px 8px; border-radius: 4px; color: white; }
+        .status.pending { background: #ffc107; }
+        .status.approved { background: #28a745; }
+        .status.rejected { background: #dc3545; }
+        .btn { padding: 8px 16px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+        .btn-delete { background: #6c757d; color: white; }
+        .btn:hover { opacity: 0.8; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; border-radius: 5px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        .profile-image { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .application-details { max-width: 300px; }
+        .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="nav">
-            <a href="../index.php">← Back to Home</a>
-            <a href="../creators/index.php">View Creators</a>
-            <a href="../topics/index.php">View Topics</a>
-            <a href="../dashboard/index.php">Dashboard</a>
+    <div class="header">
+        <h1>Creator Applications Management</h1>
+        <p>Review and manage creator applications</p>
+    </div>
+
+    <?php if ($message): ?>
+        <div class="message success"><?php echo htmlspecialchars($message); ?></div>
+    <?php endif; ?>
+
+    <?php if ($error): ?>
+        <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number"><?php echo $stats->total; ?></div>
+            <div>Total Applications</div>
         </div>
-
-        <div class="header">
-            <h1>Admin Control Panel</h1>
-            <p>Manage creators, topics, and process refunds</p>
-            <div style="color: #666; font-size: 14px;">
-                Logged in as <?php echo htmlspecialchars($_SESSION['username']); ?> (User ID: <?php echo $_SESSION['user_id']; ?>)
-            </div>
+        <div class="stat-box">
+            <div class="stat-number"><?php echo $stats->pending; ?></div>
+            <div>Pending Review</div>
         </div>
-
-        <?php if ($message): ?>
-            <div class="message"><?php echo htmlspecialchars($message); ?></div>
-        <?php endif; ?>
-
-        <?php if ($error): ?>
-            <div class="error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
-        <?php
-        // Calculate statistics
-        $pending_count = 0;
-        $approved_count = 0;
-        $rejected_count = 0;
-        $total_funding = 0;
-        foreach ($applications as $app) {
-            switch ($app->application_status) {
-                case 'pending': $pending_count++; break;
-                case 'approved': $approved_count++; break;
-                case 'rejected': $rejected_count++; break;
-            }
-            $total_funding += $app->total_funding;
-        }
-        ?>
-
-        <div class="stats-summary">
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $pending_count; ?></div>
-                <div class="stat-label">Pending Applications</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $approved_count; ?></div>
-                <div class="stat-label">Active Creators</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo count($recent_topics); ?></div>
-                <div class="stat-label">Active Topics</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">$<?php echo number_format($total_funding, 0); ?></div>
-                <div class="stat-label">Total Platform Funding</div>
-            </div>
+        <div class="stat-box">
+            <div class="stat-number"><?php echo $stats->approved; ?></div>
+            <div>Approved</div>
         </div>
+        <div class="stat-box">
+            <div class="stat-number"><?php echo $stats->rejected; ?></div>
+            <div>Rejected</div>
+        </div>
+    </div>
 
-        <div class="admin-grid">
-            <div>
-                <div class="section">
-                    <h2>Creator Applications</h2>
-                    
-                    <?php if (empty($applications)): ?>
-                        <div style="text-align: center; color: #666; padding: 20px;">
-                            <p>No creator applications yet.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($applications as $app): ?>
-                            <div class="application-card">
-                                <div class="app-header">
-                                    <div class="app-info">
-                                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                            <?php if ($app->profile_image && file_exists('../uploads/creators/' . $app->profile_image)): ?>
-                                                <img src="../uploads/creators/<?php echo htmlspecialchars($app->profile_image); ?>" alt="Profile" class="profile-image">
-                                            <?php endif; ?>
-                                            <div>
-                                                <h4 style="margin: 0;">
-                                                    <?php echo htmlspecialchars($app->display_name); ?>
-                                                    <span class="status-badge status-<?php echo $app->application_status; ?>">
-                                                        <?php echo ucfirst($app->application_status); ?>
-                                                    </span>
-                                                </h4>
-                                                <div style="font-size: 12px; color: #666;">
-                                                    <?php echo ucfirst($app->platform_type); ?> • <?php echo number_format($app->subscriber_count); ?> subscribers
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <?php if ($app->is_active): ?>
-                                        <div style="font-size: 12px; color: #666;">
-                                            <strong><?php echo $app->topic_count; ?></strong> topics created • 
-                                            <strong><?php echo $app->active_topics; ?></strong> active • 
-                                            <strong>$<?php echo number_format($app->total_funding, 0); ?></strong> total funding
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <div class="app-actions">
-                                        <?php if ($app->application_status === 'pending'): ?>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="creator_id" value="<?php echo $app->id; ?>">
-                                                <input type="hidden" name="action" value="approve">
-                                                <button type="submit" class="btn btn-success" onclick="return confirm('Approve this creator?')">Approve</button>
-                                            </form>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="creator_id" value="<?php echo $app->id; ?>">
-                                                <input type="hidden" name="action" value="reject">
-                                                <button type="submit" class="btn btn-warning" onclick="return confirm('Reject this application?')">Reject</button>
-                                            </form>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($app->is_active): ?>
-                                            <a href="../creators/profile.php?id=<?php echo $app->id; ?>" class="btn btn-info">View Profile</a>
-                                        <?php endif; ?>
-                                        
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="creator_id" value="<?php echo $app->id; ?>">
-                                            <input type="hidden" name="action" value="delete">
-                                            <button type="submit" class="btn btn-danger" onclick="return confirm('DELETE CREATOR?\n\nThis will:\n• Delete the creator permanently\n• Cancel ALL their topics\n• Refund ALL contributors\n• This action cannot be undone\n\nType DELETE to confirm')">Delete Creator</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Content Type</th>
+                <th>Applied Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($applications as $app): ?>
+            <tr>
+                <td><?php echo $app->id; ?></td>
+                <td>
+                    <?php echo htmlspecialchars($app->name); ?>
+                    <?php if ($app->profile_image): ?>
+                        <br><img src="../uploads/creators/<?php echo htmlspecialchars($app->profile_image); ?>" 
+                                 alt="Profile" class="profile-image">
                     <?php endif; ?>
-                </div>
-            </div>
-
-            <div>
-                <div class="section">
-                    <h3>Recent Active Topics</h3>
-                    
-                    <?php if (empty($recent_topics)): ?>
-                        <div style="text-align: center; color: #666; padding: 20px;">
-                            <p>No active topics.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($recent_topics as $topic): ?>
-                            <div class="topic-item">
-                                <div class="topic-header">
-                                    <div>
-                                        <div class="topic-title"><?php echo htmlspecialchars($topic->title); ?></div>
-                                        <div class="topic-meta">
-                                            By <?php echo htmlspecialchars($topic->creator_name); ?> • 
-                                            <?php echo $topic->contributor_count; ?> contributors • 
-                                            $<?php echo number_format($topic->current_funding, 0); ?> / $<?php echo number_format($topic->funding_threshold, 0); ?>
-                                        </div>
-                                    </div>
-                                    <span class="status-badge status-<?php echo $topic->status === 'active' ? 'pending' : 'approved'; ?>">
-                                        <?php echo ucfirst($topic->status); ?>
-                                    </span>
-                                </div>
-                                
-                                <div style="margin-top: 10px;">
-                                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-info">View</a>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="topic_id" value="<?php echo $topic->id; ?>">
-                                        <input type="hidden" name="topic_action" value="cancel_topic">
-                                        <button type="submit" class="btn btn-danger" onclick="return confirm('CANCEL TOPIC?\n\nThis will:\n• Cancel the topic permanently\n• Refund ALL contributors\n• This action cannot be undone')">Cancel & Refund</button>
-                                    </form>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
+                </td>
+                <td><?php echo htmlspecialchars($app->email); ?></td>
+                <td><?php echo htmlspecialchars($app->content_type); ?></td>
+                <td><?php echo date('M j, Y', strtotime($app->applied_at)); ?></td>
+                <td>
+                    <span class="status <?php echo $app->status; ?>">
+                        <?php echo ucfirst($app->status); ?>
+                    </span>
+                    <?php if ($app->reviewed_by_name): ?>
+                        <br><small>by <?php echo htmlspecialchars($app->reviewed_by_name); ?></small>
                     <?php endif; ?>
-                </div>
-
-                <div class="section">
-                    <h3>⚠️ Admin Actions</h3>
-                    <div class="warning-text">Dangerous operations - use with caution</div>
+                </td>
+                <td>
+                    <button class="btn" onclick="viewApplication(<?php echo $app->id; ?>)">View</button>
                     
-                    <div style="margin-top: 15px;">
-                        <div style="font-size: 14px; margin-bottom: 10px;">
-                            <strong>Delete Creator:</strong> Permanently removes creator, cancels all topics, refunds all contributors
-                        </div>
-                        <div style="font-size: 14px; margin-bottom: 10px;">
-                            <strong>Cancel Topic:</strong> Cancels topic and refunds all contributors via Stripe
-                        </div>
-                        <div style="font-size: 12px; color: #666;">
-                            All refunds are processed automatically through Stripe API
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <?php if ($app->status === 'pending'): ?>
+                        <form style="display: inline;" method="POST" onsubmit="return confirm('Are you sure you want to approve this application?')">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                            <input type="hidden" name="action" value="approve">
+                            <input type="hidden" name="application_id" value="<?php echo $app->id; ?>">
+                            <button type="submit" class="btn btn-approve">Approve</button>
+                        </form>
+                        
+                        <button class="btn btn-reject" onclick="showRejectModal(<?php echo $app->id; ?>)">Reject</button>
+                    <?php endif; ?>
+                    
+                    <form style="display: inline;" method="POST" onsubmit="return confirm('Are you sure you want to delete this application? This action cannot be undone.')">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="application_id" value="<?php echo $app->id; ?>">
+                        <button type="submit" class="btn btn-delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            
+            <?php if (empty($applications)): ?>
+            <tr>
+                <td colspan="7" style="text-align: center;">No applications found.</td>
+            </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
+    <!-- Application Details Modal -->
+    <div id="applicationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="applicationDetails"></div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRejectModal()">&times;</span>
+            <h2>Reject Application</h2>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="application_id" id="rejectApplicationId">
+                
+                <label for="rejection_reason">Rejection Reason:</label><br>
+                <textarea name="rejection_reason" id="rejection_reason" rows="4" style="width: 100%; margin: 10px 0;" required placeholder="Please provide a reason for rejection..."></textarea><br>
+                
+                <button type="submit" class="btn btn-reject">Reject Application</button>
+                <button type="button" class="btn" onclick="closeRejectModal()">Cancel</button>
+            </form>
         </div>
     </div>
 
     <script>
-    // Enhanced confirmation for dangerous actions
-    document.querySelectorAll('button[onclick*="DELETE CREATOR"]').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const userInput = prompt('This will permanently delete the creator and refund all money.\n\nType "DELETE" to confirm:');
-            if (userInput === 'DELETE') {
-                this.closest('form').submit();
+        // Application data for JavaScript
+        const applications = <?php echo json_encode($applications); ?>;
+        
+        function viewApplication(id) {
+            const app = applications.find(a => a.id == id);
+            if (!app) return;
+            
+            const details = `
+                <h2>Application Details</h2>
+                <p><strong>Name:</strong> ${app.name}</p>
+                <p><strong>Email:</strong> ${app.email}</p>
+                <p><strong>Content Type:</strong> ${app.content_type}</p>
+                <p><strong>Social Media:</strong> ${app.social_media || 'Not provided'}</p>
+                <p><strong>Bio:</strong></p>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    ${app.bio}
+                </div>
+                <p><strong>Experience:</strong></p>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    ${app.experience || 'Not provided'}
+                </div>
+                <p><strong>Why Join:</strong></p>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    ${app.why_join}
+                </div>
+                <p><strong>Applied:</strong> ${new Date(app.applied_at).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> <span class="status ${app.status}">${app.status}</span></p>
+                ${app.rejection_reason ? `<p><strong>Rejection Reason:</strong> ${app.rejection_reason}</p>` : ''}
+                ${app.profile_image ? `<p><strong>Profile Image:</strong><br><img src="../uploads/creators/${app.profile_image}" style="max-width: 200px; border-radius: 4px;"></p>` : ''}
+            `;
+            
+            document.getElementById('applicationDetails').innerHTML = details;
+            document.getElementById('applicationModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('applicationModal').style.display = 'none';
+        }
+        
+        function showRejectModal(id) {
+            document.getElementById('rejectApplicationId').value = id;
+            document.getElementById('rejectModal').style.display = 'block';
+        }
+        
+        function closeRejectModal() {
+            document.getElementById('rejectModal').style.display = 'none';
+            document.getElementById('rejection_reason').value = '';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const applicationModal = document.getElementById('applicationModal');
+            const rejectModal = document.getElementById('rejectModal');
+            if (event.target == applicationModal) {
+                applicationModal.style.display = 'none';
             }
-        });
-    });
+            if (event.target == rejectModal) {
+                rejectModal.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>
