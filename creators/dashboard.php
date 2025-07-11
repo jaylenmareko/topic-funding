@@ -30,9 +30,7 @@ if (!$creator) {
 // Calculate earnings
 $db->query('
     SELECT 
-        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned,
-        COUNT(CASE WHEN t.status = "completed" THEN 1 END) as topics_completed,
-        COUNT(CASE WHEN t.status = "funded" AND t.content_url IS NULL THEN 1 END) as topics_pending
+        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned
     FROM topics t 
     WHERE t.creator_id = :creator_id
 ');
@@ -117,7 +115,6 @@ $share_url = 'https://topiclaunch.com/';
             margin-top: 20px;
             backdrop-filter: blur(10px);
         }
-        .share-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
         .share-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .share-url { 
             background: rgba(255,255,255,0.2); 
@@ -322,8 +319,7 @@ $share_url = 'https://topiclaunch.com/';
                 
                 <!-- Share Your Profile -->
                 <div class="share-section">
-                    <div class="share-title">🔗 Share TopicLaunch with Your Fans</div>
-                    <p style="margin: 0 0 15px 0; opacity: 0.9;">Send this link to your fans so they can find you and propose topics!</p>
+                    <p style="margin: 0 0 15px 0; opacity: 0.9;">Send this link to your fans so they can find you and fund topics!</p>
                     <div class="share-controls">
                         <div class="share-url" id="shareUrl"><?php echo $share_url; ?></div>
                         <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
@@ -381,18 +377,6 @@ $share_url = 'https://topiclaunch.com/';
             <div class="stat-item">
                 <div class="stat-value">$<?php echo number_format($earnings->total_earned ?? 0, 0); ?></div>
                 <div class="stat-label">Total Earnings</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value"><?php echo $earnings->topics_completed ?? 0; ?></div>
-                <div class="stat-label">Completed Topics</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value"><?php echo $earnings->topics_pending ?? 0; ?></div>
-                <div class="stat-label">Due Soon</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value"><?php echo count($live_topics); ?></div>
-                <div class="stat-label">Live Topics</div>
             </div>
         </div>
 
