@@ -95,6 +95,13 @@ if ($_POST) {
             $errors[] = "YouTube handle must contain at least one letter";
         } elseif ($helper->usernameExists($username)) {
             $errors[] = "YouTube handle already exists";
+        } else {
+            // Verify YouTube handle exists
+            $youtube_url = "https://www.youtube.com/@" . $youtube_handle;
+            $headers = @get_headers($youtube_url);
+            if (!$headers || strpos($headers[0], '200') === false) {
+                $errors[] = "YouTube handle '@{$youtube_handle}' does not exist. Please enter a valid YouTube handle.";
+            }
         }
     } else {
         // Regular username validation for fans
@@ -115,6 +122,44 @@ if ($_POST) {
         $errors[] = "Invalid email format";
     } elseif ($helper->emailExists($email)) {
         $errors[] = "Email already registered";
+    } else {
+        // Verify email domain actually exists
+        $domain = substr(strrchr($email, "@"), 1);
+        
+        // Check if domain has valid format first
+        if (!preg_match('/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $domain)) {
+            $errors[] = "Invalid email domain format";
+        } else {
+            $domain_exists = false;
+            
+            // Method 1: Check MX records (most reliable for email)
+            if (function_exists('checkdnsrr')) {
+                if (checkdnsrr($domain, "MX")) {
+                    $domain_exists = true;
+                }
+                // Method 2: Check A records if no MX
+                elseif (checkdnsrr($domain, "A")) {
+                    $domain_exists = true;
+                }
+                // Method 3: Check AAAA records (IPv6)
+                elseif (checkdnsrr($domain, "AAAA")) {
+                    $domain_exists = true;
+                }
+            }
+            
+            // Fallback method: gethostbyname
+            if (!$domain_exists && function_exists('gethostbyname')) {
+                $ip = gethostbyname($domain);
+                if ($ip !== $domain && filter_var($ip, FILTER_VALIDATE_IP)) {
+                    $domain_exists = true;
+                }
+            }
+            
+            // If all methods fail, domain doesn't exist
+            if (!$domain_exists) {
+                $errors[] = "The email domain '{$domain}' does not exist. Please check your email address and try again.";
+            }
+        }
     }
     
     if (empty($password)) {
@@ -295,18 +340,21 @@ if ($_POST) {
         .youtube-handle-group { position: relative; }
         .youtube-at-symbol { 
             position: absolute; 
-            left: 8px; 
-            top: 8px; 
-            background: #e9ecef; 
+            left: 0px; 
+            top: 0px; 
+            background: #f8f9fa; 
             padding: 8px 12px; 
             border-radius: 4px 0 0 4px; 
             border: 1px solid #ddd; 
             border-right: none; 
             color: #666; 
             font-weight: bold;
+            z-index: 2;
         }
         .youtube-handle-input { 
-            padding-left: 50px !important; 
+            padding-left: 45px !important; 
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>
@@ -364,7 +412,8 @@ if ($_POST) {
         
         <div class="form-group">
             <label>Email:</label>
-            <input type="email" name="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
+            <input type="email" name="email" id="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
+            <div class="requirement" id="email-req">• Must be a valid email address</div>
         </div>
         
         <div class="form-group">
@@ -380,7 +429,6 @@ if ($_POST) {
         <div class="form-group">
             <label>Confirm Password:</label>
             <input type="password" name="confirm_password" id="confirm_password" required>
-            <div class="requirement" id="match-req">• Passwords must match</div>
         </div>
         
         <button type="submit" class="btn" id="submitBtn">
@@ -403,7 +451,7 @@ if ($_POST) {
     const lengthReq = document.getElementById('length-req');
     const letterReq = document.getElementById('letter-req');
     const numberReq = document.getElementById('number-req');
-    const matchReq = document.getElementById('match-req');
+    const emailReq = document.getElementById('email-req');
     const submitBtn = document.getElementById('submitBtn');
 
     function validatePassword() {
@@ -437,22 +485,21 @@ if ($_POST) {
             numberReq.classList.remove('valid');
         }
         
-        // Match check
-        if (confirmPwd && pwd === confirmPwd) {
-            matchReq.classList.add('valid');
-            matchReq.classList.remove('invalid');
-        } else if (confirmPwd) {
-            matchReq.classList.add('invalid');
-            matchReq.classList.remove('valid');
-        }
+        // Check if passwords match
+        const passwordsMatch = confirmPwd && pwd === confirmPwd;
+        
+        // Email validation (basic format check - server will verify domain exists)
+        const email = document.getElementById('email').value.trim();
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const emailValid = emailRegex.test(email);
         
         // Enable/disable submit button
         <?php if ($user_type === 'creator'): ?>
         const handle = document.getElementById('youtube_handle').value.trim();
-        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && pwd === confirmPwd && handle.length >= 3 && /[a-zA-Z]/.test(handle);
+        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && handle.length >= 3 && /[a-zA-Z]/.test(handle) && emailValid;
         <?php else: ?>
         const username = document.getElementById('username').value.trim();
-        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && pwd === confirmPwd && username.length >= 3;
+        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && username.length >= 3 && emailValid;
         <?php endif; ?>
         
         submitBtn.disabled = !isValid;
@@ -461,6 +508,32 @@ if ($_POST) {
 
     password.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
+    document.getElementById('email').addEventListener('input', function() {
+        const email = this.value.trim();
+        
+        if (email) {
+            // Basic format validation on frontend
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            
+            if (emailRegex.test(email)) {
+                emailReq.classList.add('valid');
+                emailReq.classList.remove('invalid');
+                emailReq.textContent = '• Valid email format (domain will be verified on submit)';
+                this.style.borderColor = '#28a745';
+            } else {
+                emailReq.classList.add('invalid');
+                emailReq.classList.remove('valid');
+                emailReq.textContent = '• Invalid email format';
+                this.style.borderColor = '#dc3545';
+            }
+        } else {
+            emailReq.classList.remove('valid', 'invalid');
+            emailReq.textContent = '• Must be a valid email address';
+            this.style.borderColor = '#ddd';
+        }
+        
+        validatePassword(); // Revalidate form
+    });
     
     <?php if ($user_type === 'creator'): ?>
     // YouTube handle validation and auto-trim
