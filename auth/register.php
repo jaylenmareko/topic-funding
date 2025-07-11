@@ -28,7 +28,7 @@ if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
     
-    $username = InputSanitizer::sanitizeString($_POST['username']);
+    $username = trim(InputSanitizer::sanitizeString($_POST['username']));
     $email = InputSanitizer::sanitizeEmail($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
@@ -160,7 +160,7 @@ if ($_POST) {
         
         <div class="form-group">
             <label>Username:</label>
-            <input type="text" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
+            <input type="text" name="username" id="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
             <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
             <?php if ($user_type === 'creator'): ?>
                 <div class="requirement">This will be your creator name on TopicLaunch</div>
@@ -259,6 +259,23 @@ if ($_POST) {
 
     password.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
+    
+    // Auto-trim username spaces and real-time validation
+    document.getElementById('username').addEventListener('input', function() {
+        let value = this.value;
+        
+        // Automatically trim spaces
+        value = value.trim();
+        
+        // Update the input value if it was modified
+        if (this.value !== value) {
+            this.value = value;
+        }
+        
+        // Real-time validation feedback
+        const isValid = value.length >= 3 && /^[a-zA-Z0-9_]+$/.test(value);
+        this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
+    });
     
     // Form submission feedback
     document.getElementById('registrationForm').addEventListener('submit', function() {
