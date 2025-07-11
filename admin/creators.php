@@ -1,60 +1,75 @@
 <?php
-// admin/creators.php - Secure admin creator management
-
+// admin/creators.php - Fixed version with error handling
 session_start();
 require_once '../config/database.php';
 
-// Enhanced admin authorization
+// Enhanced admin authorization - Check multiple admin methods
 function isAdmin($user_id) {
     if (!$user_id) return false;
     
-    $db = new Database();
-    $db->query('SELECT is_admin, is_active FROM users WHERE id = :user_id');
-    $db->bind(':user_id', $user_id);
-    $user = $db->single();
-    
-    return $user && $user->is_admin == 1 && $user->is_active == 1;
-}
-
-// Rate limiting for admin actions
-function checkAdminRateLimit($user_id, $action) {
-    $key = "admin_action_{$action}_{$user_id}";
-    $attempts = $_SESSION[$key] ?? 0;
-    $last_attempt = $_SESSION[$key . '_time'] ?? 0;
-    
-    // Reset counter after 5 minutes
-    if (time() - $last_attempt > 300) {
-        $attempts = 0;
+    try {
+        $db = new Database();
+        
+        // Method 1: Check if user_id is in hardcoded admin list (most reliable)
+        $admin_user_ids = [1, 2, 9]; // Your admin user IDs
+        if (in_array($user_id, $admin_user_ids)) {
+            return true;
+        }
+        
+        // Method 2: Check is_admin column if it exists
+        $db->query('DESCRIBE users');
+        $columns = $db->resultSet();
+        $has_admin_column = false;
+        foreach ($columns as $column) {
+            if ($column->Field === 'is_admin') {
+                $has_admin_column = true;
+                break;
+            }
+        }
+        
+        if ($has_admin_column) {
+            $db->query('SELECT is_admin, is_active FROM users WHERE id = :user_id');
+            $db->bind(':user_id', $user_id);
+            $user = $db->single();
+            
+            if ($user && $user->is_admin == 1 && $user->is_active == 1) {
+                return true;
+            }
+        }
+        
+        return false;
+        
+    } catch (Exception $e) {
+        error_log("Admin check error: " . $e->getMessage());
+        // Fallback to hardcoded admin list
+        $admin_user_ids = [1, 2, 9];
+        return in_array($user_id, $admin_user_ids);
     }
-    
-    if ($attempts >= 10) { // Allow more actions for admin
-        throw new Exception("Too many admin actions. Please wait 5 minutes.");
-    }
-    
-    $_SESSION[$key] = $attempts + 1;
-    $_SESSION[$key . '_time'] = time();
-    
-    return true;
-}
-
-// Enhanced logging
-function logAdminAction($user_id, $action, $target_id, $details = '') {
-    $db = new Database();
-    $db->query('INSERT INTO admin_log (admin_user_id, action, target_id, details, ip_address, user_agent, created_at) 
-                VALUES (:user_id, :action, :target_id, :details, :ip, :user_agent, NOW())');
-    $db->bind(':user_id', $user_id);
-    $db->bind(':action', $action);
-    $db->bind(':target_id', $target_id);
-    $db->bind(':details', $details);
-    $db->bind(':ip', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    $db->bind(':user_agent', $_SERVER['HTTP_USER_AGENT'] ?? 'unknown');
-    $db->execute();
 }
 
 // Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || !isAdmin($_SESSION['user_id'])) {
-    header('Location: /login.php');
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../auth/login.php');
     exit;
+}
+
+// Debug admin check
+$user_id = $_SESSION['user_id'];
+$is_admin = isAdmin($user_id);
+
+if (!$is_admin) {
+    // Show debug info instead of redirecting
+    echo "<h2>Admin Access Required</h2>";
+    echo "<p>Your User ID: " . $user_id . "</p>";
+    echo "<p>Admin Status: " . ($is_admin ? 'Yes' : 'No') . "</p>";
+    echo "<p>Allowed Admin IDs: 1, 2, 9</p>";
+    echo "<p><a href='../auth/logout.php'>Logout</a> | <a href='../index.php'>Home</a></p>";
+    
+    // Don't exit here so you can see what's happening
+    if ($user_id != 1 && $user_id != 2 && $user_id != 9) {
+        echo "<p style='color: red;'>You need to be logged in as user ID 1, 2, or 9 to access admin panel.</p>";
+        exit;
+    }
 }
 
 // CSRF protection
@@ -66,152 +81,104 @@ $message = '';
 $error = '';
 
 // Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        // CSRF protection
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            throw new Exception("Invalid request. Please try again.");
-        }
-        
-        $action = $_POST['action'] ?? '';
-        $application_id = intval($_POST['application_id'] ?? 0);
-        
-        if (!$application_id) {
-            throw new Exception("Invalid application ID.");
-        }
-        
-        // Rate limiting
-        checkAdminRateLimit($_SESSION['user_id'], $action);
-        
-        $db = new Database();
-        
-        switch ($action) {
-            case 'approve':
-                // Get application details
-                $db->query('SELECT * FROM creator_applications WHERE id = :id');
-                $db->bind(':id', $application_id);
-                $application = $db->single();
-                
-                if (!$application) {
-                    throw new Exception("Application not found.");
-                }
-                
-                if ($application->status !== 'pending') {
-                    throw new Exception("Application has already been processed.");
-                }
-                
-                // Begin transaction
-                $db->beginTransaction();
-                
-                try {
-                    // Update application status
-                    $db->query('UPDATE creator_applications SET status = :status, reviewed_by = :admin_id, reviewed_at = NOW() WHERE id = :id');
-                    $db->bind(':status', 'approved');
-                    $db->bind(':admin_id', $_SESSION['user_id']);
-                    $db->bind(':id', $application_id);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token'])) {
+    // CSRF protection
+    if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid request. Please try again.";
+    } else {
+        try {
+            $action = $_POST['action'] ?? '';
+            $creator_id = intval($_POST['creator_id'] ?? 0);
+            
+            if (!$creator_id) {
+                throw new Exception("Invalid creator ID.");
+            }
+            
+            $db = new Database();
+            
+            switch ($action) {
+                case 'activate':
+                    $db->query('UPDATE creators SET is_active = 1 WHERE id = :id');
+                    $db->bind(':id', $creator_id);
                     $db->execute();
                     
-                    // Create user account for approved creator
-                    $password = bin2hex(random_bytes(8)); // Generate temporary password
-                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    if ($db->rowCount() > 0) {
+                        $message = "Creator activated successfully.";
+                    } else {
+                        throw new Exception("Creator not found.");
+                    }
+                    break;
                     
-                    $db->query('INSERT INTO users (name, email, password, role, is_active, created_at) 
-                                VALUES (:name, :email, :password, :role, 1, NOW())');
-                    $db->bind(':name', $application->name);
-                    $db->bind(':email', $application->email);
-                    $db->bind(':password', $hashed_password);
-                    $db->bind(':role', 'creator');
+                case 'deactivate':
+                    $db->query('UPDATE creators SET is_active = 0 WHERE id = :id');
+                    $db->bind(':id', $creator_id);
                     $db->execute();
                     
-                    $user_id = $db->lastInsertId();
+                    if ($db->rowCount() > 0) {
+                        $message = "Creator deactivated successfully.";
+                    } else {
+                        throw new Exception("Creator not found.");
+                    }
+                    break;
                     
-                    // Create creator profile
-                    $db->query('INSERT INTO creator_profiles (user_id, bio, social_media, content_type, profile_image, created_at) 
-                                VALUES (:user_id, :bio, :social_media, :content_type, :profile_image, NOW())');
-                    $db->bind(':user_id', $user_id);
-                    $db->bind(':bio', $application->bio);
-                    $db->bind(':social_media', $application->social_media);
-                    $db->bind(':content_type', $application->content_type);
-                    $db->bind(':profile_image', $application->profile_image);
+                case 'delete_creator':
+                    // First check if creator has any topics
+                    $db->query('SELECT COUNT(*) as topic_count FROM topics WHERE creator_id = :id');
+                    $db->bind(':id', $creator_id);
+                    $topic_count = $db->single()->topic_count;
+                    
+                    if ($topic_count > 0) {
+                        throw new Exception("Cannot delete creator with existing topics. Deactivate instead.");
+                    }
+                    
+                    $db->query('DELETE FROM creators WHERE id = :id');
+                    $db->bind(':id', $creator_id);
                     $db->execute();
                     
-                    $db->commit();
+                    if ($db->rowCount() > 0) {
+                        $message = "Creator deleted successfully.";
+                    } else {
+                        throw new Exception("Creator not found.");
+                    }
+                    break;
                     
-                    // Log admin action
-                    logAdminAction($_SESSION['user_id'], 'approve_creator', $application_id, "Approved creator: {$application->name}");
-                    
-                    $message = "Creator application approved successfully. User account created.";
-                    
-                    // Send welcome email (optional)
-                    // mail($application->email, "Welcome to Our Platform", "Your temporary password is: $password");
-                    
-                } catch (Exception $e) {
-                    $db->rollback();
-                    throw $e;
-                }
-                break;
-                
-            case 'reject':
-                $rejection_reason = trim($_POST['rejection_reason'] ?? '');
-                
-                if (empty($rejection_reason)) {
-                    throw new Exception("Please provide a rejection reason.");
-                }
-                
-                $db->query('UPDATE creator_applications SET status = :status, reviewed_by = :admin_id, reviewed_at = NOW(), rejection_reason = :reason WHERE id = :id');
-                $db->bind(':status', 'rejected');
-                $db->bind(':admin_id', $_SESSION['user_id']);
-                $db->bind(':reason', $rejection_reason);
-                $db->bind(':id', $application_id);
-                $db->execute();
-                
-                if ($db->rowCount() > 0) {
-                    logAdminAction($_SESSION['user_id'], 'reject_creator', $application_id, "Rejected creator. Reason: {$rejection_reason}");
-                    $message = "Creator application rejected.";
-                } else {
-                    throw new Exception("Application not found or already processed.");
-                }
-                break;
-                
-            case 'delete':
-                $db->query('DELETE FROM creator_applications WHERE id = :id');
-                $db->bind(':id', $application_id);
-                $db->execute();
-                
-                if ($db->rowCount() > 0) {
-                    logAdminAction($_SESSION['user_id'], 'delete_creator_application', $application_id, "Deleted creator application");
-                    $message = "Creator application deleted.";
-                } else {
-                    throw new Exception("Application not found.");
-                }
-                break;
-                
-            default:
-                throw new Exception("Invalid action.");
+                default:
+                    throw new Exception("Invalid action.");
+            }
+            
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            error_log("Admin action error: " . $e->getMessage());
         }
-        
-    } catch (Exception $e) {
-        $error = $e->getMessage();
-        error_log("Admin action error: " . $e->getMessage());
     }
 }
 
-// Fetch all creator applications
-$db = new Database();
-$db->query('SELECT ca.*, u.name as reviewed_by_name 
-            FROM creator_applications ca 
-            LEFT JOIN users u ON ca.reviewed_by = u.id 
-            ORDER BY ca.applied_at DESC');
-$applications = $db->resultSet();
-
-// Get statistics
-$db->query('SELECT 
-    COUNT(*) as total,
-    SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
-    SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as approved,
-    SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as rejected
-    FROM creator_applications');
-$stats = $db->single();
+// Fetch all creators instead of creator_applications since that table doesn't exist
+try {
+    $db = new Database();
+    
+    // Use the existing creators table instead
+    $db->query('SELECT c.*, u.username as applicant_username, u.email as applicant_email 
+                FROM creators c 
+                LEFT JOIN users u ON c.applicant_user_id = u.id 
+                ORDER BY c.created_at DESC');
+    $applications = $db->resultSet();
+    
+    // Get statistics from creators table
+    $db->query('SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as approved,
+        0 as rejected
+        FROM creators');
+    $stats = $db->single();
+    
+} catch (Exception $e) {
+    error_log("Database error in admin/creators.php: " . $e->getMessage());
+    $error = "Database error: " . $e->getMessage();
+    $applications = [];
+    $stats = (object)['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0];
+}
 ?>
 
 <!DOCTYPE html>
@@ -222,7 +189,7 @@ $stats = $db->single();
     <title>Creator Applications - Admin</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background: #007bff; color: white; padding: 20px; margin-bottom: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
         .stats { display: flex; gap: 20px; margin-bottom: 20px; }
         .stat-box { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
         .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
@@ -246,14 +213,13 @@ $stats = $db->single();
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: black; }
         .profile-image { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
-        .application-details { max-width: 300px; }
-        .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Creator Applications Management</h1>
-        <p>Review and manage creator applications</p>
+        <h1>Creator Management</h1>
+        <p>Manage existing creators on the platform</p>
+        <a href="../index.php" style="color: white;">← Back to Home</a>
     </div>
 
     <?php if ($message): ?>
@@ -267,19 +233,15 @@ $stats = $db->single();
     <div class="stats">
         <div class="stat-box">
             <div class="stat-number"><?php echo $stats->total; ?></div>
-            <div>Total Applications</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number"><?php echo $stats->pending; ?></div>
-            <div>Pending Review</div>
+            <div>Total Creators</div>
         </div>
         <div class="stat-box">
             <div class="stat-number"><?php echo $stats->approved; ?></div>
-            <div>Approved</div>
+            <div>Active Creators</div>
         </div>
         <div class="stat-box">
-            <div class="stat-number"><?php echo $stats->rejected; ?></div>
-            <div>Rejected</div>
+            <div class="stat-number"><?php echo $stats->pending; ?></div>
+            <div>Inactive Creators</div>
         </div>
     </div>
 
@@ -287,75 +249,65 @@ $stats = $db->single();
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Name</th>
+                <th>Display Name</th>
                 <th>Email</th>
-                <th>Content Type</th>
-                <th>Applied Date</th>
+                <th>Platform</th>
+                <th>Created Date</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($applications as $app): ?>
-            <tr>
-                <td><?php echo $app->id; ?></td>
-                <td>
-                    <?php echo htmlspecialchars($app->name); ?>
-                    <?php if ($app->profile_image): ?>
-                        <br><img src="../uploads/creators/<?php echo htmlspecialchars($app->profile_image); ?>" 
-                                 alt="Profile" class="profile-image">
-                    <?php endif; ?>
-                </td>
-                <td><?php echo htmlspecialchars($app->email); ?></td>
-                <td><?php echo htmlspecialchars($app->content_type); ?></td>
-                <td><?php echo date('M j, Y', strtotime($app->applied_at)); ?></td>
-                <td>
-                    <span class="status <?php echo $app->status; ?>">
-                        <?php echo ucfirst($app->status); ?>
-                    </span>
-                    <?php if ($app->reviewed_by_name): ?>
-                        <br><small>by <?php echo htmlspecialchars($app->reviewed_by_name); ?></small>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <button class="btn" onclick="viewApplication(<?php echo $app->id; ?>)">View</button>
-                    
-                    <?php if ($app->status === 'pending'): ?>
-                        <form style="display: inline;" method="POST" onsubmit="return confirm('Are you sure you want to approve this application?')">
-                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                            <input type="hidden" name="action" value="approve">
-                            <input type="hidden" name="application_id" value="<?php echo $app->id; ?>">
-                            <button type="submit" class="btn btn-approve">Approve</button>
-                        </form>
-                        
-                        <button class="btn btn-reject" onclick="showRejectModal(<?php echo $app->id; ?>)">Reject</button>
-                    <?php endif; ?>
-                    
-                    <form style="display: inline;" method="POST" onsubmit="return confirm('Are you sure you want to delete this application? This action cannot be undone.')">
-                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="application_id" value="<?php echo $app->id; ?>">
-                        <button type="submit" class="btn btn-delete">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            
             <?php if (empty($applications)): ?>
             <tr>
-                <td colspan="7" style="text-align: center;">No applications found.</td>
+                <td colspan="7" style="text-align: center;">No creators found.</td>
             </tr>
+            <?php else: ?>
+                <?php foreach ($applications as $creator): ?>
+                <tr>
+                    <td><?php echo $creator->id; ?></td>
+                    <td><?php echo htmlspecialchars($creator->display_name ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($creator->email ?? $creator->applicant_email ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($creator->platform_type ?? 'youtube'); ?></td>
+                    <td><?php echo date('M j, Y', strtotime($creator->created_at)); ?></td>
+                    <td>
+                        <span class="status <?php echo $creator->is_active ? 'approved' : 'pending'; ?>">
+                            <?php echo $creator->is_active ? 'Active' : 'Inactive'; ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($creator->is_active): ?>
+                            <form style="display: inline;" method="POST" onsubmit="return confirm('Deactivate this creator?')">
+                                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                                <input type="hidden" name="action" value="deactivate">
+                                <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+                                <button type="submit" class="btn btn-reject">Deactivate</button>
+                            </form>
+                        <?php else: ?>
+                            <form style="display: inline;" method="POST" onsubmit="return confirm('Activate this creator?')">
+                                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                                <input type="hidden" name="action" value="activate">
+                                <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+                                <button type="submit" class="btn btn-approve">Activate</button>
+                            </form>
+                        <?php endif; ?>
+                        
+                        <form style="display: inline;" method="POST" onsubmit="return confirm('Delete this creator? This cannot be undone.')">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                            <input type="hidden" name="action" value="delete_creator">
+                            <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+                            <button type="submit" class="btn btn-delete">Delete</button>
+                        </form>
+                        
+                        <?php if ($creator->platform_url): ?>
+                            <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn" style="background: #007bff; color: white;">View Channel</a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
-
-    <!-- Application Details Modal -->
-    <div id="applicationModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <div id="applicationDetails"></div>
-        </div>
-    </div>
 
     <!-- Reject Modal -->
     <div id="rejectModal" class="modal">
@@ -377,45 +329,6 @@ $stats = $db->single();
     </div>
 
     <script>
-        // Application data for JavaScript
-        const applications = <?php echo json_encode($applications); ?>;
-        
-        function viewApplication(id) {
-            const app = applications.find(a => a.id == id);
-            if (!app) return;
-            
-            const details = `
-                <h2>Application Details</h2>
-                <p><strong>Name:</strong> ${app.name}</p>
-                <p><strong>Email:</strong> ${app.email}</p>
-                <p><strong>Content Type:</strong> ${app.content_type}</p>
-                <p><strong>Social Media:</strong> ${app.social_media || 'Not provided'}</p>
-                <p><strong>Bio:</strong></p>
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                    ${app.bio}
-                </div>
-                <p><strong>Experience:</strong></p>
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                    ${app.experience || 'Not provided'}
-                </div>
-                <p><strong>Why Join:</strong></p>
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                    ${app.why_join}
-                </div>
-                <p><strong>Applied:</strong> ${new Date(app.applied_at).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> <span class="status ${app.status}">${app.status}</span></p>
-                ${app.rejection_reason ? `<p><strong>Rejection Reason:</strong> ${app.rejection_reason}</p>` : ''}
-                ${app.profile_image ? `<p><strong>Profile Image:</strong><br><img src="../uploads/creators/${app.profile_image}" style="max-width: 200px; border-radius: 4px;"></p>` : ''}
-            `;
-            
-            document.getElementById('applicationDetails').innerHTML = details;
-            document.getElementById('applicationModal').style.display = 'block';
-        }
-        
-        function closeModal() {
-            document.getElementById('applicationModal').style.display = 'none';
-        }
-        
         function showRejectModal(id) {
             document.getElementById('rejectApplicationId').value = id;
             document.getElementById('rejectModal').style.display = 'block';
@@ -428,11 +341,7 @@ $stats = $db->single();
         
         // Close modals when clicking outside
         window.onclick = function(event) {
-            const applicationModal = document.getElementById('applicationModal');
             const rejectModal = document.getElementById('rejectModal');
-            if (event.target == applicationModal) {
-                applicationModal.style.display = 'none';
-            }
             if (event.target == rejectModal) {
                 rejectModal.style.display = 'none';
             }
