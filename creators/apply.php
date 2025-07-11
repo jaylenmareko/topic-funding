@@ -48,6 +48,9 @@ if ($_POST) {
             $youtube_handle = substr($youtube_handle, 1);
         }
         
+        // Additional cleanup - trim again after @ removal
+        $youtube_handle = trim($youtube_handle);
+        
         // Handle profile image upload
         $profile_image = null;
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
@@ -329,23 +332,29 @@ if ($_POST) {
         submitBtn.disabled = true;
     });
 
-    // Real-time validation and URL preview
+    // Real-time validation and URL preview with auto-trim
     document.getElementById('youtube_handle').addEventListener('input', function() {
         let value = this.value;
         
+        // Automatically trim spaces
+        value = value.trim();
+        
         // Remove @ if user types it
         if (value.startsWith('@')) {
-            this.value = value.substring(1);
-            value = this.value;
+            value = value.substring(1);
         }
         
         // Remove youtube.com/ if user pastes full URL
         if (value.includes('youtube.com/')) {
             const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
             if (match) {
-                this.value = match[1];
-                value = this.value;
+                value = match[1];
             }
+        }
+        
+        // Update the input value if it was modified
+        if (this.value !== value) {
+            this.value = value;
         }
         
         // Update URL preview
