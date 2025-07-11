@@ -1,5 +1,5 @@
 <?php
-// creators/index.php - Simplified browse creators page with creator access control
+// creators/index.php - Simplified browse creators page with clickable creator tiles
 session_start();
 require_once '../config/database.php';
 
@@ -125,11 +125,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header h1 { margin: 0 0 15px 0; color: #333; }
         
-        .filters { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .search-box { flex: 1; max-width: 300px; }
-        .search-box input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; }
-        .search-box button { background: #667eea; color: white; padding: 12px 20px; border: none; border-radius: 25px; margin-left: 10px; cursor: pointer; }
-        
         .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
         .creator-card { 
             background: white; 
@@ -138,8 +133,16 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             transition: transform 0.3s, box-shadow 0.3s;
             text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
-        .creator-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .creator-card:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15); 
+            text-decoration: none;
+            color: inherit;
+        }
         
         .creator-image { 
             width: 80px; 
@@ -159,24 +162,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             font-size: 20px; 
             font-weight: bold; 
             color: #333; 
-            margin: 0 0 20px 0; 
+            margin: 0; 
         }
-        
-        .creator-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { 
-            background: #667eea; 
-            color: white; 
-            padding: 12px 20px; 
-            text-decoration: none; 
-            border-radius: 6px; 
-            display: inline-block; 
-            font-weight: 500; 
-            transition: background 0.3s; 
-            text-align: center; 
-        }
-        .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
-        .btn-outline { background: transparent; color: #667eea; border: 2px solid #667eea; }
-        .btn-outline:hover { background: #667eea; color: white; }
         
         .empty-state { text-align: center; color: #666; padding: 60px 20px; background: white; border-radius: 12px; }
         
@@ -214,8 +201,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     </nav>
 
     <div class="container">
-            
-        </div>
 
         <?php if (empty($creators)): ?>
             <div class="empty-state">
@@ -226,7 +211,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <?php else: ?>
             <div class="creator-grid">
                 <?php foreach ($creators as $creator): ?>
-                    <div class="creator-card">
+                    <a href="profile.php?id=<?php echo $creator->id; ?>" class="creator-card">
                         <div class="creator-image">
                             <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                                 <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
@@ -239,16 +224,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                         <h3 class="creator-name">
                             <?php echo htmlspecialchars($creator->display_name); ?>
                         </h3>
-                        
-                        <div class="creator-actions">
-                            <?php if (isset($_SESSION['user_id'])): ?>
-                                <a href="profile.php?id=<?php echo $creator->id; ?>" class="btn">Fund Topics</a>
-                            <?php endif; ?>
-                            <?php if ($creator->platform_url): ?>
-                                <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
