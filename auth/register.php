@@ -28,20 +28,85 @@ if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
     
-    $username = trim(InputSanitizer::sanitizeString($_POST['username']));
+    if ($user_type === 'creator') {
+        // For creators, use YouTube handle instead of username
+        $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+        
+        // Remove @ if user included it
+        if (strpos($youtube_handle, '@') === 0) {
+            $youtube_handle = substr($youtube_handle, 1);
+        }
+        
+        // Additional cleanup - trim again after @ removal
+        $youtube_handle = trim($youtube_handle);
+        
+        // Use YouTube handle as username
+        $username = $youtube_handle;
+        
+        // Handle profile image upload for creators
+        $profile_image = null;
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/creators/';
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+            $file_type = $_FILES['profile_image']['type'];
+            $file_size = $_FILES['profile_image']['size'];
+            
+            if (!in_array($file_type, $allowed_types)) {
+                $errors[] = "Only JPG, PNG, and GIF images are allowed";
+            } elseif ($file_size > 2 * 1024 * 1024) { // 2MB limit
+                $errors[] = "Image must be less than 2MB";
+            } else {
+                $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
+                $temp_filename = 'creator_temp_' . time() . '.' . $file_extension;
+                $upload_path = $upload_dir . $temp_filename;
+                
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
+                    $profile_image = $temp_filename;
+                } else {
+                    $errors[] = "Failed to upload image";
+                }
+            }
+        }
+    } else {
+        // For fans, use regular username
+        $username = trim(InputSanitizer::sanitizeString($_POST['username']));
+    }
+    
     $email = InputSanitizer::sanitizeEmail($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
     // Validation
-    if (empty($username)) {
-        $errors[] = "Username is required";
-    } elseif (strlen($username) < 3) {
-        $errors[] = "Username must be at least 3 characters";
-    } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-        $errors[] = "Username can only contain letters, numbers, and underscores";
-    } elseif ($helper->usernameExists($username)) {
-        $errors[] = "Username already exists";
+    if ($user_type === 'creator') {
+        // YouTube handle validation
+        if (empty($youtube_handle)) {
+            $errors[] = "YouTube handle is required";
+        } elseif (strlen($youtube_handle) < 3) {
+            $errors[] = "YouTube handle must be at least 3 characters";
+        } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
+            $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+        } elseif (preg_match('/^[0-9._-]+$/', $youtube_handle)) {
+            $errors[] = "YouTube handle must contain at least one letter";
+        } elseif ($helper->usernameExists($username)) {
+            $errors[] = "YouTube handle already exists";
+        }
+    } else {
+        // Regular username validation for fans
+        if (empty($username)) {
+            $errors[] = "Username is required";
+        } elseif (strlen($username) < 3) {
+            $errors[] = "Username must be at least 3 characters";
+        } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            $errors[] = "Username can only contain letters, numbers, and underscores";
+        } elseif ($helper->usernameExists($username)) {
+            $errors[] = "Username already exists";
+        }
     }
     
     if (empty($email)) {
@@ -65,17 +130,113 @@ if ($_POST) {
     // If no errors, handle based on user type
     if (empty($errors)) {
         if ($user_type === 'creator') {
-            // For creators: Store registration data in session, don't create account yet
-            $_SESSION['pending_creator_registration'] = [
-                'username' => $username,
-                'email' => $email,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                'full_name' => $username
-            ];
-            
-            // Redirect to creator application form
-            header('Location: ../creators/apply.php');
-            exit;
+            // For creators: Create account and creator profile immediately
+            try {
+                $db = new Database();
+                $db->beginTransaction();
+                
+                // Create user account
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $user_id = $helper->createUser($username, $email, $password_hash, $username);
+                
+                if (!$user_id) {
+                    throw new Exception("Failed to create user account");
+                }
+                
+                // Generate creator username from user username
+                $creator_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $username)) . '_' . $user_id;
+                
+                // Construct YouTube URL with @username format
+                $platform_url = 'https://youtube.com/@' . $youtube_handle;
+                
+                // Create creator profile immediately
+                $db->query('
+                    INSERT INTO creators (
+                        username, 
+                        display_name, 
+                        email, 
+                        bio, 
+                        platform_type, 
+                        platform_url, 
+                        subscriber_count, 
+                        default_funding_threshold, 
+                        commission_rate, 
+                        is_verified, 
+                        is_active, 
+                        applicant_user_id, 
+                        application_status,
+                        manual_payout_threshold
+                    ) VALUES (
+                        :username, 
+                        :display_name, 
+                        :email, 
+                        :bio, 
+                        :platform_type, 
+                        :platform_url, 
+                        :subscriber_count, 
+                        :default_funding_threshold, 
+                        :commission_rate, 
+                        :is_verified, 
+                        :is_active, 
+                        :applicant_user_id, 
+                        :application_status,
+                        :manual_payout_threshold
+                    )
+                ');
+                
+                $db->bind(':username', $creator_username);
+                $db->bind(':display_name', $username);
+                $db->bind(':email', $email);
+                $db->bind(':bio', 'YouTube Creator on TopicLaunch');
+                $db->bind(':platform_type', 'youtube');
+                $db->bind(':platform_url', $platform_url);
+                $db->bind(':subscriber_count', 1000);
+                $db->bind(':default_funding_threshold', 50.00);
+                $db->bind(':commission_rate', 5.00);
+                $db->bind(':is_verified', 1);
+                $db->bind(':is_active', 1);
+                $db->bind(':applicant_user_id', $user_id);
+                $db->bind(':application_status', 'approved');
+                $db->bind(':manual_payout_threshold', 100.00);
+                $db->execute();
+                
+                $creator_id = $db->lastInsertId();
+                
+                // Update profile image filename with actual creator ID
+                if ($profile_image) {
+                    $file_extension = pathinfo($profile_image, PATHINFO_EXTENSION);
+                    $final_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
+                    $old_path = '../uploads/creators/' . $profile_image;
+                    $new_path = '../uploads/creators/' . $final_filename;
+                    
+                    if (rename($old_path, $new_path)) {
+                        // Update creator with final image filename
+                        $db->query('UPDATE creators SET profile_image = :profile_image WHERE id = :id');
+                        $db->bind(':profile_image', $final_filename);
+                        $db->bind(':id', $creator_id);
+                        $db->execute();
+                    }
+                }
+                
+                $db->endTransaction();
+                
+                // Auto-login the creator
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                $_SESSION['full_name'] = $username;
+                $_SESSION['email'] = $email;
+                
+                session_regenerate_id(true);
+                
+                // Redirect to creator dashboard
+                header('Location: ../creators/dashboard.php');
+                exit;
+                
+            } catch (Exception $e) {
+                $db->cancelTransaction();
+                $errors[] = "Registration failed: " . $e->getMessage();
+                error_log("Creator registration error: " . $e->getMessage());
+            }
         } else {
             // For fans: Create account immediately and auto-login
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
@@ -132,6 +293,22 @@ if ($_POST) {
         .requirement { color: #666; font-size: 12px; }
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
+        .youtube-handle-group { position: relative; }
+        .youtube-at-symbol { 
+            position: absolute; 
+            left: 8px; 
+            top: 8px; 
+            background: #e9ecef; 
+            padding: 8px 12px; 
+            border-radius: 4px 0 0 4px; 
+            border: 1px solid #ddd; 
+            border-right: none; 
+            color: #666; 
+            font-weight: bold;
+        }
+        .youtube-handle-input { 
+            padding-left: 50px !important; 
+        }
     </style>
 </head>
 <body>
@@ -155,17 +332,38 @@ if ($_POST) {
         </div>
     <?php endif; ?>
     
-    <form method="POST" id="registrationForm">
+    <form method="POST" id="registrationForm" enctype="multipart/form-data">
         <?php echo CSRFProtection::getTokenField(); ?>
         
-        <div class="form-group">
-            <label>Username:</label>
-            <input type="text" name="username" id="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
-            <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
-            <?php if ($user_type === 'creator'): ?>
-                <div class="requirement">This will be your creator name on TopicLaunch</div>
-            <?php endif; ?>
-        </div>
+        <?php if ($user_type === 'creator'): ?>
+            <!-- Profile Image for Creators -->
+            <div class="form-group">
+                <label for="profile_image">Profile Image (Optional):</label>
+                <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                <div class="requirement">JPG, PNG, or GIF. Max 2MB. Can add later.</div>
+            </div>
+
+            <!-- YouTube Handle for Creators -->
+            <div class="form-group">
+                <label>YouTube Handle:</label>
+                <div class="youtube-handle-group">
+                    <span class="youtube-at-symbol">@</span>
+                    <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
+                           value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>" 
+                           required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
+                           title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
+                           placeholder="MrBeast">
+                </div>
+                <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+            </div>
+        <?php else: ?>
+            <!-- Regular Username for Fans -->
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" name="username" id="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
+                <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
+            </div>
+        <?php endif; ?>
         
         <div class="form-group">
             <label>Email:</label>
@@ -190,7 +388,7 @@ if ($_POST) {
         
         <button type="submit" class="btn" id="submitBtn">
             <?php if ($user_type === 'creator'): ?>
-                📺 Continue to YouTuber Setup
+                📺 Create YouTuber Account
             <?php else: ?>
                 💰 Create Account & Browse YouTubers
             <?php endif; ?>
@@ -252,7 +450,14 @@ if ($_POST) {
         }
         
         // Enable/disable submit button
-        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && pwd === confirmPwd;
+        <?php if ($user_type === 'creator'): ?>
+        const handle = document.getElementById('youtube_handle').value.trim();
+        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && pwd === confirmPwd && handle.length >= 3 && /[a-zA-Z]/.test(handle);
+        <?php else: ?>
+        const username = document.getElementById('username').value.trim();
+        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && pwd === confirmPwd && username.length >= 3;
+        <?php endif; ?>
+        
         submitBtn.disabled = !isValid;
         submitBtn.style.opacity = isValid ? '1' : '0.6';
     }
@@ -260,6 +465,39 @@ if ($_POST) {
     password.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
     
+    <?php if ($user_type === 'creator'): ?>
+    // YouTube handle validation and auto-trim
+    document.getElementById('youtube_handle').addEventListener('input', function() {
+        let value = this.value;
+        
+        // Automatically trim spaces
+        value = value.trim();
+        
+        // Remove @ if user types it
+        if (value.startsWith('@')) {
+            value = value.substring(1);
+        }
+        
+        // Remove youtube.com/ if user pastes full URL
+        if (value.includes('youtube.com/')) {
+            const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
+            if (match) {
+                value = match[1];
+            }
+        }
+        
+        // Update the input value if it was modified
+        if (this.value !== value) {
+            this.value = value;
+        }
+        
+        // Real-time validation feedback
+        const isValid = value.length >= 3 && /[a-zA-Z]/.test(value) && /^[a-zA-Z0-9_.-]+$/.test(value);
+        this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
+        
+        validatePassword(); // Revalidate form
+    });
+    <?php else: ?>
     // Auto-trim username spaces and real-time validation
     document.getElementById('username').addEventListener('input', function() {
         let value = this.value;
@@ -275,7 +513,10 @@ if ($_POST) {
         // Real-time validation feedback
         const isValid = value.length >= 3 && /^[a-zA-Z0-9_]+$/.test(value);
         this.style.borderColor = value ? (isValid ? '#28a745' : '#dc3545') : '#ddd';
+        
+        validatePassword(); // Revalidate form
     });
+    <?php endif; ?>
     
     // Form submission feedback
     document.getElementById('registrationForm').addEventListener('submit', function() {
