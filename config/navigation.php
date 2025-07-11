@@ -153,7 +153,7 @@ function renderNavigation($current_page = '') {
                         <!-- Fan Navigation - Only show Browse YouTubers on specific pages, NOT on dashboard -->
                         <?php if ($current_page !== 'dashboard'): ?>
                         <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
-                            Browse YouTubers
+                            YouTubers
                         </a>
                         <?php endif; ?>
                         
