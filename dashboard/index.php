@@ -79,7 +79,7 @@ $recent_contributions = $db->resultSet();
             margin-bottom: 30px;
             box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
         }
-        .welcome-content { 
+        .header-content { 
             text-align: center;
         }
         .welcome-text h1 { 
@@ -93,6 +93,32 @@ $recent_contributions = $db->resultSet();
             margin: 0; 
             opacity: 0.9; 
             font-weight: 400;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        .action-btn:hover {
+            background: #218838;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
         }
         
         /* Stats Grid */
@@ -265,6 +291,7 @@ $recent_contributions = $db->resultSet();
         /* Responsive Design */
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .action-buttons { flex-direction: column; }
         }
         
         @media (max-width: 480px) {
@@ -283,6 +310,13 @@ $recent_contributions = $db->resultSet();
                 <div class="welcome-text">
                     <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                     <p>Fund topics and support your favorite creators</p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="../creators/index.php" class="action-btn">
+                        📺 YouTubers
+                    </a>
                 </div>
             </div>
         </div>
