@@ -24,8 +24,8 @@ try {
     die('Database error: ' . $e->getMessage());
 }
 
-// Simple search functionality
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+// Simple search functionality (removed for now)
+$search = '';
 
 if ($search) {
     $creators = array_filter($creators, function($creator) use ($search) {
@@ -183,8 +183,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .creator-grid { grid-template-columns: 1fr; }
-            .filters { flex-direction: column; align-items: stretch; }
-            .search-box { max-width: none; }
             .login-form { flex-direction: column; gap: 5px; }
             .nav-container { flex-direction: column; gap: 15px; }
         }
@@ -216,41 +214,14 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     </nav>
 
     <div class="container">
-        <div class="header">
-            <h1>Browse YouTubers</h1>
             
-            <!-- Search -->
-            <div class="filters">
-                <form method="GET" class="search-box">
-                    <input type="text" name="search" placeholder="Search YouTubers..." 
-                           value="<?php echo htmlspecialchars($search); ?>">
-                    <button type="submit">Search</button>
-                </form>
-
-                <?php if ($search): ?>
-                    <a href="index.php" style="background: #6c757d; color: white; padding: 12px 20px; text-decoration: none; border-radius: 25px;">Clear Search</a>
-                <?php endif; ?>
-            </div>
         </div>
-
-        <?php if ($search): ?>
-            <div style="margin-bottom: 20px; color: #666;">
-                Search results for "<strong><?php echo htmlspecialchars($search); ?></strong>" • 
-                <strong><?php echo count($creators); ?></strong> YouTubers found
-            </div>
-        <?php endif; ?>
 
         <?php if (empty($creators)): ?>
             <div class="empty-state">
-                <?php if ($search): ?>
-                    <h3>No YouTubers found</h3>
-                    <p>No YouTubers match your search criteria</p>
-                    <a href="index.php" class="btn">View All YouTubers</a>
-                <?php else: ?>
-                    <h3>No YouTubers yet</h3>
-                    <p>Be the first to join as a YouTuber!</p>
-                    <a href="apply.php" class="btn">Apply to be a YouTuber</a>
-                <?php endif; ?>
+                <h3>No YouTubers yet</h3>
+                <p>Be the first to join as a YouTuber!</p>
+                <a href="apply.php" class="btn">Apply to be a YouTuber</a>
             </div>
         <?php else: ?>
             <div class="creator-grid">
