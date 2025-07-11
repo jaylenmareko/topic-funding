@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation without Browse YouTubers for creators
+// config/navigation.php - Updated navigation without Browse YouTubers for dashboard page
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -150,14 +150,19 @@ function renderNavigation($current_page = '') {
                     <?php if ($is_creator): ?>
                         <!-- Creator Navigation - NO Browse YouTubers button and NO Creator Dashboard button -->
                     <?php else: ?>
-                        <!-- Fan Navigation - YouTubers is the main page -->
+                        <!-- Fan Navigation - Only show Browse YouTubers on specific pages, NOT on dashboard -->
+                        <?php if ($current_page !== 'dashboard'): ?>
                         <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
                             Browse YouTubers
                         </a>
-                        <!-- Dashboard button for fans -->
+                        <?php endif; ?>
+                        
+                        <!-- Dashboard button for fans - only show if NOT on dashboard -->
+                        <?php if ($current_page !== 'dashboard'): ?>
                         <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-btn">
                             📊 Dashboard
                         </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                     
                     <!-- Admin Panel -->
