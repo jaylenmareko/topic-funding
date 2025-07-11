@@ -1,5 +1,5 @@
 <?php
-// creators/edit.php - Simplified creator profile editing (display name + profile image only)
+// creators/edit.php - Updated with YouTube handle input like registration form
 session_start();
 require_once '../config/database.php';
 
@@ -39,11 +39,40 @@ $success = '';
 
 // Handle form submission
 if ($_POST) {
-    $display_name = trim($_POST['display_name']);
+    $youtube_handle = trim($_POST['youtube_handle']);
+    
+    // Remove @ if user included it
+    if (strpos($youtube_handle, '@') === 0) {
+        $youtube_handle = substr($youtube_handle, 1);
+    }
+    
+    // Additional cleanup - trim again after @ removal
+    $youtube_handle = trim($youtube_handle);
     
     // Validation
-    if (empty($display_name) || strlen($display_name) < 2) {
-        $errors[] = "Display name must be at least 2 characters";
+    if (empty($youtube_handle)) {
+        $errors[] = "YouTube handle is required";
+    } elseif (strlen($youtube_handle) < 3) {
+        $errors[] = "YouTube handle must be at least 3 characters";
+    } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
+        $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+    } elseif (preg_match('/^[0-9._-]+$/', $youtube_handle)) {
+        $errors[] = "YouTube handle must contain at least one letter";
+    } else {
+        // Check if this handle is already used by another creator
+        $db->query('SELECT id FROM creators WHERE display_name = :display_name AND id != :current_id');
+        $db->bind(':display_name', $youtube_handle);
+        $db->bind(':current_id', $creator_id);
+        if ($db->single()) {
+            $errors[] = "YouTube handle already exists";
+        } else {
+            // Verify YouTube handle exists
+            $youtube_url = "https://www.youtube.com/@" . $youtube_handle;
+            $headers = @get_headers($youtube_url);
+            if (!$headers || strpos($headers[0], '200') === false) {
+                $errors[] = "YouTube handle '@{$youtube_handle}' does not exist. Please enter a valid YouTube handle.";
+            }
+        }
     }
     
     // Handle image upload
@@ -85,13 +114,18 @@ if ($_POST) {
     // Update creator if no errors
     if (empty($errors)) {
         $db = new Database();
+        
+        // Update both display_name and platform_url
+        $new_platform_url = 'https://youtube.com/@' . $youtube_handle;
+        
         $db->query('
             UPDATE creators 
-            SET display_name = :display_name, profile_image = :profile_image
+            SET display_name = :display_name, profile_image = :profile_image, platform_url = :platform_url
             WHERE id = :id
         ');
-        $db->bind(':display_name', $display_name);
+        $db->bind(':display_name', $youtube_handle);
         $db->bind(':profile_image', $profile_image);
+        $db->bind(':platform_url', $new_platform_url);
         $db->bind(':id', $creator_id);
         
         if ($db->execute()) {
@@ -102,6 +136,12 @@ if ($_POST) {
             $errors[] = "Failed to update profile";
         }
     }
+}
+
+// Extract current handle from display_name (remove @ if present)
+$current_handle = $creator->display_name;
+if (strpos($current_handle, '@') === 0) {
+    $current_handle = substr($current_handle, 1);
 }
 ?>
 <!DOCTYPE html>
@@ -129,6 +169,31 @@ if ($_POST) {
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
         small { color: #666; font-size: 14px; }
         
+        /* YouTube Handle Styling */
+        .youtube-handle-group { position: relative; }
+        .youtube-at-symbol { 
+            position: absolute; 
+            left: 0px; 
+            top: 0px; 
+            background: #f8f9fa; 
+            padding: 12px 12px; 
+            border-radius: 6px 0 0 6px; 
+            border: 1px solid #ddd; 
+            border-right: none; 
+            color: #666; 
+            font-weight: bold;
+            z-index: 2;
+            font-size: 16px;
+        }
+        .youtube-handle-input { 
+            padding-left: 45px !important; 
+            position: relative;
+            z-index: 1;
+        }
+        .requirement { color: #666; font-size: 12px; margin-top: 5px; }
+        .requirement.valid { color: #28a745; }
+        .requirement.invalid { color: #dc3545; }
+        
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 20px; }
         }
@@ -142,7 +207,7 @@ if ($_POST) {
 
         <div class="header">
             <h1>✏️ Edit Profile</h1>
-            <p>Update your display name and profile image</p>
+            <p>Update your YouTube handle and profile image</p>
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -155,11 +220,18 @@ if ($_POST) {
             <div class="success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
 
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="profileForm">
             <div class="form-group">
-                <label>Display Name:</label>
-                <input type="text" name="display_name" value="<?php echo htmlspecialchars($creator->display_name); ?>" required minlength="2">
-                <small>This is how your name appears to fans</small>
+                <label>YouTube Handle:</label>
+                <div class="youtube-handle-group">
+                    <span class="youtube-at-symbol">@</span>
+                    <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
+                           value="<?php echo htmlspecialchars($current_handle); ?>" 
+                           required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
+                           title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
+                           placeholder="MrBeast">
+                </div>
+                <div class="requirement" id="handle-req">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
             </div>
 
             <div class="form-group">
@@ -174,13 +246,72 @@ if ($_POST) {
                 <small>JPG, PNG, or GIF. Max 2MB. Leave empty to keep current image.</small>
             </div>
 
-            <button type="submit" class="btn">
+            <button type="submit" class="btn" id="submitBtn">
                 💾 Update Profile
             </button>
         </form>
     </div>
 
     <script>
+    // YouTube handle validation and auto-trim (same as registration form)
+    document.getElementById('youtube_handle').addEventListener('input', function() {
+        let value = this.value;
+        
+        // Automatically trim spaces
+        value = value.trim();
+        
+        // Remove @ if user types it
+        if (value.startsWith('@')) {
+            value = value.substring(1);
+        }
+        
+        // Remove youtube.com/ if user pastes full URL
+        if (value.includes('youtube.com/')) {
+            const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
+            if (match) {
+                value = match[1];
+            }
+        }
+        
+        // Update the input value if it was modified
+        if (this.value !== value) {
+            this.value = value;
+        }
+        
+        // Real-time validation feedback
+        const handleReq = document.getElementById('handle-req');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (value.length >= 3 && /[a-zA-Z]/.test(value) && /^[a-zA-Z0-9_.-]+$/.test(value)) {
+            this.style.borderColor = '#28a745';
+            handleReq.classList.add('valid');
+            handleReq.classList.remove('invalid');
+            handleReq.textContent = '✓ Valid YouTube handle format';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        } else if (value.length > 0) {
+            this.style.borderColor = '#dc3545';
+            handleReq.classList.add('invalid');
+            handleReq.classList.remove('valid');
+            
+            if (value.length < 3) {
+                handleReq.textContent = '✗ Must be at least 3 characters';
+            } else if (!(/[a-zA-Z]/.test(value))) {
+                handleReq.textContent = '✗ Must contain at least one letter';
+            } else if (!(/^[a-zA-Z0-9_.-]+$/.test(value))) {
+                handleReq.textContent = '✗ Only letters, numbers, dots, dashes, underscores allowed';
+            }
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        } else {
+            this.style.borderColor = '#ddd';
+            handleReq.classList.remove('valid', 'invalid');
+            handleReq.textContent = 'Example: MrBeast, PewDiePie, etc. Must contain at least one letter.';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        }
+    });
+
     // Preview image before upload
     document.querySelector('input[type="file"]').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -200,6 +331,28 @@ if ($_POST) {
             reader.readAsDataURL(file);
         }
     });
+
+    // Form submission feedback
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        const handle = document.getElementById('youtube_handle').value.trim();
+        
+        if (!handle || handle.length < 3) {
+            e.preventDefault();
+            alert('Please enter a valid YouTube handle (3+ characters)');
+            return;
+        }
+        
+        if (!confirm('Update your YouTube handle to @' + handle + '?\n\nThis will update your display name and channel URL.')) {
+            e.preventDefault();
+            return;
+        }
+        
+        document.getElementById('submitBtn').innerHTML = '⏳ Updating Profile...';
+        document.getElementById('submitBtn').disabled = true;
+    });
+    
+    // Initial validation
+    document.getElementById('youtube_handle').dispatchEvent(new Event('input'));
     </script>
 </body>
 </html>
