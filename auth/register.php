@@ -269,7 +269,6 @@ if ($_POST) {
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { margin: 0 0 10px 0; color: #333; }
         .user-type-indicator { 
             background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; 
             color: white; 
@@ -313,8 +312,6 @@ if ($_POST) {
 </head>
 <body>
     <div class="header">
-        <h2>Join TopicLaunch</h2>
-        
         <div class="user-type-indicator">
             <?php if ($user_type === 'creator'): ?>
                 📺 YouTuber Registration
