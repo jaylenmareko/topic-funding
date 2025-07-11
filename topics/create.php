@@ -176,21 +176,18 @@ if ($_POST) {
                 <input type="text" name="title" required minlength="10" maxlength="100" 
                        placeholder="What should they make a video about?"
                        value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-                <small>Be specific! Example: "How to edit like MrBeast"</small>
             </div>
 
             <div class="form-group">
                 <label>Description:</label>
                 <textarea name="description" required minlength="30" 
                           placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-                <small>What exactly do you want to see in this video?</small>
             </div>
 
             <div class="form-group">
                 <label>Funding Goal ($):</label>
                 <input type="number" name="funding_threshold" id="funding_threshold" 
                        value="<?php echo $creator->default_funding_threshold; ?>" min="10" max="1000" step="0.01" required>
-                <small>How much should the community raise for this topic?</small>
             </div>
 
             <div class="form-group">
