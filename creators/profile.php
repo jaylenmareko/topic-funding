@@ -54,14 +54,7 @@ $completed_topics = $db->resultSet();
         .creator-info { display: flex; gap: 25px; align-items: start; flex-wrap: wrap; }
         .creator-avatar { width: 120px; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; flex-shrink: 0; }
         .creator-details { flex: 1; min-width: 300px; }
-        .creator-details h1 { margin: 0 0 10px 0; color: #333; font-size: 28px; }
-        .creator-badges { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
-        .platform-badge { background: #e9ecef; padding: 6px 15px; border-radius: 15px; font-size: 14px; color: #495057; font-weight: 500; }
-        .verified-badge { color: #28a745; font-weight: bold; font-size: 16px; }
-        .creator-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; margin: 20px 0; }
-        .stat { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
-        .stat-number { font-size: 20px; font-weight: bold; color: #667eea; }
-        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+        .creator-details h1 { margin: 0 0 20px 0; color: #333; font-size: 28px; }
         .creator-actions { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
         .btn { background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; transition: background 0.3s; }
         .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
@@ -99,7 +92,6 @@ $completed_topics = $db->resultSet();
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .creator-info { flex-direction: column; text-align: center; }
-            .creator-stats { grid-template-columns: repeat(2, 1fr); }
             .content-tabs { flex-direction: column; }
             .topic-grid { grid-template-columns: 1fr; }
             .creator-actions { justify-content: center; }
@@ -111,7 +103,7 @@ $completed_topics = $db->resultSet();
 
     <div class="container">
         <div class="creator-header">
-                            <div class="creator-info">
+            <div class="creator-info">
                 <div class="creator-avatar">
                     <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                         <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
@@ -123,23 +115,7 @@ $completed_topics = $db->resultSet();
                 <div class="creator-details">
                     <h1><?php echo htmlspecialchars($creator->display_name); ?></h1>
                     
-                    <div class="creator-badges">
-                        <span class="platform-badge"><?php echo ucfirst($creator->platform_type); ?></span>
-                        <?php if ($creator->is_verified): ?>
-                            <span class="verified-badge">✓ Verified</span>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <p style="margin: 15px 0; color: #666; line-height: 1.6;">
-                        <?php echo htmlspecialchars($creator->bio); ?>
-                    </p>
-                    
-                    <div class="creator-stats">
-                        <div class="stat">
-                            <div class="stat-number"><?php echo number_format($creator->subscriber_count); ?></div>
-                            <div class="stat-label">Subscribers</div>
-                        </div>
-                    </div>
+
                     
                     <div class="creator-actions">
                         <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Propose New Topic</a>
@@ -184,35 +160,35 @@ $completed_topics = $db->resultSet();
             <?php else: ?>
                 <div class="topic-grid">
                     <?php foreach ($active_topics as $topic): ?>
-                        <div class="topic-card">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                <span class="status-badge status-active">Active</span>
-                                <div style="font-size: 12px; color: #666;">
-                                    Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?>
-                                </div>
-                            </div>
-                            
-                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                            <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                            
-                            <?php 
-                            $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
-                            $progress_percent = min($progress_percent, 100);
-                            ?>
-                            
-                            <div class="funding-bar">
-                                <div class="funding-progress" style="width: <?php echo $progress_percent; ?>%"></div>
-                            </div>
-                            
-                            <div class="funding-info">
-                                <div class="funding-stats">
-                                    <span class="funding-amount">$<?php echo number_format($topic->current_funding, 2); ?></span>
-                                    of $<?php echo number_format($topic->funding_threshold, 2); ?>
-                                    (<?php echo round($progress_percent, 1); ?>%)
-                                </div>
-                                <a href="../topics/fund.php?id=<?php echo $topic->id; ?>" class="btn">Fund This Topic</a>
+                    <div class="topic-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <span class="status-badge status-active">Active</span>
+                            <div style="font-size: 12px; color: #666;">
+                                Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?>
                             </div>
                         </div>
+                        
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                        
+                        <?php 
+                        $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
+                        $progress_percent = min($progress_percent, 100);
+                        ?>
+                        
+                        <div class="funding-bar">
+                            <div class="funding-progress" style="width: <?php echo $progress_percent; ?>%"></div>
+                        </div>
+                        
+                        <div class="funding-info">
+                            <div class="funding-stats">
+                                <span class="funding-amount">$<?php echo number_format($topic->current_funding, 2); ?></span>
+                                of $<?php echo number_format($topic->funding_threshold, 2); ?>
+                                (<?php echo round($progress_percent, 1); ?>%)
+                            </div>
+                            <a href="../topics/fund.php?id=<?php echo $topic->id; ?>" class="btn">Fund This Topic</a>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -229,33 +205,33 @@ $completed_topics = $db->resultSet();
             <?php else: ?>
                 <div class="topic-grid">
                     <?php foreach ($funded_topics as $topic): ?>
-                        <div class="topic-card">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                <span class="status-badge status-funded">Funded</span>
-                                <div style="font-size: 12px; color: #666;">
-                                    Funded <?php echo date('M j, Y', strtotime($topic->funded_at)); ?>
-                                </div>
-                            </div>
-                            
-                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                            <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                            
-                            <div class="completion-info">
-                                <strong>✅ Fully Funded!</strong><br>
-                                Raised: $<?php echo number_format($topic->current_funding, 2); ?>
-                            </div>
-                            
-                            <?php if ($topic->content_deadline): ?>
-                                <div class="deadline-warning">
-                                    <strong>⏰ Content Due:</strong><br>
-                                    <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <div style="margin-top: 15px;">
-                                <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
+                    <div class="topic-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <span class="status-badge status-funded">Funded</span>
+                            <div style="font-size: 12px; color: #666;">
+                                Funded <?php echo date('M j, Y', strtotime($topic->funded_at)); ?>
                             </div>
                         </div>
+                        
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                        
+                        <div class="completion-info">
+                            <strong>✅ Fully Funded!</strong><br>
+                            Raised: $<?php echo number_format($topic->current_funding, 2); ?>
+                        </div>
+                        
+                        <?php if ($topic->content_deadline): ?>
+                            <div class="deadline-warning">
+                                <strong>⏰ Content Due:</strong><br>
+                                <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div style="margin-top: 15px;">
+                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn">View Details</a>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -272,29 +248,29 @@ $completed_topics = $db->resultSet();
             <?php else: ?>
                 <div class="topic-grid">
                     <?php foreach ($completed_topics as $topic): ?>
-                        <div class="topic-card">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                <span class="status-badge status-completed">Completed</span>
-                                <div style="font-size: 12px; color: #666;">
-                                    Completed <?php echo date('M j, Y', strtotime($topic->completed_at)); ?>
-                                </div>
-                            </div>
-                            
-                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                            <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                            
-                            <div class="completion-info">
-                                <strong>✅ Content Delivered!</strong><br>
-                                Raised: $<?php echo number_format($topic->current_funding, 2); ?>
-                            </div>
-                            
-                            <div style="margin-top: 15px;">
-                                <?php if ($topic->content_url): ?>
-                                    <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" class="content-link">View Content</a>
-                                <?php endif; ?>
-                                <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">View Details</a>
+                    <div class="topic-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <span class="status-badge status-completed">Completed</span>
+                            <div style="font-size: 12px; color: #666;">
+                                Completed <?php echo date('M j, Y', strtotime($topic->completed_at)); ?>
                             </div>
                         </div>
+                        
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                        
+                        <div class="completion-info">
+                            <strong>✅ Content Delivered!</strong><br>
+                            Raised: $<?php echo number_format($topic->current_funding, 2); ?>
+                        </div>
+                        
+                        <div style="margin-top: 15px;">
+                            <?php if ($topic->content_url): ?>
+                                <a href="<?php echo htmlspecialchars($topic->content_url); ?>" target="_blank" class="content-link">View Content</a>
+                            <?php endif; ?>
+                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">View Details</a>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
