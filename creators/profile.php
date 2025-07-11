@@ -60,8 +60,6 @@ $completed_topics = $db->resultSet();
         .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
-        .btn-outline { background: transparent; color: #667eea; border: 2px solid #667eea; }
-        .btn-outline:hover { background: #667eea; color: white; }
         .content-tabs { display: flex; gap: 0; margin-bottom: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab { padding: 15px 25px; border: none; background: transparent; cursor: pointer; font-size: 16px; font-weight: 500; color: #666; transition: all 0.3s; }
         .tab.active { background: #667eea; color: white; }
@@ -115,13 +113,8 @@ $completed_topics = $db->resultSet();
                 <div class="creator-details">
                     <h1><?php echo htmlspecialchars($creator->display_name); ?></h1>
                     
-
-                    
                     <div class="creator-actions">
                         <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success">💡 Propose New Topic</a>
-                        <?php if ($creator->platform_url): ?>
-                            <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
