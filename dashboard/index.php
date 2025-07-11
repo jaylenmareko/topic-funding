@@ -30,17 +30,6 @@ if ($creator) {
 // FAN DASHBOARD - For non-creators
 // ==============================================================================
 
-// Get user's contribution statistics
-$db->query('
-    SELECT 
-        COUNT(*) as total_contributions,
-        COUNT(DISTINCT topic_id) as topics_funded
-    FROM contributions 
-    WHERE user_id = :user_id AND payment_status = "completed"
-');
-$db->bind(':user_id', $user_id);
-$user_stats = $db->single();
-
 // Get user's recent contributions with topic and creator info
 $db->query('
     SELECT c.*, t.title as topic_title, t.status as topic_status, 
@@ -119,41 +108,6 @@ $recent_contributions = $db->resultSet();
             text-decoration: none;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
-        
-        /* Stats Grid */
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px; 
-        }
-        .stat-card { 
-            background: white; 
-            padding: 24px; 
-            border-radius: 16px; 
-            text-align: center; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-        .stat-number { 
-            font-size: 2.25rem; 
-            font-weight: 700; 
-            color: #667eea; 
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-        .stat-label { 
-            color: #6c757d; 
-            font-size: 0.875rem; 
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
         
         /* Main Content */
@@ -290,13 +244,11 @@ $recent_contributions = $db->resultSet();
         
         /* Responsive Design */
         @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .action-buttons { flex-direction: column; }
         }
         
         @media (max-width: 480px) {
             .container { padding: 15px; }
-            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -318,18 +270,6 @@ $recent_contributions = $db->resultSet();
                         📺 YouTubers
                     </a>
                 </div>
-            </div>
-        </div>
-
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $user_stats->total_contributions; ?></div>
-                <div class="stat-label">Contributions Made</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $user_stats->topics_funded; ?></div>
-                <div class="stat-label">Topics Supported</div>
             </div>
         </div>
 
