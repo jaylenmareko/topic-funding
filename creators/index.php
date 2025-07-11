@@ -130,34 +130,59 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .search-box input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; }
         .search-box button { background: #667eea; color: white; padding: 12px 20px; border: none; border-radius: 25px; margin-left: 10px; cursor: pointer; }
         
-        .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; }
-        .creator-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; }
+        .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
+        .creator-card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
         .creator-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-        .creator-header { display: flex; gap: 20px; align-items: start; margin-bottom: 20px; }
-        .creator-image { width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: bold; flex-shrink: 0; }
-        .creator-info h3 { margin: 0 0 8px 0; color: #333; font-size: 20px; }
-        .creator-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-        .platform-badge { background: #e9ecef; padding: 4px 12px; border-radius: 15px; font-size: 12px; color: #495057; font-weight: 500; }
-        .verified-badge { color: #28a745; font-weight: bold; }
-        .creator-stats { display: flex; gap: 20px; margin: 15px 0; }
-        .stat { text-align: center; }
-        .stat-number { font-weight: bold; color: #667eea; font-size: 18px; }
-        .stat-label { font-size: 12px; color: #666; }
-        .creator-bio { color: #666; line-height: 1.6; margin: 15px 0; }
+        
+        .creator-image { 
+            width: 80px; 
+            height: 80px; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 32px; 
+            color: white; 
+            font-weight: bold; 
+            margin: 0 auto 20px auto;
+        }
+        
+        .creator-name { 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: #333; 
+            margin: 0 0 20px 0; 
+        }
+        
         .creator-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { background: #667eea; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; transition: background 0.3s; text-align: center; }
+        .btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 12px 20px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            display: inline-block; 
+            font-weight: 500; 
+            transition: background 0.3s; 
+            text-align: center; 
+        }
         .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
         .btn-outline { background: transparent; color: #667eea; border: 2px solid #667eea; }
         .btn-outline:hover { background: #667eea; color: white; }
-        .btn-green { background: #28a745; }
-        .btn-green:hover { background: #218838; color: white; text-decoration: none; }
+        
         .empty-state { text-align: center; color: #666; padding: 60px 20px; background: white; border-radius: 12px; }
-        .featured-badge { background: linear-gradient(45deg, #feca57, #ff9ff3); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
         
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .creator-grid { grid-template-columns: 1fr; }
-            .creator-header { flex-direction: column; text-align: center; }
             .filters { flex-direction: column; align-items: stretch; }
             .search-box { max-width: none; }
             .login-form { flex-direction: column; gap: 5px; }
@@ -193,7 +218,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     <div class="container">
         <div class="header">
             <h1>Browse YouTubers</h1>
-            <p>Discover talented YouTubers and fund the topics you want to see covered</p>
             
             <!-- Search -->
             <div class="filters">
@@ -232,52 +256,25 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             <div class="creator-grid">
                 <?php foreach ($creators as $creator): ?>
                     <div class="creator-card">
-                        <div class="creator-header">
-                            <div class="creator-image">
-                                <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
-                                    <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
-                                         alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                                <?php else: ?>
-                                    <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
-                                <?php endif; ?>
-                            </div>
-                            <div class="creator-info">
-                                <h3>
-                                    <?php echo htmlspecialchars($creator->display_name); ?>
-                                    <?php if ($creator->subscriber_count >= 10000): ?>
-                                        <span class="featured-badge">⭐ Featured</span>
-                                    <?php endif; ?>
-                                </h3>
-                                <div class="creator-badges">
-                                    <span class="platform-badge">YouTube</span>
-                                    <?php if ($creator->is_verified): ?>
-                                        <span class="verified-badge">✓ Verified</span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+                        <div class="creator-image">
+                            <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
+                                <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                                     alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                            <?php else: ?>
+                                <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
+                            <?php endif; ?>
                         </div>
                         
-                        <div class="creator-stats">
-                            <div class="stat">
-                                <div class="stat-number"><?php echo number_format($creator->subscriber_count); ?></div>
-                                <div class="stat-label">Subscribers</div>
-                            </div>
-                        </div>
-                        
-                        <div class="creator-bio">
-                            <?php echo htmlspecialchars(substr($creator->bio, 0, 150)) . (strlen($creator->bio) > 150 ? '...' : ''); ?>
-                        </div>
+                        <h3 class="creator-name">
+                            <?php echo htmlspecialchars($creator->display_name); ?>
+                        </h3>
                         
                         <div class="creator-actions">
                             <?php if (isset($_SESSION['user_id'])): ?>
                                 <a href="profile.php?id=<?php echo $creator->id; ?>" class="btn">Fund Topics</a>
-                                <?php if ($creator->platform_url): ?>
-                                    <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
-                                <?php endif; ?>
-                            <?php else: ?>
-                                <?php if ($creator->platform_url): ?>
-                                    <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
-                                <?php endif; ?>
+                            <?php endif; ?>
+                            <?php if ($creator->platform_url): ?>
+                                <a href="<?php echo htmlspecialchars($creator->platform_url); ?>" target="_blank" class="btn btn-outline">Visit Channel</a>
                             <?php endif; ?>
                         </div>
                     </div>
