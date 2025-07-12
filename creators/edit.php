@@ -30,7 +30,7 @@ $db->bind(':id', $creator_id);
 $creator_check = $db->single();
 
 if (!$creator_check || $creator_check->applicant_user_id != $_SESSION['user_id']) {
-    header('Location: ../dashboard/index.php');
+    header('Location: ../creators/dashboard.php');
     exit;
 }
 
@@ -202,7 +202,7 @@ if (strpos($current_handle, '@') === 0) {
 <body>
     <div class="container">
         <div class="nav">
-            <a href="../dashboard/index.php">← Back to Dashboard</a>
+            <a href="../creators/dashboard.php">← Back to Dashboard</a>
         </div>
 
         <div class="header">
