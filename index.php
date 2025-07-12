@@ -1,9 +1,9 @@
 <?php
-// index.php - Fixed to redirect fans to browse creators
+// index.php - Updated to redirect fans to browse creators (no dashboard)
 session_start();
 require_once 'config/database.php';
 
-// REDIRECT LOGGED IN USERS BASED ON ROLE - FIXED
+// REDIRECT LOGGED IN USERS BASED ON ROLE - NO FAN DASHBOARD
 if (isset($_SESSION['user_id'])) {
     $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
@@ -14,7 +14,7 @@ if (isset($_SESSION['user_id'])) {
         // Creators go to their creator dashboard
         header('Location: creators/dashboard.php');
     } else {
-        // FIXED: Fans go to browse creators (not dashboard)
+        // Fans go to browse creators (NO DASHBOARD)
         header('Location: creators/index.php');
     }
     exit;
@@ -51,7 +51,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             if ($is_creator) {
                 header('Location: creators/dashboard.php'); // Creators go to creator dashboard
             } else {
-                header('Location: creators/index.php'); // FIXED: Fans go to browse creators
+                header('Location: creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
             }
             exit;
         } else {
