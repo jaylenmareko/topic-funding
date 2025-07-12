@@ -1,9 +1,9 @@
 <?php
-// webhooks/stripe.php - Stripe webhook handler
+// webhooks/stripe.php - Complete webhook handler with FundingProcessor
 
 require_once '../config/database.php';
 require_once '../config/stripe.php';
-require_once '../config/test_config.php';
+require_once '../config/funding_processor.php';
 
 // Set content type
 header('Content-Type: application/json');
