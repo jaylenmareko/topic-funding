@@ -12,7 +12,7 @@ if (isset($_SESSION['user_id'])) {
     
     if ($is_creator) {
         // Creators should not access this page - redirect to dashboard
-        header('Location: ../dashboard/index.php');
+        header('Location: ../creators/dashboard.php');
         exit;
     }
 }
@@ -59,7 +59,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             $is_creator = $db->single();
             
             if ($is_creator) {
-                header('Location: ../dashboard/index.php'); // Creators go to dashboard
+                header('Location: ../creators/dashboard.php'); // Creators go to dashboard
             } else {
                 header('Location: ' . $_SERVER['REQUEST_URI']); // Fans stay here
             }
@@ -193,7 +193,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             <?php else: ?>
                 <div style="color: white;">
                     Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                    <a href="../dashboard/index.php" style="color: white; margin-left: 15px;">Dashboard</a>
                     <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
                 </div>
             <?php endif; ?>
