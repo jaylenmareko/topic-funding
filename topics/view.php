@@ -124,39 +124,11 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         <?php if ($is_creator): ?>
             <!-- No back link for creators - they can use navigation -->
         <?php else: ?>
-            <!-- Original back link for fans -->
-            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Profile</a>
+            <!-- Updated back link text for fans -->
+            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Topics</a>
         <?php endif; ?>
 
-        <div class="topic-header">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <span class="status-badge status-<?php echo str_replace('_', '-', $topic->status); ?>">
-                    <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
-                </span>
-                <div class="topic-meta">
-                    Created <?php echo date('M j, Y g:i A', strtotime($topic->created_at)); ?>
-                </div>
-            </div>
 
-            <h1 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h1>
-
-            <?php if (!$is_creator): ?>
-            <div class="creator-info">
-                <div class="creator-avatar">
-                    <?php if ($topic->creator_image): ?>
-                        <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" 
-                             alt="Creator" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                    <?php else: ?>
-                        <?php echo strtoupper(substr($topic->creator_name, 0, 1)); ?>
-                    <?php endif; ?>
-                </div>
-                <div class="creator-details">
-                    <h3><?php echo htmlspecialchars($topic->creator_name); ?></h3>
-                    <p>Content Creator</p>
-                </div>
-            </div>
-            <?php endif; ?>
-        </div>
 
         <?php if ($topic->status === 'pending_approval'): ?>
         <div class="pending-approval">
