@@ -1,5 +1,5 @@
 <?php
-// auth/register.php - Updated to redirect fans to creators page for faster transactions
+// auth/register.php - Updated to redirect fans to creators page (no dashboard)
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -13,9 +13,9 @@ if (isset($_SESSION['user_id'])) {
     $is_creator = $db->single();
     
     if ($is_creator) {
-        header('Location: ../dashboard/index.php'); // Creators go to dashboard
+        header('Location: ../creators/dashboard.php'); // Creators go to dashboard
     } else {
-        header('Location: ../creators/index.php'); // Fans go to browse creators
+        header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
     }
     exit;
 }
@@ -297,7 +297,7 @@ if ($_POST) {
                 // Regenerate session ID for security
                 session_regenerate_id(true);
                 
-                // REDIRECT FANS TO BROWSE CREATORS FOR FASTER TRANSACTIONS
+                // REDIRECT FANS TO BROWSE CREATORS (NO DASHBOARD)
                 header('Location: ../creators/index.php');
                 exit;
             } else {
@@ -508,6 +508,7 @@ if ($_POST) {
 
     password.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
+    
     document.getElementById('email').addEventListener('input', function() {
         const email = this.value.trim();
         
