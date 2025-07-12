@@ -184,7 +184,6 @@ sort($suggested_amounts);
         .secure-badge { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 15px; color: #28a745; }
         .security-features { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
         .rate-limit-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
-        .webhook-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
         
         @media (max-width: 768px) {
             .container { padding: 10px; }
@@ -197,8 +196,6 @@ sort($suggested_amounts);
     <div class="container">
         <div class="nav">
             <a href="view.php?id=<?php echo $topic->id; ?>">← Back to Topic</a>
-            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>">Creator Profile</a>
-            <a href="../dashboard/index.php">My Dashboard</a>
         </div>
 
         <div class="topic-summary">
@@ -252,50 +249,26 @@ sort($suggested_amounts);
             <?php endif; ?>
 
             <?php if ($topic->status === 'active'): ?>
-                <div class="webhook-info">
-                    <strong>🔧 Enhanced Payment System:</strong> Now using webhook-based payment processing for improved reliability and bypassing server restrictions.
-                </div>
 
                 <div class="security-features">
-                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure webhook payment processing.
+                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure payment processing.
                 </div>
 
                 <div class="secure-badge">
                     <span>🔒</span>
-                    <span>Secure payment powered by Stripe + Webhooks</span>
+                    <span>Secure payment processing</span>
                 </div>
 
                 <form method="POST" id="fundingForm">
                     <?php echo CSRFProtection::getTokenField(); ?>
                     
                     <div class="form-section">
-                        <h3>Choose Your Contribution Amount</h3>
-                        
-                        <div class="amount-buttons">
-                            <?php foreach ($suggested_amounts as $amount): ?>
-                                <button type="button" class="amount-btn" data-amount="<?php echo $amount; ?>">
-                                    $<?php echo $amount; ?>
-                                    <?php if ($amount == $remaining && $remaining > 0): ?>
-                                        <br><small>Fund it!</small>
-                                    <?php endif; ?>
-                                </button>
-                            <?php endforeach; ?>
-                        </div>
-
                         <div class="custom-amount">
-                            <input type="number" name="amount" id="customAmount" placeholder="Or enter custom amount ($1-$1000)" min="1" max="1000" step="0.01" required>
+                            <input type="number" name="amount" id="customAmount" placeholder="Enter amount ($1-$1000)" min="1" max="1000" step="0.01" required>
                         </div>
                     </div>
 
-                    <div class="payment-note">
-                        <strong>💳 Secure Webhook Payment:</strong> Your payment will be processed securely through Stripe with webhook confirmation. You will be redirected to complete your payment on Stripe's secure checkout page.
-                    </div>
-
-                    <button type="submit" class="btn" id="submitBtn">Continue to Secure Payment (Webhook)</button>
-                    
-                    <div class="stripe-powered">
-                        Payments securely processed by <strong>Stripe + Webhook System</strong>
-                    </div>
+                    <button type="submit" class="btn" id="submitBtn">Continue to Secure Payment</button>
                 </form>
             <?php else: ?>
                 <div class="success">
@@ -332,27 +305,6 @@ sort($suggested_amounts);
     </div>
 
     <script>
-    // Handle amount button clicks
-    document.querySelectorAll('.amount-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('active'));
-            
-            // Add active class to clicked button
-            this.classList.add('active');
-            
-            // Set the custom amount input
-            document.getElementById('customAmount').value = this.dataset.amount;
-            validateForm();
-        });
-    });
-
-    // Clear button selection when typing custom amount
-    document.getElementById('customAmount').addEventListener('input', function() {
-        document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('active'));
-        validateForm();
-    });
-
     function validateForm() {
         const amount = parseFloat(document.getElementById('customAmount').value);
         const submitBtn = document.getElementById('submitBtn');
@@ -365,6 +317,11 @@ sort($suggested_amounts);
             submitBtn.style.opacity = '0.6';
         }
     }
+
+    // Clear button selection when typing custom amount
+    document.getElementById('customAmount').addEventListener('input', function() {
+        validateForm();
+    });
 
     // Form validation
     document.getElementById('fundingForm').addEventListener('submit', function(e) {
@@ -384,7 +341,7 @@ sort($suggested_amounts);
         
         // Show loading state
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = 'Processing with Webhooks...';
+        submitBtn.innerHTML = 'Processing...';
         submitBtn.disabled = true;
     });
     
