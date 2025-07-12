@@ -1,5 +1,5 @@
 <?php
-// cron/auto_refund.php - Cron job to process automatic refunds for overdue topics
+// cron/auto_refund.php - Updated for cleaned database
 // Run this every 15 minutes via cron: */15 * * * * /usr/local/bin/php /home4/uunppite/public_html/cron/auto_refund.php
 
 set_time_limit(300); // 5 minutes max execution
@@ -148,7 +148,7 @@ try {
                 $db->bind(':id', $topic->id);
                 $db->execute();
                 
-                // Record that we processed this topic
+                // UPDATED: Record processing in auto_refund_processed table (you kept this one)
                 $db->query('
                     INSERT INTO auto_refund_processed (topic_id, refunds_count, total_refunded, processed_at)
                     VALUES (:topic_id, :refunds_count, :total_refunded, NOW())
@@ -322,11 +322,11 @@ function sendEmail($to, $subject, $message) {
     return mail($to, $subject, $message, $headers);
 }
 
-// Create required tables if they don't exist
+// UPDATED: Create required tables for cleaned database
 function createRequiredTables() {
     $db = new Database();
     
-    // Create auto_refund_processed table
+    // Make sure auto_refund_processed table exists (you kept this one)
     $db->query("
         CREATE TABLE IF NOT EXISTS auto_refund_processed (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -340,7 +340,7 @@ function createRequiredTables() {
     ");
     $db->execute();
     
-    // Create refund_log table if it doesn't exist
+    // Make sure refund_log table exists (you kept this one)
     $db->query("
         CREATE TABLE IF NOT EXISTS refund_log (
             id INT AUTO_INCREMENT PRIMARY KEY,
