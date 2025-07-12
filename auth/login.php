@@ -1,5 +1,5 @@
 <?php
-// auth/login.php - Updated to redirect fans to browse YouTubers
+// auth/login.php - Updated to redirect fans to browse creators (no dashboard)
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
@@ -15,7 +15,7 @@ if (isset($_SESSION['user_id'])) {
     if ($is_creator) {
         header('Location: ../creators/dashboard.php'); // Creators go to creator dashboard
     } else {
-        header('Location: ../creators/index.php'); // Fans go to browse creators
+        header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
     }
     exit;
 }
@@ -62,7 +62,7 @@ if ($_POST) {
             if ($is_creator) {
                 header('Location: ../creators/dashboard.php'); // Creators go to creator dashboard
             } else {
-                header('Location: ../creators/index.php'); // Fans go to browse creators
+                header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
             }
             exit;
         } else {
