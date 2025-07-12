@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation without Browse YouTubers for dashboard page
+// config/navigation.php - Updated navigation with NO fan dashboard
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -103,6 +103,12 @@ function renderNavigation($current_page = '') {
     .nav-btn.admin:hover {
         background: #ff3742;
     }
+    .nav-btn.dashboard {
+        background: #667eea;
+    }
+    .nav-btn.dashboard:hover {
+        background: #5a6fd8;
+    }
     .nav-mobile-toggle {
         display: none;
         background: none;
@@ -148,21 +154,17 @@ function renderNavigation($current_page = '') {
                     <!-- Main Navigation for Logged In Users -->
                     
                     <?php if ($is_creator): ?>
-                        <!-- Creator Navigation - NO Browse YouTubers button and NO Creator Dashboard button -->
-                    <?php else: ?>
-                        <!-- Fan Navigation - Only show Browse YouTubers on specific pages, NOT on dashboard -->
+                        <!-- Creator Navigation - Only show Dashboard button when NOT on dashboard -->
                         <?php if ($current_page !== 'dashboard'): ?>
-                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
-                            YouTubers
-                        </a>
-                        <?php endif; ?>
-                        
-                        <!-- Dashboard button for fans - only show if NOT on dashboard -->
-                        <?php if ($current_page !== 'dashboard'): ?>
-                        <a href="<?php echo $base_path; ?>dashboard/index.php" class="nav-btn">
+                        <a href="<?php echo $base_path; ?>creators/dashboard.php" class="nav-btn dashboard">
                             📊 Dashboard
                         </a>
                         <?php endif; ?>
+                    <?php else: ?>
+                        <!-- Fan Navigation - NO DASHBOARD BUTTON, just YouTubers link -->
+                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
+                            YouTubers
+                        </a>
                     <?php endif; ?>
                     
                     <!-- Admin Panel -->
