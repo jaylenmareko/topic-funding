@@ -1,5 +1,5 @@
 <?php
-// admin/creators.php - Fixed version with error handling
+// admin/creators.php - Updated for cleaned database
 session_start();
 require_once '../config/database.php';
 
@@ -153,31 +153,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token'])) {
     }
 }
 
-// Fetch all creators instead of creator_applications since that table doesn't exist
+// UPDATED: Fetch creators directly from creators table (no more creator_applications)
 try {
     $db = new Database();
     
-    // Use the existing creators table instead
+    // Get all creators with user info
     $db->query('SELECT c.*, u.username as applicant_username, u.email as applicant_email 
                 FROM creators c 
                 LEFT JOIN users u ON c.applicant_user_id = u.id 
                 ORDER BY c.created_at DESC');
-    $applications = $db->resultSet();
+    $creators = $db->resultSet();
     
-    // Get statistics from creators table
+    // UPDATED: Get statistics from creators table only
     $db->query('SELECT 
         COUNT(*) as total,
-        SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as approved,
-        0 as rejected
+        SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive,
+        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active
         FROM creators');
     $stats = $db->single();
     
 } catch (Exception $e) {
     error_log("Database error in admin/creators.php: " . $e->getMessage());
     $error = "Database error: " . $e->getMessage();
-    $applications = [];
-    $stats = (object)['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0];
+    $creators = [];
+    $stats = (object)['total' => 0, 'inactive' => 0, 'active' => 0];
 }
 ?>
 
@@ -186,7 +185,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator Applications - Admin</title>
+    <title>Creator Management - Admin</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .header { background: #007bff; color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
@@ -197,9 +196,8 @@ try {
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
         .status { padding: 4px 8px; border-radius: 4px; color: white; }
-        .status.pending { background: #ffc107; }
-        .status.approved { background: #28a745; }
-        .status.rejected { background: #dc3545; }
+        .status.active { background: #28a745; }
+        .status.inactive { background: #ffc107; color: #000; }
         .btn { padding: 8px 16px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; }
         .btn-approve { background: #28a745; color: white; }
         .btn-reject { background: #dc3545; color: white; }
@@ -208,17 +206,13 @@ try {
         .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; border-radius: 5px; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close:hover { color: black; }
         .profile-image { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Creator Management</h1>
-        <p>Manage existing creators on the platform</p>
+        <p>Manage creators on the platform</p>
         <a href="../index.php" style="color: white;">← Back to Home</a>
     </div>
 
@@ -236,11 +230,11 @@ try {
             <div>Total Creators</div>
         </div>
         <div class="stat-box">
-            <div class="stat-number"><?php echo $stats->approved; ?></div>
+            <div class="stat-number"><?php echo $stats->active; ?></div>
             <div>Active Creators</div>
         </div>
         <div class="stat-box">
-            <div class="stat-number"><?php echo $stats->pending; ?></div>
+            <div class="stat-number"><?php echo $stats->inactive; ?></div>
             <div>Inactive Creators</div>
         </div>
     </div>
@@ -258,12 +252,12 @@ try {
             </tr>
         </thead>
         <tbody>
-            <?php if (empty($applications)): ?>
+            <?php if (empty($creators)): ?>
             <tr>
                 <td colspan="7" style="text-align: center;">No creators found.</td>
             </tr>
             <?php else: ?>
-                <?php foreach ($applications as $creator): ?>
+                <?php foreach ($creators as $creator): ?>
                 <tr>
                     <td><?php echo $creator->id; ?></td>
                     <td><?php echo htmlspecialchars($creator->display_name ?? 'N/A'); ?></td>
@@ -271,7 +265,7 @@ try {
                     <td><?php echo htmlspecialchars($creator->platform_type ?? 'youtube'); ?></td>
                     <td><?php echo date('M j, Y', strtotime($creator->created_at)); ?></td>
                     <td>
-                        <span class="status <?php echo $creator->is_active ? 'approved' : 'pending'; ?>">
+                        <span class="status <?php echo $creator->is_active ? 'active' : 'inactive'; ?>">
                             <?php echo $creator->is_active ? 'Active' : 'Inactive'; ?>
                         </span>
                     </td>
@@ -308,44 +302,5 @@ try {
             <?php endif; ?>
         </tbody>
     </table>
-
-    <!-- Reject Modal -->
-    <div id="rejectModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeRejectModal()">&times;</span>
-            <h2>Reject Application</h2>
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                <input type="hidden" name="action" value="reject">
-                <input type="hidden" name="application_id" id="rejectApplicationId">
-                
-                <label for="rejection_reason">Rejection Reason:</label><br>
-                <textarea name="rejection_reason" id="rejection_reason" rows="4" style="width: 100%; margin: 10px 0;" required placeholder="Please provide a reason for rejection..."></textarea><br>
-                
-                <button type="submit" class="btn btn-reject">Reject Application</button>
-                <button type="button" class="btn" onclick="closeRejectModal()">Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function showRejectModal(id) {
-            document.getElementById('rejectApplicationId').value = id;
-            document.getElementById('rejectModal').style.display = 'block';
-        }
-        
-        function closeRejectModal() {
-            document.getElementById('rejectModal').style.display = 'none';
-            document.getElementById('rejection_reason').value = '';
-        }
-        
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const rejectModal = document.getElementById('rejectModal');
-            if (event.target == rejectModal) {
-                rejectModal.style.display = 'none';
-            }
-        }
-    </script>
 </body>
 </html>
