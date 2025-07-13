@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - Processes Stripe webhook payments
+// config/funding_processor.php - Fixed for topic funding
 
 require_once 'database.php';
 require_once 'notification_system.php';
@@ -20,21 +20,26 @@ class FundingProcessor {
             // Get payment intent from Stripe
             $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
             
-            // Find the checkout session for this payment intent
-            $sessions = \Stripe\Checkout\Session::all([
-                'payment_intent' => $payment_intent_id,
-                'limit' => 1
-            ]);
-            
-            if (empty($sessions->data)) {
-                error_log("No session found for payment intent: " . $payment_intent_id);
-                return ['success' => false, 'error' => 'No session found'];
+            // Check if we have metadata directly on the payment intent
+            if (!empty($payment_intent->metadata->type)) {
+                $metadata = $payment_intent->metadata;
+                error_log("Using payment intent metadata: " . json_encode($metadata));
+            } else {
+                // Fallback: Find the checkout session for this payment intent
+                $sessions = \Stripe\Checkout\Session::all([
+                    'payment_intent' => $payment_intent_id,
+                    'limit' => 1
+                ]);
+                
+                if (empty($sessions->data)) {
+                    error_log("No session found for payment intent: " . $payment_intent_id);
+                    return ['success' => false, 'error' => 'No session or metadata found'];
+                }
+                
+                $session = $sessions->data[0];
+                $metadata = $session->metadata;
+                error_log("Using session metadata: " . json_encode($metadata));
             }
-            
-            $session = $sessions->data[0];
-            $metadata = $session->metadata;
-            
-            error_log("Session metadata: " . json_encode($metadata));
             
             $type = $metadata->type ?? '';
             
@@ -57,6 +62,7 @@ class FundingProcessor {
         try {
             $topic_id = $metadata->topic_id;
             $user_id = $metadata->user_id;
+            // FIXED: Use 'amount' instead of 'initial_contribution' for funding
             $amount = floatval($metadata->amount);
             
             error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount");
