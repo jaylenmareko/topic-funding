@@ -33,10 +33,9 @@ if (!isset($_SESSION['user_id'])) {
 
         <div style="margin-top: 30px;">
             <?php if ($type === 'topic_creation'): ?>
-                <a href="creators/index.php" class="btn">Browse Creators</a>
+                <a href="creators/index.php" class="btn">Youtubers</a>
             <?php else: ?>
-                <a href="topics/index.php" class="btn btn-primary">Browse Topics</a>
-                <a href="dashboard/index.php" class="btn">My Dashboard</a>
+                <a href="creators/index.php" class="btn btn-primary">Youtubers</a>
             <?php endif; ?>
         </div>
     </div>
