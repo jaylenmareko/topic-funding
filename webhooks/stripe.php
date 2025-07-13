@@ -1,5 +1,5 @@
 <?php
-// webhooks/stripe.php - Complete webhook handler with FundingProcessor
+// webhooks/stripe.php - Production webhook handler
 
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -12,30 +12,26 @@ header('Content-Type: application/json');
 $payload = @file_get_contents('php://input');
 $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
-// For testing, you can disable signature verification
-$verify_signature = defined('STRIPE_WEBHOOK_SECRET') && STRIPE_WEBHOOK_SECRET !== 'whsec_test_your_webhook_secret_here';
+// Verify webhook signature
+$endpoint_secret = STRIPE_WEBHOOK_SECRET;
 
-if ($verify_signature) {
-    // Verify webhook signature
-    $endpoint_secret = STRIPE_WEBHOOK_SECRET;
-    
-    $event = null;
-    try {
-        $event = verifyWebhookSignature($payload, $sig_header, $endpoint_secret);
-    } catch (Exception $e) {
-        error_log('Webhook signature verification failed: ' . $e->getMessage());
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid signature']);
-        exit;
-    }
-} else {
-    // For testing - parse payload directly (NOT for production)
-    $event = json_decode($payload, true);
-    if (!$event) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON']);
-        exit;
-    }
+$event = null;
+try {
+    $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+} catch (\UnexpectedValueException $e) {
+    // Invalid payload
+    error_log('Webhook error: Invalid payload - ' . $e->getMessage());
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid payload']);
+    exit;
+} catch (\Stripe\Exception\SignatureVerificationException $e) {
+    // Invalid signature
+    error_log('Webhook error: Invalid signature - ' . $e->getMessage());
+    error_log('Signature header: ' . $sig_header);
+    error_log('Endpoint secret: ' . substr($endpoint_secret, 0, 10) . '...');
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid signature']);
+    exit;
 }
 
 // Log webhook for debugging
@@ -48,6 +44,10 @@ try {
     switch ($event['type']) {
         case 'payment_intent.succeeded':
             $payment_intent = $event['data']['object'];
+            
+            // Log metadata for debugging
+            error_log('Payment intent metadata: ' . json_encode($payment_intent['metadata']));
+            
             $result = $processor->handlePaymentSuccess($payment_intent['id']);
             
             if (!$result['success']) {
@@ -77,6 +77,11 @@ try {
             error_log('Payment canceled: ' . $payment_intent['id']);
             break;
             
+        case 'checkout.session.completed':
+            // Log but don't process - we handle everything via payment_intent.succeeded
+            error_log('Checkout session completed');
+            break;
+            
         default:
             error_log('Unhandled webhook type: ' . $event['type']);
     }
@@ -88,38 +93,5 @@ try {
     error_log('Webhook processing error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => $e->getMessage()]);
-}
-
-// Webhook signature verification function
-function verifyWebhookSignature($payload, $sig_header, $endpoint_secret) {
-    $elements = explode(',', $sig_header);
-    $sig_data = [];
-    
-    foreach ($elements as $element) {
-        list($key, $value) = explode('=', $element, 2);
-        $sig_data[$key] = $value;
-    }
-    
-    if (!isset($sig_data['t']) || !isset($sig_data['v1'])) {
-        throw new Exception('Missing signature elements');
-    }
-    
-    $timestamp = $sig_data['t'];
-    $signature = $sig_data['v1'];
-    
-    // Check timestamp (within 5 minutes)
-    if (abs(time() - $timestamp) > 300) {
-        throw new Exception('Timestamp outside tolerance');
-    }
-    
-    // Verify signature
-    $signed_payload = $timestamp . '.' . $payload;
-    $expected_signature = hash_hmac('sha256', $signed_payload, $endpoint_secret);
-    
-    if (!hash_equals($expected_signature, $signature)) {
-        throw new Exception('Invalid signature');
-    }
-    
-    return json_decode($payload, true);
 }
 ?>
