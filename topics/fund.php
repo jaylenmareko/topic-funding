@@ -198,34 +198,6 @@ sort($suggested_amounts);
             <a href="view.php?id=<?php echo $topic->id; ?>">← Back to Topic</a>
         </div>
 
-        <div class="topic-summary">
-            <h1 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h1>
-            
-            <div class="creator-info">
-                <div class="creator-avatar">
-                    <?php if ($topic->creator_image): ?>
-                        <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" alt="Creator" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                    <?php else: ?>
-                        <?php echo strtoupper(substr($topic->creator_name, 0, 1)); ?>
-                    <?php endif; ?>
-                </div>
-                <div>
-                    <strong><?php echo htmlspecialchars($topic->creator_name); ?></strong>
-                    <div style="color: #666; font-size: 14px;">Content Creator</div>
-                </div>
-            </div>
-
-            <div class="funding-progress">
-                <div class="funding-bar" style="width: <?php echo $progress_percent; ?>%"></div>
-            </div>
-
-            <div class="funding-stats">
-                <div><strong>$<?php echo number_format($topic->current_funding, 2); ?></strong> raised</div>
-                <div><strong>$<?php echo number_format($remaining, 2); ?></strong> remaining</div>
-                <div><strong><?php echo round($progress_percent); ?>%</strong> complete</div>
-            </div>
-        </div>
-
         <div class="funding-form">
             <?php if (!empty($errors)): ?>
                 <?php foreach ($errors as $error): ?>
@@ -250,10 +222,6 @@ sort($suggested_amounts);
 
             <?php if ($topic->status === 'active'): ?>
 
-                <div class="security-features">
-                    🛡️ <strong>Security Features:</strong> CSRF protection, rate limiting, input validation, and secure payment processing.
-                </div>
-
                 <div class="secure-badge">
                     <span>🔒</span>
                     <span>Secure payment processing</span>
@@ -275,31 +243,6 @@ sort($suggested_amounts);
                     This topic has been fully funded! The creator is now working on the content.
                 </div>
                 <a href="view.php?id=<?php echo $topic->id; ?>" class="btn">View Topic Details</a>
-            <?php endif; ?>
-
-            <?php if (!empty($contributions)): ?>
-            <div class="recent-contributors">
-                <h3>Recent Contributors (<?php echo count($contributions); ?>)</h3>
-                <?php foreach (array_slice($contributions, 0, 5) as $contribution): ?>
-                    <div class="contributor-item">
-                        <div class="contributor-info">
-                            <div class="contributor-avatar">
-                                <?php echo strtoupper(substr($contribution->username, 0, 1)); ?>
-                            </div>
-                            <div>
-                                <div class="contributor-name"><?php echo htmlspecialchars($contribution->username); ?></div>
-                                <div class="contribution-date"><?php echo date('M j, Y', strtotime($contribution->contributed_at)); ?></div>
-                            </div>
-                        </div>
-                        <div class="contribution-amount">$<?php echo number_format($contribution->amount, 2); ?></div>
-                    </div>
-                <?php endforeach; ?>
-                <?php if (count($contributions) > 5): ?>
-                    <div style="text-align: center; margin-top: 15px;">
-                        <a href="view.php?id=<?php echo $topic->id; ?>" style="color: #007bff;">View all contributors</a>
-                    </div>
-                <?php endif; ?>
-            </div>
             <?php endif; ?>
         </div>
     </div>
