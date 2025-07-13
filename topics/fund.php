@@ -39,47 +39,31 @@ if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
     
-    // Rate limiting - max 5 funding attempts per hour per user
-    $rate_limit_key = 'funding_attempts_' . $_SESSION['user_id'];
-    $current_attempts = $_SESSION[$rate_limit_key] ?? 0;
-    $last_attempt_time = $_SESSION[$rate_limit_key . '_time'] ?? 0;
+    $amount = InputSanitizer::sanitizeFloat($_POST['amount']);
     
-    // Reset counter if more than 1 hour has passed
-    if (time() - $last_attempt_time > 3600) {
-        $current_attempts = 0;
+    // Validation
+    if ($amount < 1) {
+        $errors[] = "Minimum contribution is $1";
+    } elseif ($amount > 1000) {
+        $errors[] = "Maximum contribution is $1,000";
+    } elseif (!is_numeric($amount)) {
+        $errors[] = "Please enter a valid amount";
     }
     
-    if ($current_attempts >= 5) {
-        $errors[] = "Too many funding attempts. Please try again in an hour.";
-    } else {
-        $amount = InputSanitizer::sanitizeFloat($_POST['amount']);
-        
-        // Validation
-        if ($amount < 1) {
-            $errors[] = "Minimum contribution is $1";
-        } elseif ($amount > 1000) {
-            $errors[] = "Maximum contribution is $1,000";
-        } elseif (!is_numeric($amount)) {
-            $errors[] = "Please enter a valid amount";
-        }
-        
-        // Check if user has already contributed to this topic (optional limit)
-        $db = new Database();
-        $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
-        $db->bind(':topic_id', $topic_id);
-        $db->bind(':user_id', $_SESSION['user_id']);
-        $existing_contributions = $db->single()->count;
-        
-        if ($existing_contributions >= 3) {
-            $errors[] = "You can only contribute up to 3 times per topic.";
-        }
-        
-        // Process payment if no errors
-        if (empty($errors)) {
-            try {
-                // Update rate limiting
-                $_SESSION[$rate_limit_key] = $current_attempts + 1;
-                $_SESSION[$rate_limit_key . '_time'] = time();
+    // Check if user has already contributed to this topic (optional limit)
+    $db = new Database();
+    $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
+    $db->bind(':topic_id', $topic_id);
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $existing_contributions = $db->single()->count;
+    
+    if ($existing_contributions >= 3) {
+        $errors[] = "You can only contribute up to 3 times per topic.";
+    }
+    
+    // Process payment if no errors
+    if (empty($errors)) {
+        try {
                 
                 // Create Stripe Checkout Session with webhook URLs
                 $session = \Stripe\Checkout\Session::create([
@@ -207,17 +191,6 @@ sort($suggested_amounts);
 
             <?php if ($success): ?>
                 <div class="success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
-
-            <?php
-            // Show rate limit warning if approaching limit
-            $rate_limit_key = 'funding_attempts_' . $_SESSION['user_id'];
-            $current_attempts = $_SESSION[$rate_limit_key] ?? 0;
-            if ($current_attempts >= 3):
-            ?>
-            <div class="rate-limit-warning">
-                ⚠️ You have <?php echo 5 - $current_attempts; ?> funding attempts remaining this hour.
-            </div>
             <?php endif; ?>
 
             <?php if ($topic->status === 'active'): ?>
