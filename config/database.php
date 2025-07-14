@@ -111,6 +111,11 @@ class Database {
     public function cancelTransaction() {
         return $this->dbh->rollback();
     }
+
+    // Check if transaction is active
+    public function inTransaction() {
+        return $this->dbh->inTransaction();
+    }
 }
 
 // Helper functions for common database operations with enhanced funding logic
