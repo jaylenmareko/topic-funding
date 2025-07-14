@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - Fixed for topic funding
+// config/funding_processor.php - Fixed for topic funding with proper transaction handling
 
 require_once 'database.php';
 require_once 'notification_system.php';
@@ -62,10 +62,17 @@ class FundingProcessor {
         try {
             $topic_id = $metadata->topic_id;
             $user_id = $metadata->user_id;
-            // FIXED: Use 'amount' instead of 'initial_contribution' for funding
             $amount = floatval($metadata->amount);
             
             error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount");
+            
+            // Check if already processed
+            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+            $this->db->bind(':payment_id', $payment_intent_id);
+            if ($this->db->single()) {
+                error_log("Payment already processed: " . $payment_intent_id);
+                return ['success' => true, 'message' => 'Payment already processed'];
+            }
             
             $this->db->beginTransaction();
             
@@ -96,6 +103,7 @@ class FundingProcessor {
             $this->db->bind(':topic_id', $topic_id);
             $topic = $this->db->single();
             
+            $fully_funded = false;
             if ($topic && $topic->current_funding >= $topic->funding_threshold) {
                 error_log("Topic is now fully funded!");
                 
@@ -110,7 +118,13 @@ class FundingProcessor {
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
                 
-                // Send funding notifications
+                $fully_funded = true;
+            }
+            
+            $this->db->endTransaction();
+            
+            // Send funding notifications AFTER transaction is committed
+            if ($fully_funded) {
                 try {
                     $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
                     error_log("Funding notifications sent: " . json_encode($notification_result));
@@ -120,13 +134,19 @@ class FundingProcessor {
                 }
             }
             
-            $this->db->endTransaction();
             error_log("Topic funding processed successfully");
             
-            return ['success' => true, 'contribution_id' => $contribution_id];
+            return [
+                'success' => true, 
+                'contribution_id' => $contribution_id,
+                'topic_id' => $topic_id,
+                'fully_funded' => $fully_funded
+            ];
             
         } catch (Exception $e) {
-            $this->db->cancelTransaction();
+            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
+                $this->db->cancelTransaction();
+            }
             error_log("Topic funding processing error: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
@@ -142,6 +162,14 @@ class FundingProcessor {
             $initial_contribution = floatval($metadata->initial_contribution);
             
             error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution");
+            
+            // Check if already processed
+            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+            $this->db->bind(':payment_id', $payment_intent_id);
+            if ($this->db->single()) {
+                error_log("Payment already processed: " . $payment_intent_id);
+                return ['success' => true, 'message' => 'Payment already processed'];
+            }
             
             $this->db->beginTransaction();
             
@@ -174,7 +202,9 @@ class FundingProcessor {
             
             error_log("Created initial contribution");
             
-            // Send topic live notification
+            $this->db->endTransaction();
+            
+            // Send topic live notification AFTER transaction is committed
             try {
                 $this->notificationSystem->sendTopicLiveNotification($topic_id);
                 error_log("Topic live notifications sent");
@@ -183,13 +213,14 @@ class FundingProcessor {
                 // Don't fail the payment for notification errors
             }
             
-            $this->db->endTransaction();
             error_log("Topic creation processed successfully");
             
             return ['success' => true, 'topic_id' => $topic_id];
             
         } catch (Exception $e) {
-            $this->db->cancelTransaction();
+            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
+                $this->db->cancelTransaction();
+            }
             error_log("Topic creation processing error: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
