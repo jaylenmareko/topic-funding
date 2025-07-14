@@ -100,9 +100,9 @@ $completed_topics = $db->resultSet();
     <?php renderNavigation('browse_creators'); ?>
 
     <div class="container">
-        <!-- Fund a Topic Button -->
+        <!-- Create a Topic Button -->
         <div style="text-align: center; margin: 80px 0 50px 0;">
-            <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success" style="font-size: 18px; padding: 15px 30px;">Fund a Topic</a>
+            <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success" style="font-size: 18px; padding: 15px 30px;">Create a Topic</a>
         </div>
 
         <!-- Active Topics -->
