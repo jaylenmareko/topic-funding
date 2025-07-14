@@ -64,45 +64,43 @@ if ($_POST) {
     // Process payment if no errors
     if (empty($errors)) {
         try {
-                
-                // Create Stripe Checkout Session with webhook URLs
-                $session = \Stripe\Checkout\Session::create([
-                    'payment_method_types' => ['card'],
-                    'line_items' => [[
-                        'price_data' => [
-                            'currency' => STRIPE_CURRENCY,
-                            'product_data' => [
-                                'name' => 'Fund Topic: ' . $topic->title,
-                                'description' => 'Contribution to fund this topic by ' . $topic->creator_name,
-                            ],
-                            'unit_amount' => $amount * 100, // Stripe expects cents
+            // Create Stripe Checkout Session with webhook URLs
+            $session = \Stripe\Checkout\Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => STRIPE_CURRENCY,
+                        'product_data' => [
+                            'name' => 'Fund Topic: ' . $topic->title,
+                            'description' => 'Contribution to fund this topic by ' . $topic->creator_name,
                         ],
-                        'quantity' => 1,
-                    ]],
-                    'mode' => 'payment',
-                    // Use simple success/cancel URLs that don't trigger Mod_Security
-                    'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id,
-                    'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_funding&topic_id=' . $topic_id,
-                    'metadata' => [
-                        'type' => 'topic_funding',
-                        'topic_id' => $topic_id,
-                        'user_id' => $_SESSION['user_id'],
-                        'amount' => $amount,
+                        'unit_amount' => $amount * 100, // Stripe expects cents
                     ],
-                    'customer_email' => $_SESSION['email'] ?? null,
-                ]);
-                
-                // Redirect to Stripe Checkout
-                header('Location: ' . $session->url);
-                exit;
-                
-            } catch (\Stripe\Exception\ApiErrorException $e) {
-                $errors[] = "Payment processing error. Please try again.";
-                error_log("Stripe error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
-            } catch (Exception $e) {
-                $errors[] = "An error occurred. Please try again.";
-                error_log("Funding error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
-            }
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                // Use simple success/cancel URLs that don't trigger Mod_Security
+                'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id,
+                'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_funding&topic_id=' . $topic_id,
+                'metadata' => [
+                    'type' => 'topic_funding',
+                    'topic_id' => $topic_id,
+                    'user_id' => $_SESSION['user_id'],
+                    'amount' => $amount,
+                ],
+                'customer_email' => $_SESSION['email'] ?? null,
+            ]);
+            
+            // Redirect to Stripe Checkout
+            header('Location: ' . $session->url);
+            exit;
+            
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            $errors[] = "Payment processing error. Please try again.";
+            error_log("Stripe error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+        } catch (Exception $e) {
+            $errors[] = "An error occurred. Please try again.";
+            error_log("Funding error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
         }
     }
 }
