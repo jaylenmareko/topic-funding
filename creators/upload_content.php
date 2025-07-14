@@ -50,7 +50,6 @@ $minutes_remaining = max(0, floor(($time_remaining % 3600) / 60));
 // Handle content upload
 if ($_POST && isset($_POST['content_url'])) {
     $content_url = trim($_POST['content_url']);
-    $completion_notes = trim($_POST['completion_notes'] ?? '');
     
     // Validation
     if (empty($content_url)) {
@@ -73,12 +72,10 @@ if ($_POST && isset($_POST['content_url'])) {
                 UPDATE topics 
                 SET content_url = :content_url, 
                     status = "completed", 
-                    completed_at = NOW(),
-                    completion_notes = :notes
+                    completed_at = NOW()
                 WHERE id = :topic_id
             ');
             $db->bind(':content_url', $content_url);
-            $db->bind(':notes', $completion_notes);
             $db->bind(':topic_id', $topic_id);
             $db->execute();
             
@@ -88,12 +85,9 @@ if ($_POST && isset($_POST['content_url'])) {
             
             $db->endTransaction();
             
-            $success = "Content uploaded successfully! All contributors have been notified.";
-            
-            // Refresh topic data
-            $db->query('SELECT * FROM topics WHERE id = :topic_id');
-            $db->bind(':topic_id', $topic_id);
-            $topic = $db->single();
+            // Redirect to dashboard after successful upload
+            header('Location: dashboard.php?uploaded=1');
+            exit;
             
         } catch (Exception $e) {
             $db->cancelTransaction();
@@ -131,19 +125,12 @@ $funding_stats = $db->single();
         .upload-form { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        input[type="url"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        textarea { height: 100px; resize: vertical; }
+        input[type="url"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .btn:hover { background: #218838; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin: 20px 0; }
-        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
-        .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
-        .stat-label { color: #666; font-size: 14px; }
-        .requirements { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .requirements h4 { margin-top: 0; color: #1976d2; }
         .completed-status { background: #d4edda; padding: 20px; border-radius: 8px; text-align: center; }
         .timer { font-size: 20px; font-weight: bold; }
         .timer.urgent { color: #dc3545; }
@@ -158,27 +145,29 @@ $funding_stats = $db->single();
 <body>
     <div class="container">
         <div class="nav">
-            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>">← Back to My Profile</a>
-            <a href="../topics/view.php?id=<?php echo $topic_id; ?>">View Topic</a>
-            <a href="../dashboard/index.php">Dashboard</a>
+            <a href="../creators/dashboard.php">← Dashboard</a>
         </div>
 
         <div class="header">
             <h1 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h1>
-            <p style="color: #666; margin: 0;">Upload your content to complete this funded topic</p>
+            <p style="color: #666; margin: 0 0 20px 0;">Upload your content to complete this funded topic</p>
             
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $funding_stats->contributor_count; ?></div>
-                    <div class="stat-label">Contributors Waiting</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">$<?php echo number_format($funding_stats->total_funding, 0); ?></div>
-                    <div class="stat-label">Total Funded</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $hours_remaining; ?>h <?php echo $minutes_remaining; ?>m</div>
-                    <div class="stat-label">Time Remaining</div>
+            <!-- Earnings Breakdown -->
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 6px; border-left: 4px solid #28a745;">
+                <h4 style="margin: 0 0 10px 0; color: #155724;">💰 Payment Breakdown</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                    <div>
+                        <strong>Total Funded:</strong> $<?php echo number_format($funding_stats->total_funding, 2); ?>
+                    </div>
+                    <div>
+                        <strong>TopicLaunch Fee (10%):</strong> $<?php echo number_format($funding_stats->total_funding * 0.10, 2); ?>
+                    </div>
+                    <div style="color: #28a745; font-weight: bold; font-size: 16px;">
+                        <strong>Your Earnings (90%):</strong> $<?php echo number_format($funding_stats->total_funding * 0.90, 2); ?>
+                    </div>
+                    <div style="color: #666; font-size: 12px;">
+                        Payment processed after content upload
+                    </div>
                 </div>
             </div>
         </div>
@@ -213,16 +202,6 @@ $funding_stats = $db->single();
                 </div>
             <?php endif; ?>
 
-            <div class="requirements">
-                <h4>📋 Content Requirements:</h4>
-                <ul>
-                    <li>Upload your video/content to your platform (YouTube, Twitch, etc.)</li>
-                    <li>Make sure the content directly addresses the requested topic</li>
-                    <li>Content should be publicly accessible to contributors</li>
-                    <li>Provide the direct URL to your uploaded content below</li>
-                </ul>
-            </div>
-
             <?php if (!empty($errors)): ?>
                 <?php foreach ($errors as $error): ?>
                     <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -243,12 +222,6 @@ $funding_stats = $db->single();
                                placeholder="https://youtube.com/watch?v=... or https://twitch.tv/videos/..."
                                value="<?php echo isset($_POST['content_url']) ? htmlspecialchars($_POST['content_url']) : ''; ?>">
                         <small style="color: #666;">Direct link to your uploaded video or live stream</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="completion_notes">Completion Notes (Optional):</label>
-                        <textarea id="completion_notes" name="completion_notes" 
-                                  placeholder="Any additional notes for your contributors..."><?php echo isset($_POST['completion_notes']) ? htmlspecialchars($_POST['completion_notes']) : ''; ?></textarea>
                     </div>
 
                     <button type="submit" class="btn" id="submitBtn" <?php echo $deadline_passed ? 'disabled' : ''; ?>>
