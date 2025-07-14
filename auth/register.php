@@ -43,6 +43,9 @@ if ($_POST) {
         // Use YouTube handle as username
         $username = $youtube_handle;
         
+        // Get PayPal email for creators
+        $paypal_email = trim(InputSanitizer::sanitizeEmail($_POST['paypal_email'] ?? ''));
+        
         // Handle profile image upload for creators
         $profile_image = null;
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
@@ -72,6 +75,15 @@ if ($_POST) {
                     $errors[] = "Failed to upload image";
                 }
             }
+        }
+        
+        // PayPal email validation for creators
+        if (empty($paypal_email)) {
+            $errors[] = "PayPal email is required for automatic payments";
+        } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Please enter a valid PayPal email address";
+        } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $paypal_email)) {
+            $errors[] = "Please enter a properly formatted PayPal email address";
         }
     } else {
         // For fans, use regular username
@@ -175,7 +187,7 @@ if ($_POST) {
     // If no errors, handle based on user type
     if (empty($errors)) {
         if ($user_type === 'creator') {
-            // For creators: Create account and creator profile immediately
+            // For creators: Create account and creator profile immediately with PayPal
             try {
                 $db = new Database();
                 $db->beginTransaction();
@@ -194,7 +206,7 @@ if ($_POST) {
                 // Construct YouTube URL with @username format
                 $platform_url = 'https://youtube.com/@' . $youtube_handle;
                 
-                // Create creator profile immediately
+                // Create creator profile immediately with PayPal email
                 $db->query('
                     INSERT INTO creators (
                         username, 
@@ -210,7 +222,8 @@ if ($_POST) {
                         is_active, 
                         applicant_user_id, 
                         application_status,
-                        manual_payout_threshold
+                        manual_payout_threshold,
+                        paypal_email
                     ) VALUES (
                         :username, 
                         :display_name, 
@@ -225,7 +238,8 @@ if ($_POST) {
                         :is_active, 
                         :applicant_user_id, 
                         :application_status,
-                        :manual_payout_threshold
+                        :manual_payout_threshold,
+                        :paypal_email
                     )
                 ');
                 
@@ -243,6 +257,7 @@ if ($_POST) {
                 $db->bind(':applicant_user_id', $user_id);
                 $db->bind(':application_status', 'approved');
                 $db->bind(':manual_payout_threshold', 100.00);
+                $db->bind(':paypal_email', $paypal_email);
                 $db->execute();
                 
                 $creator_id = $db->lastInsertId();
@@ -273,7 +288,7 @@ if ($_POST) {
                 
                 session_regenerate_id(true);
                 
-                // Redirect to creator dashboard
+                // Redirect directly to creator dashboard
                 header('Location: ../creators/dashboard.php');
                 exit;
                 
@@ -401,6 +416,15 @@ if ($_POST) {
                 </div>
                 <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
             </div>
+
+            <!-- PayPal Email for Creators -->
+            <div class="form-group">
+                <label>PayPal Email (for automatic payments):</label>
+                <input type="email" name="paypal_email" id="paypal_email" 
+                       value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>" 
+                       required placeholder="your-paypal@email.com">
+                <div class="requirement" id="paypal-req">• Valid PayPal email for $100+ automatic payouts</div>
+            </div>
         <?php else: ?>
             <!-- Regular Username for Fans -->
             <div class="form-group">
@@ -496,7 +520,9 @@ if ($_POST) {
         // Enable/disable submit button
         <?php if ($user_type === 'creator'): ?>
         const handle = document.getElementById('youtube_handle').value.trim();
-        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && handle.length >= 3 && /[a-zA-Z]/.test(handle) && emailValid;
+        const paypalEmail = document.getElementById('paypal_email').value.trim();
+        const paypalValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(paypalEmail);
+        const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && handle.length >= 3 && /[a-zA-Z]/.test(handle) && emailValid && paypalValid;
         <?php else: ?>
         const username = document.getElementById('username').value.trim();
         const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && username.length >= 3 && emailValid;
@@ -537,6 +563,34 @@ if ($_POST) {
     });
     
     <?php if ($user_type === 'creator'): ?>
+    // PayPal email validation for creators
+    document.getElementById('paypal_email').addEventListener('input', function() {
+        const email = this.value.trim();
+        const paypalReq = document.getElementById('paypal-req');
+        
+        if (email) {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            
+            if (emailRegex.test(email)) {
+                paypalReq.classList.add('valid');
+                paypalReq.classList.remove('invalid');
+                paypalReq.textContent = '• Valid PayPal email for automatic payouts';
+                this.style.borderColor = '#28a745';
+            } else {
+                paypalReq.classList.add('invalid');
+                paypalReq.classList.remove('valid');
+                paypalReq.textContent = '• Invalid PayPal email format';
+                this.style.borderColor = '#dc3545';
+            }
+        } else {
+            paypalReq.classList.remove('valid', 'invalid');
+            paypalReq.textContent = '• Valid PayPal email for $100+ automatic payouts';
+            this.style.borderColor = '#ddd';
+        }
+        
+        validatePassword(); // Revalidate form
+    });
+    
     // YouTube handle validation and auto-trim
     document.getElementById('youtube_handle').addEventListener('input', function() {
         let value = this.value;
