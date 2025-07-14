@@ -23,7 +23,8 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
 if (!$creator) {
-    header('Location: ../dashboard/index.php');
+    // If no creator found, redirect to browse creators instead of dashboard
+    header('Location: ../creators/index.php');
     exit;
 }
 
@@ -135,8 +136,10 @@ $share_url = 'https://topiclaunch.com/';
             cursor: pointer; 
             font-weight: bold;
             transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
         }
-        .share-btn:hover { background: rgba(255,255,255,0.3); }
+        .share-btn:hover { background: rgba(255,255,255,0.3); color: white; text-decoration: none; }
         
         /* PayPal Setup Alert */
         .paypal-alert { 
@@ -317,6 +320,11 @@ $share_url = 'https://topiclaunch.com/';
                 <h1 class="header-title">📺 YouTuber Dashboard</h1>
                 <p class="header-subtitle">Welcome, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
                 
+                <!-- Profile Management -->
+                <div style="margin: 20px 0;">
+                    <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="share-btn" style="background: rgba(255,255,255,0.3);">⚙️ Edit Profile</a>
+                </div>
+                
                 <!-- Share Your Profile -->
                 <div class="share-section">
                     <p style="margin: 0 0 15px 0; opacity: 0.9;">Send this link to your fans so they can find you and fund topics!</p>
@@ -409,7 +417,7 @@ $share_url = 'https://topiclaunch.com/';
                         <p>No topics currently being funded.</p>
                         <div class="payout-message">
                             <strong>💡 How it works:</strong><br>
-                            Fans create topics for you automatically. Once you earn $100, you can enter your PayPal email to receive payments.
+                            Fans create topics for you automatically. Once you earn $100, we will send your earnings to your PayPal email.
                         </div>
                     </div>
                 <?php endif; ?>
@@ -432,14 +440,12 @@ $share_url = 'https://topiclaunch.com/';
                         </div>
                         <div style="margin-top: 10px;">
                             <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">View</a>
-                            <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn" style="background: #6c757d; color: white; margin-left: 10px;">Edit Profile</a>
                         </div>
                     </div>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="empty-state">
                         <p>No completed topics yet.</p>
-                        <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="btn" style="background: #6c757d; color: white;">Edit Profile</a>
                     </div>
                 <?php endif; ?>
             </div>
