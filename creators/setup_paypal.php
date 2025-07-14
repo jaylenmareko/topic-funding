@@ -37,8 +37,8 @@ $db->query('
 $db->bind(':creator_id', $creator->id);
 $earnings = $db->single();
 
-$minimum_threshold = $creator->manual_payout_threshold ?? 100;
-$can_setup_paypal = $earnings->total_earned >= $minimum_threshold;
+$minimum_threshold = $creator->manual_payout_threshold ?? 1;
+$can_setup_paypal = true; // Always allow PayPal setup for testing
 
 $errors = [];
 $success = '';
