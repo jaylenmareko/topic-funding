@@ -79,7 +79,7 @@ if ($_POST) {
         
         // PayPal email validation for creators
         if (empty($paypal_email)) {
-            $errors[] = "PayPal email is required for automatic payments";
+            $errors[] = "PayPal email is required for payments";
         } elseif (!filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = "Please enter a valid PayPal email address";
         } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $paypal_email)) {
@@ -419,11 +419,10 @@ if ($_POST) {
 
             <!-- PayPal Email for Creators -->
             <div class="form-group">
-                <label>PayPal Email (for automatic payments):</label>
+                <label>PayPal Email (for payments):</label>
                 <input type="email" name="paypal_email" id="paypal_email" 
                        value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>" 
                        required placeholder="your-paypal@email.com">
-                <div class="requirement" id="paypal-req">• Valid PayPal email for $100+ automatic payouts</div>
             </div>
         <?php else: ?>
             <!-- Regular Username for Fans -->
@@ -566,25 +565,16 @@ if ($_POST) {
     // PayPal email validation for creators
     document.getElementById('paypal_email').addEventListener('input', function() {
         const email = this.value.trim();
-        const paypalReq = document.getElementById('paypal-req');
         
         if (email) {
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             
             if (emailRegex.test(email)) {
-                paypalReq.classList.add('valid');
-                paypalReq.classList.remove('invalid');
-                paypalReq.textContent = '• Valid PayPal email for automatic payouts';
                 this.style.borderColor = '#28a745';
             } else {
-                paypalReq.classList.add('invalid');
-                paypalReq.classList.remove('valid');
-                paypalReq.textContent = '• Invalid PayPal email format';
                 this.style.borderColor = '#dc3545';
             }
         } else {
-            paypalReq.classList.remove('valid', 'invalid');
-            paypalReq.textContent = '• Valid PayPal email for $100+ automatic payouts';
             this.style.borderColor = '#ddd';
         }
         
