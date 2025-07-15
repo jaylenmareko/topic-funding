@@ -45,8 +45,7 @@ if (!isset($_SESSION['user_id'])) {
         </div>
         
         <div style="margin-top: 30px;">
-            <a href="dashboard/index.php" class="btn">Go to Dashboard</a>
-            <a href="creators/index.php" class="btn">Browse YouTubers</a>
+            <a href="creators/index.php" class="btn">Browse More YouTubers</a>
         </div>
         
         <div style="margin-top: 20px; color: #666; font-size: 14px;">
@@ -75,9 +74,9 @@ if (!isset($_SESSION['user_id'])) {
         
         // Try to check if payment was processed by looking for new topics/contributions
         <?php if ($type === 'topic_creation'): ?>
-        // For topic creation, redirect to dashboard after delay
+        // For topic creation, redirect to creators page after delay
         if (checkCount >= 10) {
-            window.location.href = 'dashboard/index.php?created=1';
+            window.location.href = 'creators/index.php?created=1';
             return;
         }
         <?php else: ?>
@@ -94,7 +93,7 @@ if (!isset($_SESSION['user_id'])) {
             // Max checks reached, redirect anyway
             statusEl.textContent = 'Processing complete! Redirecting...';
             setTimeout(() => {
-                window.location.href = 'dashboard/index.php';
+                window.location.href = 'creators/index.php';
             }, 2000);
         }
     }
