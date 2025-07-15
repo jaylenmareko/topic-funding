@@ -121,7 +121,6 @@ class NotificationSystem {
             
             🎯 What happens next:
             • Your topic is live for the community to fund
-            • Others can now contribute to reach the goal
             • Once funded, " . $topic->creator_name . " has 48 hours to create content
             • You'll be notified when it's fully funded and when content is delivered
             
@@ -135,7 +134,6 @@ class NotificationSystem {
             
             🛡️ Protection: If the creator doesn't deliver content within 48 hours of funding, you'll get a 90% refund automatically (10% covers platform fees and delivery guarantee).
             
-            Track progress in your dashboard: https://topiclaunch.com/dashboard/index.php
             
             Thanks for being part of TopicLaunch!
             
@@ -241,8 +239,6 @@ class NotificationSystem {
             • Platform Fee (10%): $" . number_format($fee_info['platform_fee'], 2) . "
             • Your Earnings: $" . number_format($fee_info['creator_amount'], 2) . "
             
-            📅 IMPORTANT: Content Deadline
-            You have exactly 48 hours to create and upload your content for this topic.
             
             Deadline: " . date('M j, Y g:i A', strtotime($deadline)) . "
             
@@ -253,25 +249,19 @@ class NotificationSystem {
             
             ⚠️ CRITICAL: If you don't upload content within 48 hours:
             - All contributors will be automatically refunded 90% of their contributions
-            - The topic will be marked as failed
-            - This may affect your creator status
             
             💳 Payment Information:
-            Your earnings of $" . number_format($fee_info['creator_amount'], 2) . " will be processed as manual PayPal payout.
-            Request your payout from your dashboard after successful content delivery.
+            Your earnings of $" . number_format($fee_info['creator_amount'], 2) . " will be processed as PayPal payout.
             
             📝 To upload your content:
             1. Go to: https://topiclaunch.com/creators/upload_content.php?topic=" . $topic->id . "
             2. Add your video/content URL
-            3. Mark the topic as completed
             
             💡 Platform Fee Policy:
             TopicLaunch charges a 10% platform fee to cover payment processing, hosting, platform maintenance, and delivery guarantee services.
             
             Thank you for being part of TopicLaunch! Your supporters are excited to see your content.
-            
-            Questions? Reply to this email or contact support.
-            
+                        
             Best regards,
             TopicLaunch Team
         ";
