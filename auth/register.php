@@ -436,7 +436,6 @@ if ($_POST) {
         <div class="form-group">
             <label>Email:</label>
             <input type="email" name="email" id="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
-            <div class="requirement" id="email-req">• Must be a valid email address</div>
         </div>
         
         <div class="form-group">
@@ -474,7 +473,6 @@ if ($_POST) {
     const lengthReq = document.getElementById('length-req');
     const letterReq = document.getElementById('letter-req');
     const numberReq = document.getElementById('number-req');
-    const emailReq = document.getElementById('email-req');
     const submitBtn = document.getElementById('submitBtn');
 
     function validatePassword() {
@@ -542,19 +540,11 @@ if ($_POST) {
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             
             if (emailRegex.test(email)) {
-                emailReq.classList.add('valid');
-                emailReq.classList.remove('invalid');
-                emailReq.textContent = '• Valid email format (domain will be verified on submit)';
                 this.style.borderColor = '#28a745';
             } else {
-                emailReq.classList.add('invalid');
-                emailReq.classList.remove('valid');
-                emailReq.textContent = '• Invalid email format';
                 this.style.borderColor = '#dc3545';
             }
         } else {
-            emailReq.classList.remove('valid', 'invalid');
-            emailReq.textContent = '• Must be a valid email address';
             this.style.borderColor = '#ddd';
         }
         
