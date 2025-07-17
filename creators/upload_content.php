@@ -1,6 +1,6 @@
 <?php
-// creators/upload_content.php - Allow creators to upload content URLs for funded topics
 session_start();
+// creators/upload_content.php - Allow creators to upload content URLs for funded topics
 require_once '../config/database.php';
 require_once '../config/notification_system.php';
 
@@ -86,7 +86,7 @@ if ($_POST && isset($_POST['content_url'])) {
             $db->endTransaction();
             
             // Redirect to dashboard after successful upload
-            header('Location: dashboard.php?uploaded=1');
+            header('Location: ../creators/dashboard.php?uploaded=1');
             exit;
             
         } catch (Exception $e) {
