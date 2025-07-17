@@ -178,18 +178,20 @@ function renderNavigation($current_page = '') {
                     <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
                     
                 <?php else: ?>
-                    <!-- Navigation for Guests -->
-                    <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
-                        📺 Join as Creator
-                    </a>
-                    
-                    <a href="<?php echo $base_path; ?>auth/login.php" class="nav-btn">
-                        Login
-                    </a>
-                    
-                    <a href="<?php echo $base_path; ?>auth/register.php" class="nav-btn creator">
-                        Get Started
-                    </a>
+                    <!-- Navigation for Guests - Remove buttons on topic view pages -->
+                    <?php if (strpos($_SERVER['REQUEST_URI'], '/topics/view.php') === false): ?>
+                        <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
+                            📺 Join as Creator
+                        </a>
+                        
+                        <a href="<?php echo $base_path; ?>auth/login.php" class="nav-btn">
+                            Login
+                        </a>
+                        
+                        <a href="<?php echo $base_path; ?>auth/register.php" class="nav-btn creator">
+                            Get Started
+                        </a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             
