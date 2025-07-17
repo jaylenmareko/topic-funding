@@ -204,8 +204,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <?php if (empty($creators)): ?>
             <div class="empty-state">
                 <h3>No YouTubers yet</h3>
-                <p>Be the first to join as a YouTuber!</p>
-                <a href="apply.php" class="btn">Apply to be a YouTuber</a>
             </div>
         <?php else: ?>
             <div class="creator-grid">
