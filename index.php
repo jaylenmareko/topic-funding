@@ -268,7 +268,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 
     <!-- Hero Section - Only for Guests -->
     <div class="hero">
-        <h1>Fund Topics from Your Favorite YouTuber</h1>
+        <h1>Fund Topics for Your Favorite YouTuber</h1>
         <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
         
         <!-- User Type Selection -->
