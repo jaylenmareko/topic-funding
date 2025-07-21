@@ -139,22 +139,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             border-color: rgba(255,255,255,0.4);
             transform: translateY(-5px);
         }
-        .user-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-            display: block;
-        }
-        .user-type h3 {
-            color: white;
-            margin: 0 0 15px 0;
-            font-size: 24px;
-        }
-        .user-type p {
-            color: rgba(255,255,255,0.9);
-            margin: 0 0 25px 0;
-            font-size: 16px;
-            line-height: 1.4;
-        }
         .btn-youtuber, .btn-fan {
             display: inline-block;
             padding: 15px 30px;
@@ -239,9 +223,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             .user-type {
                 padding: 30px 20px;
             }
-            .user-icon {
-                font-size: 50px;
-            }
             .process-steps { grid-template-columns: 1fr; }
             .login-form { flex-direction: column; gap: 5px; }
             .nav-container { flex-direction: column; gap: 15px; }
@@ -274,16 +255,12 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <!-- User Type Selection -->
         <div class="user-type-selector">
             <div class="user-type youtuber">
-                <div class="user-icon">📺</div>
-                <h3>Are you a YouTuber?</h3>
                 <a href="auth/register.php?type=creator" class="btn-youtuber">
                     Youtuber Signup
                 </a>
             </div>
             
             <div class="user-type fan">
-                <div class="user-icon">💰</div>
-                <h3>Are you a Fan?</h3>
                 <a href="auth/register.php?type=fan" class="btn-fan">
                     Fan Signup
                 </a>
