@@ -277,7 +277,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 <div class="user-icon">📺</div>
                 <h3>Are you a YouTuber?</h3>
                 <a href="auth/register.php?type=creator" class="btn-youtuber">
-                    Join as YouTuber
+                    Youtuber Signup
                 </a>
             </div>
             
@@ -285,7 +285,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 <div class="user-icon">💰</div>
                 <h3>Are you a Fan?</h3>
                 <a href="auth/register.php?type=fan" class="btn-fan">
-                    Propose a Topic
+                    Fan Signup
                 </a>
             </div>
         </div>
