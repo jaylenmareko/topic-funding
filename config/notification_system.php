@@ -82,9 +82,6 @@ class NotificationSystem {
             • Once it reaches the goal, you'll have 48 hours to create the content
             • You'll earn 90% of the funding (after 10% platform fee)
             
-            📱 Track Progress:
-            View the topic: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
-            Creator Dashboard: https://topiclaunch.com/creators/dashboard.php
             
             💡 Tips for Success:
             • Share the topic with your audience to help it get funded faster
@@ -124,8 +121,6 @@ class NotificationSystem {
             • Once funded, " . $topic->creator_name . " has 48 hours to create content
             • You'll be notified when it's fully funded and when content is delivered
             
-            📱 Share Your Topic:
-            Help it get funded faster: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
             
             💡 Pro Tips:
             • Share with friends who might be interested
@@ -313,9 +308,6 @@ class NotificationSystem {
                 💡 Platform Info:
                 TopicLaunch operates on a 10% platform fee model to ensure sustainable content creation and reliable delivery guarantees.
                 
-                📱 Track Progress:
-                View topic status: https://topiclaunch.com/topics/view.php?id=" . $topic_id . "
-                
                 Thank you for supporting content creators on TopicLaunch!
                 
                 Best regards,
@@ -375,10 +367,6 @@ class NotificationSystem {
                 ⭐ Your Impact:
                 Thanks to your support, this content was successfully created and delivered!
                 
-                📱 More Options:
-                • View topic details: https://topiclaunch.com/topics/view.php?id=" . $topic_id . "
-                • Browse more topics: https://topiclaunch.com/topics/
-                • Support more creators: https://topiclaunch.com/creators/
                 
                 Thank you for being part of the TopicLaunch community!
                 
