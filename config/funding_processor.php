@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - Fixed for topic funding with proper transaction handling
+// config/funding_processor.php - Fixed for topic funding with proper notification handling
 
 require_once 'database.php';
 require_once 'notification_system.php';
@@ -76,6 +76,17 @@ class FundingProcessor {
             
             $this->db->beginTransaction();
             
+            // Get topic info BEFORE adding contribution
+            $this->db->query('SELECT * FROM topics WHERE id = :topic_id');
+            $this->db->bind(':topic_id', $topic_id);
+            $topic_before = $this->db->single();
+            
+            if (!$topic_before) {
+                throw new Exception("Topic not found: " . $topic_id);
+            }
+            
+            error_log("Topic before funding - Current: {$topic_before->current_funding}, Threshold: {$topic_before->funding_threshold}, Status: {$topic_before->status}");
+            
             // Add contribution to database
             $this->db->query('
                 INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
@@ -96,16 +107,18 @@ class FundingProcessor {
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             
-            error_log("Updated topic funding");
+            error_log("Updated topic funding by $amount");
             
-            // Check if topic is now fully funded
+            // Get updated topic info
             $this->db->query('SELECT * FROM topics WHERE id = :topic_id');
             $this->db->bind(':topic_id', $topic_id);
-            $topic = $this->db->single();
+            $topic_after = $this->db->single();
+            
+            error_log("Topic after funding - Current: {$topic_after->current_funding}, Threshold: {$topic_after->funding_threshold}");
             
             $fully_funded = false;
-            if ($topic && $topic->current_funding >= $topic->funding_threshold) {
-                error_log("Topic is now fully funded!");
+            if ($topic_after && $topic_after->current_funding >= $topic_after->funding_threshold) {
+                error_log("Topic is now fully funded! Updating status and sending notifications...");
                 
                 // Update topic status to funded
                 $this->db->query('
@@ -119,19 +132,29 @@ class FundingProcessor {
                 $this->db->execute();
                 
                 $fully_funded = true;
-            }
-            
-            $this->db->endTransaction();
-            
-            // Send funding notifications AFTER transaction is committed
-            if ($fully_funded) {
+                
+                // Commit transaction BEFORE sending notifications
+                $this->db->endTransaction();
+                
+                // Send funding notifications AFTER transaction is committed
                 try {
+                    error_log("Sending funding notifications for topic: " . $topic_id);
                     $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
-                    error_log("Funding notifications sent: " . json_encode($notification_result));
+                    error_log("Notification result: " . json_encode($notification_result));
+                    
+                    if ($notification_result['success']) {
+                        error_log("Funding notifications sent successfully");
+                    } else {
+                        error_log("Notification sending failed: " . $notification_result['error']);
+                    }
                 } catch (Exception $e) {
                     error_log("Notification error: " . $e->getMessage());
                     // Don't fail the payment for notification errors
                 }
+            } else {
+                // Commit transaction if not fully funded
+                $this->db->endTransaction();
+                error_log("Topic not yet fully funded - need $" . ($topic_after->funding_threshold - $topic_after->current_funding) . " more");
             }
             
             error_log("Topic funding processed successfully");
@@ -140,7 +163,9 @@ class FundingProcessor {
                 'success' => true, 
                 'contribution_id' => $contribution_id,
                 'topic_id' => $topic_id,
-                'fully_funded' => $fully_funded
+                'fully_funded' => $fully_funded,
+                'new_total' => $topic_after->current_funding,
+                'threshold' => $topic_after->funding_threshold
             ];
             
         } catch (Exception $e) {
@@ -173,7 +198,7 @@ class FundingProcessor {
             
             $this->db->beginTransaction();
             
-            // Create the topic
+            // Create the topic (status = active, no approval needed)
             $this->db->query('
                 INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
                 VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "active", :initial_funding, NOW())
@@ -202,12 +227,38 @@ class FundingProcessor {
             
             error_log("Created initial contribution");
             
+            // Check if topic is immediately fully funded
+            $fully_funded = $initial_contribution >= $funding_threshold;
+            
+            if ($fully_funded) {
+                error_log("Topic is immediately fully funded! Updating status...");
+                
+                // Update topic status to funded
+                $this->db->query('
+                    UPDATE topics 
+                    SET status = "funded", 
+                        funded_at = NOW(), 
+                        content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR) 
+                    WHERE id = :topic_id
+                ');
+                $this->db->bind(':topic_id', $topic_id);
+                $this->db->execute();
+            }
+            
             $this->db->endTransaction();
             
             // Send topic live notification AFTER transaction is committed
             try {
+                error_log("Sending topic live notification for: " . $topic_id);
                 $this->notificationSystem->sendTopicLiveNotification($topic_id);
                 error_log("Topic live notifications sent");
+                
+                // If immediately fully funded, also send funding notifications
+                if ($fully_funded) {
+                    error_log("Also sending funding notifications since topic is immediately funded");
+                    $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
+                    error_log("Funding notification result: " . json_encode($notification_result));
+                }
             } catch (Exception $e) {
                 error_log("Notification error: " . $e->getMessage());
                 // Don't fail the payment for notification errors
@@ -215,7 +266,11 @@ class FundingProcessor {
             
             error_log("Topic creation processed successfully");
             
-            return ['success' => true, 'topic_id' => $topic_id];
+            return [
+                'success' => true, 
+                'topic_id' => $topic_id,
+                'fully_funded' => $fully_funded
+            ];
             
         } catch (Exception $e) {
             if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
