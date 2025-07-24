@@ -91,7 +91,7 @@ class NotificationSystem {
             • Start thinking about how you'll approach this content
             • Make sure you can deliver within 48 hours once funded
             
-            Questions? Reply to this email or contact support.
+            Questions? Contact me@topiclaunch.com for support.
             
             Best regards,
             TopicLaunch Team
@@ -250,8 +250,6 @@ class NotificationSystem {
             ⚠️ CRITICAL: If you don't upload content within 48 hours:
             - All contributors will be automatically refunded 90% of their contributions
             
-            💳 Payment Information:
-            Your earnings of $" . number_format($fee_info['creator_amount'], 2) . " will be processed as PayPal payout.
             
             📝 To upload your content:
             1. Go to: https://topiclaunch.com/creators/upload_content.php?topic=" . $topic->id . "
@@ -527,7 +525,7 @@ class NotificationSystem {
                 • Communicate with supporters if you face unexpected delays
                 • Upload content well before the 48-hour deadline
                 
-                If you believe this was an error, please contact support immediately.
+                If you believe this was an error, please contact me@topiclaunch.com for support immediately.
                 
                 Best regards,
                 TopicLaunch Team
@@ -574,7 +572,7 @@ class NotificationSystem {
                     
                     🔍 Browse more topics: https://topiclaunch.com/topics/
                     
-                    Questions? Contact our support team.
+                    Questions? Contact me@topiclaunch.com for support.
                     
                     Thank you for using TopicLaunch!
                     
