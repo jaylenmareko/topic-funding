@@ -43,9 +43,6 @@ if ($topic->applicant_user_id != $_SESSION['user_id']) {
 
 // Check if deadline has passed
 $deadline_passed = strtotime($topic->content_deadline) < time();
-$time_remaining = strtotime($topic->content_deadline) - time();
-$hours_remaining = max(0, floor($time_remaining / 3600));
-$minutes_remaining = max(0, floor(($time_remaining % 3600) / 60));
 
 // Handle content upload
 if ($_POST && isset($_POST['content_url'])) {
@@ -132,9 +129,6 @@ $funding_stats = $db->single();
         .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
         .completed-status { background: #d4edda; padding: 20px; border-radius: 8px; text-align: center; }
-        .timer { font-size: 20px; font-weight: bold; }
-        .timer.urgent { color: #dc3545; }
-        .timer.normal { color: #28a745; }
         
         @media (max-width: 600px) {
             .container { margin: 10px; }
@@ -180,25 +174,18 @@ $funding_stats = $db->single();
                 <p><em>Completed on <?php echo date('M j, Y g:i A', strtotime($topic->completed_at)); ?></em></p>
             </div>
         <?php else: ?>
-            <!-- Deadline Status -->
+            <!-- Deadline Status (without time remaining) -->
             <?php if ($deadline_passed): ?>
                 <div class="deadline-info deadline-expired">
                     <h3>⚠️ Deadline Expired</h3>
                     <p>The 48-hour deadline has passed. Auto-refunds may have been processed. Please contact support if you believe this is an error.</p>
                     <p><strong>Deadline was:</strong> <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?></p>
                 </div>
-            <?php elseif ($hours_remaining <= 6): ?>
-                <div class="deadline-info deadline-urgent">
-                    <h3>🚨 Urgent: Deadline Approaching!</h3>
-                    <p class="timer urgent"><?php echo $hours_remaining; ?> hours, <?php echo $minutes_remaining; ?> minutes remaining</p>
-                    <p><strong>Deadline:</strong> <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?></p>
-                    <p><strong>⚠️ Important:</strong> If content isn't uploaded by the deadline, all contributors will be automatically refunded.</p>
-                </div>
             <?php else: ?>
                 <div class="deadline-info deadline-normal">
                     <h3>📅 Content Deadline</h3>
-                    <p class="timer normal"><?php echo $hours_remaining; ?> hours, <?php echo $minutes_remaining; ?> minutes remaining</p>
                     <p><strong>Deadline:</strong> <?php echo date('M j, Y g:i A', strtotime($topic->content_deadline)); ?></p>
+                    <p><strong>⚠️ Important:</strong> If content isn't uploaded by the deadline, all contributors will be automatically refunded.</p>
                 </div>
             <?php endif; ?>
 
@@ -233,40 +220,6 @@ $funding_stats = $db->single();
     </div>
 
     <script>
-    // Real-time countdown timer
-    let deadline = new Date('<?php echo date('c', strtotime($topic->content_deadline)); ?>').getTime();
-    
-    function updateCountdown() {
-        let now = new Date().getTime();
-        let timeLeft = deadline - now;
-        
-        if (timeLeft > 0) {
-            let hours = Math.floor(timeLeft / (1000 * 60 * 60));
-            let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            
-            document.querySelectorAll('.timer').forEach(timer => {
-                timer.textContent = hours + ' hours, ' + minutes + ' minutes remaining';
-                
-                if (hours <= 1) {
-                    timer.className = 'timer urgent';
-                }
-            });
-        } else {
-            document.querySelectorAll('.timer').forEach(timer => {
-                timer.textContent = 'DEADLINE EXPIRED';
-                timer.className = 'timer urgent';
-            });
-            
-            // Disable form if deadline passed
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').textContent = 'Deadline Expired';
-        }
-    }
-    
-    // Update countdown every minute
-    setInterval(updateCountdown, 60000);
-    updateCountdown(); // Initial call
-
     // Form validation
     document.getElementById('uploadForm').addEventListener('submit', function(e) {
         const url = document.getElementById('content_url').value.trim();
