@@ -317,11 +317,11 @@ $share_url = 'https://topiclaunch.com/';
         <!-- Header with Share Section -->
         <div class="dashboard-header">
             <div class="header-content">
-                <h1 class="header-title">📺 YouTuber Dashboard</h1>
-                <p class="header-subtitle">Welcome, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
-                
-                <!-- Profile Management -->
-                <div style="margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h1 class="header-title">📺 YouTuber Dashboard</h1>
+                        <p class="header-subtitle">Welcome, <?php echo htmlspecialchars($creator->display_name); ?>!</p>
+                    </div>
                     <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="share-btn" style="background: rgba(255,255,255,0.3);">⚙️ Edit Profile</a>
                 </div>
                 
