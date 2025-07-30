@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Improved creator dashboard
+// creators/dashboard.php - Improved creator dashboard with topic selector
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -42,6 +42,23 @@ $earnings = $db->single();
 $has_paypal = !empty($creator->paypal_email);
 $needs_paypal_setup = $earnings->total_earned >= ($creator->manual_payout_threshold ?? 100) && !$has_paypal;
 
+// Get creator's topics for sharing dropdown (all topics, not just recent)
+$db->query('
+    SELECT id, title, status, created_at, current_funding, funding_threshold
+    FROM topics 
+    WHERE creator_id = :creator_id 
+    AND status IN ("active", "funded", "completed")
+    ORDER BY created_at DESC
+');
+$db->bind(':creator_id', $creator->id);
+$shareable_topics = $db->resultSet();
+
+// Default share URL (fallback)
+$default_share_url = 'https://topiclaunch.com/';
+if (!empty($shareable_topics)) {
+    $default_share_url = 'https://topiclaunch.com/topics/view.php?id=' . $shareable_topics[0]->id;
+}
+
 // Get urgent funded topics awaiting content (48-hour deadline)
 $db->query('
     SELECT t.*, 
@@ -83,9 +100,6 @@ $db->query('
 ');
 $db->bind(':creator_id', $creator->id);
 $completed_topics = $db->resultSet();
-
-// Generate share URL - link to landing page
-$share_url = 'https://topiclaunch.com/';
 ?>
 <!DOCTYPE html>
 <html>
@@ -117,6 +131,19 @@ $share_url = 'https://topiclaunch.com/';
             backdrop-filter: blur(10px);
         }
         .share-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .topic-selector {
+            background: rgba(255,255,255,0.2); 
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            color: white;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .topic-selector option {
+            background: #333;
+            color: white;
+        }
         .share-url { 
             background: rgba(255,255,255,0.2); 
             padding: 12px 15px; 
@@ -140,6 +167,7 @@ $share_url = 'https://topiclaunch.com/';
             display: inline-block;
         }
         .share-btn:hover { background: rgba(255,255,255,0.3); color: white; text-decoration: none; }
+        .share-info { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
         
         /* PayPal Setup Alert */
         .paypal-alert { 
@@ -307,6 +335,7 @@ $share_url = 'https://topiclaunch.com/';
             .share-controls { flex-direction: column; align-items: stretch; }
             .share-url { min-width: auto; }
             .paypal-alert { flex-direction: column; gap: 15px; text-align: center; }
+            .topic-selector { min-width: auto; }
         }
     </style>
 </head>
@@ -325,13 +354,31 @@ $share_url = 'https://topiclaunch.com/';
                     <a href="../creators/edit.php?id=<?php echo $creator->id; ?>" class="share-btn" style="background: rgba(255,255,255,0.3);">⚙️ Edit Profile</a>
                 </div>
                 
-                <!-- Share Your Profile -->
+                <!-- Share Your Topics -->
                 <div class="share-section">
-                    <p style="margin: 0 0 15px 0; opacity: 0.9;">Send this link to your fans so they can find you and fund topics!</p>
-                    <div class="share-controls">
-                        <div class="share-url" id="shareUrl"><?php echo $share_url; ?></div>
-                        <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
-                    </div>
+                    <?php if (!empty($shareable_topics)): ?>
+                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Share your topics with fans so they can fund them!</p>
+                        <div class="share-info">Select a topic to share:</div>
+                        <div class="share-controls">
+                            <select class="topic-selector" id="topicSelector" onchange="updateShareUrl()">
+                                <?php foreach ($shareable_topics as $topic): ?>
+                                    <option value="<?php echo $topic->id; ?>" data-title="<?php echo htmlspecialchars($topic->title); ?>">
+                                        <?php echo htmlspecialchars($topic->title); ?> 
+                                        (<?php echo ucfirst($topic->status); ?> - 
+                                        $<?php echo number_format($topic->current_funding, 0); ?>/$<?php echo number_format($topic->funding_threshold, 0); ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="share-url" id="shareUrl"><?php echo $default_share_url; ?></div>
+                            <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
+                        </div>
+                    <?php else: ?>
+                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Create topics to share with your fans!</p>
+                        <div class="share-controls">
+                            <div class="share-url">No topics available to share yet</div>
+                            <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="share-btn">Create Topic</a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -453,8 +500,25 @@ $share_url = 'https://topiclaunch.com/';
     </div>
 
     <script>
+    function updateShareUrl() {
+        const selector = document.getElementById('topicSelector');
+        const shareUrl = document.getElementById('shareUrl');
+        const selectedTopicId = selector.value;
+        
+        if (selectedTopicId) {
+            shareUrl.textContent = `https://topiclaunch.com/topics/view.php?id=${selectedTopicId}`;
+        }
+    }
+
     function copyShareLink() {
         const shareUrl = document.getElementById('shareUrl').textContent;
+        
+        // Don't copy if there's no valid URL
+        if (!shareUrl.includes('topics/view.php')) {
+            alert('Please create a topic first to generate a shareable link!');
+            return;
+        }
+        
         navigator.clipboard.writeText(shareUrl).then(function() {
             // Show success feedback
             const button = event.target;
@@ -481,10 +545,21 @@ $share_url = 'https://topiclaunch.com/';
 
     function shareOnTwitter() {
         const shareUrl = document.getElementById('shareUrl').textContent;
-        const tweetText = encodeURIComponent('🎬 I\'m on TopicLaunch! Propose topics you want me to cover and help fund them. Check out my profile:');
+        const selector = document.getElementById('topicSelector');
+        const selectedOption = selector.options[selector.selectedIndex];
+        const topicTitle = selectedOption.getAttribute('data-title');
+        
+        const tweetText = encodeURIComponent(`🎬 Help fund my next video: "${topicTitle}" on TopicLaunch!`);
         const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(shareUrl)}`;
         window.open(twitterUrl, '_blank', 'width=550,height=420');
     }
+
+    // Initialize the share URL on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        <?php if (!empty($shareable_topics)): ?>
+        updateShareUrl();
+        <?php endif; ?>
+    });
     </script>
 </body>
 </html>
