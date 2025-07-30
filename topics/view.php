@@ -1,5 +1,5 @@
 <?php
-// topics/view.php - Individual topic detail page with simplified view for creators
+// topics/view.php - Individual topic detail page with simplified view for creators and guest-friendly for non-logged-in users
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -18,16 +18,18 @@ if (!$topic) {
     exit;
 }
 
-// Check if current user is a creator
+// Check if current user is a creator (only if logged in)
 $is_creator = false;
-if (isset($_SESSION['user_id'])) {
+$is_logged_in = isset($_SESSION['user_id']);
+
+if ($is_logged_in) {
     $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
     $db->bind(':user_id', $_SESSION['user_id']);
     $is_creator = $db->single() ? true : false;
 }
 
-// Get topic contributions (only for non-creators)
+// Get topic contributions (only for non-creators or non-logged-in users)
 $contributions = [];
 $analytics = null;
 if (!$is_creator) {
@@ -118,17 +120,47 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     </style>
 </head>
 <body <?php echo $is_creator ? 'class="creator-simple-view"' : ''; ?>>
-    <?php renderNavigation('browse_creators'); ?>
+    <?php if ($is_logged_in): ?>
+        <?php renderNavigation('browse_creators'); ?>
+    <?php endif; ?>
 
     <div class="container">
-        <?php if ($is_creator): ?>
-            <!-- No back link for creators - they can use navigation -->
+        <?php if ($is_logged_in): ?>
+            <?php if ($is_creator): ?>
+                <!-- No back link for creators - they can use navigation -->
+            <?php else: ?>
+                <!-- Back link only for logged-in fans -->
+                <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Topics</a>
+            <?php endif; ?>
         <?php else: ?>
-            <!-- Updated back link text for fans -->
-            <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Topics</a>
+            <!-- Show topic header with creator info for non-logged-in users -->
+            <div class="topic-header">
+                <div class="topic-title"><?php echo htmlspecialchars($topic->title); ?></div>
+                <div class="topic-meta">
+                    <span class="status-badge status-<?php echo $topic->status; ?>">
+                        <?php echo ucfirst(str_replace('_', ' ', $topic->status)); ?>
+                    </span>
+                    <?php if ($topic->created_at): ?>
+                        <span style="margin-left: 15px;">Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?></span>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="creator-info">
+                    <div class="creator-avatar">
+                        <?php if ($topic->creator_image && file_exists('../uploads/creators/' . $topic->creator_image)): ?>
+                            <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" 
+                                 alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                        <?php else: ?>
+                            <?php echo strtoupper(substr($topic->creator_name, 0, 1)); ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="creator-details">
+                        <h3><?php echo htmlspecialchars($topic->creator_name); ?></h3>
+                        <p>YouTube Creator</p>
+                    </div>
+                </div>
+            </div>
         <?php endif; ?>
-
-
 
         <?php if ($topic->status === 'pending_approval'): ?>
         <div class="pending-approval">
@@ -177,7 +209,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
             </div>
 
         <?php else: ?>
-            <!-- FULL VIEW FOR FANS - All sections -->
+            <!-- FULL VIEW FOR FANS AND NON-LOGGED-IN USERS - All sections -->
             <div class="content-grid">
                 <div class="main-content">
                     <h2>Topic Description</h2>
@@ -273,13 +305,13 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                         </div>
 
                         <?php if ($topic->status === 'active'): ?>
-                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <?php if ($is_logged_in): ?>
                                 <a href="fund.php?id=<?php echo $topic->id; ?>" class="action-button">
                                     💰 Fund This Topic
                                 </a>
                             <?php else: ?>
-                                <a href="../auth/login.php" class="action-button login">
-                                    🔑 Login to Fund
+                                <a href="../auth/register.php?type=fan&return_to=<?php echo urlencode('/topics/view.php?id=' . $topic->id); ?>" class="action-button login">
+                                    🔑 Login/Signup to Fund
                                 </a>
                             <?php endif; ?>
                         <?php elseif ($topic->status === 'funded'): ?>
@@ -296,12 +328,8 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                             </div>
                         <?php endif; ?>
                     </div>
-
-
                 </div>
             </div>
-
-
         <?php endif; ?>
     </div>
 
