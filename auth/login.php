@@ -1,9 +1,12 @@
 <?php
-// auth/login.php - Updated to redirect fans to browse creators (no dashboard)
+// auth/login.php - Updated to redirect fans to browse creators (no dashboard) or return_to URL
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
+
+// Get return_to parameter for redirect after login
+$return_to = isset($_GET['return_to']) ? $_GET['return_to'] : '';
 
 // Check if already logged in and redirect appropriately
 if (isset($_SESSION['user_id'])) {
@@ -15,7 +18,12 @@ if (isset($_SESSION['user_id'])) {
     if ($is_creator) {
         header('Location: ../creators/dashboard.php'); // Creators go to creator dashboard
     } else {
-        header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+        // Fans go to return_to URL or browse creators
+        if ($return_to) {
+            header('Location: ..' . $return_to);
+        } else {
+            header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+        }
     }
     exit;
 }
@@ -26,6 +34,9 @@ $errors = [];
 if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
+    
+    // Get return_to from form if it exists
+    $return_to = $_POST['return_to'] ?? $return_to;
     
     $email = InputSanitizer::sanitizeEmail($_POST['email']);
     $password = $_POST['password'];
@@ -62,7 +73,12 @@ if ($_POST) {
             if ($is_creator) {
                 header('Location: ../creators/dashboard.php'); // Creators go to creator dashboard
             } else {
-                header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+                // Fans go to return_to URL or browse creators
+                if ($return_to) {
+                    header('Location: ..' . $return_to);
+                } else {
+                    header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+                }
             }
             exit;
         } else {
@@ -106,6 +122,11 @@ if ($_POST) {
     
     <form method="POST">
         <?php echo CSRFProtection::getTokenField(); ?>
+        
+        <!-- Pass through return_to parameter -->
+        <?php if ($return_to): ?>
+            <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($return_to); ?>">
+        <?php endif; ?>
         
         <div class="form-group">
             <label>Email:</label>
