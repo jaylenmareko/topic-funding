@@ -1,9 +1,12 @@
 <?php
-// auth/register.php - Updated to redirect fans to creators page (no dashboard)
+// auth/register.php - Updated to redirect fans to browse creators (no dashboard) or return_to URL
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
+
+// Get return_to parameter for redirect after registration
+$return_to = isset($_GET['return_to']) ? $_GET['return_to'] : '';
 
 // Redirect if already logged in - Check if they're a creator first
 if (isset($_SESSION['user_id'])) {
@@ -15,7 +18,12 @@ if (isset($_SESSION['user_id'])) {
     if ($is_creator) {
         header('Location: ../creators/dashboard.php'); // Creators go to dashboard
     } else {
-        header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+        // Fans go to return_to URL or browse creators
+        if ($return_to) {
+            header('Location: ..' . $return_to);
+        } else {
+            header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+        }
     }
     exit;
 }
@@ -27,6 +35,9 @@ $user_type = $_GET['type'] ?? 'fan'; // 'creator' or 'fan'
 if ($_POST) {
     // CSRF Protection
     CSRFProtection::requireValidToken();
+    
+    // Get return_to from form if it exists
+    $return_to = $_POST['return_to'] ?? $return_to;
     
     if ($user_type === 'creator') {
         // For creators, use YouTube handle instead of username
@@ -312,8 +323,12 @@ if ($_POST) {
                 // Regenerate session ID for security
                 session_regenerate_id(true);
                 
-                // REDIRECT FANS TO BROWSE CREATORS (NO DASHBOARD)
-                header('Location: ../creators/index.php');
+                // REDIRECT FANS TO return_to URL or browse creators (NO DASHBOARD)
+                if ($return_to) {
+                    header('Location: ..' . $return_to);
+                } else {
+                    header('Location: ../creators/index.php');
+                }
                 exit;
             } else {
                 $errors[] = "Registration failed. Please try again.";
@@ -395,6 +410,11 @@ if ($_POST) {
     <form method="POST" id="registrationForm" enctype="multipart/form-data">
         <?php echo CSRFProtection::getTokenField(); ?>
         
+        <!-- Pass through return_to parameter -->
+        <?php if ($return_to): ?>
+            <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($return_to); ?>">
+        <?php endif; ?>
+        
         <?php if ($user_type === 'creator'): ?>
             <!-- Profile Image for Creators -->
             <div class="form-group">
@@ -463,7 +483,7 @@ if ($_POST) {
     </form>
 
     <div class="links">
-        <a href="login.php">Already have an account? Login here</a>
+        <a href="login.php<?php echo $return_to ? '?return_to=' . urlencode($return_to) : ''; ?>">Already have an account? Login here</a>
     </div>
 
     <script>
