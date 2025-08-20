@@ -279,12 +279,12 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             <div class="process-step" data-step="2">
                 <div class="process-icon">🤝</div>
                 <h3>Community Backs It</h3>
-                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content. (TopicLaunch takes 10%)</p>
+                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content in 48 hours.</p>
             </div>
             <div class="process-step" data-step="3">
                 <div class="process-icon">⚡</div>
                 <h3>48-Hour Delivery</h3>
-                <p>YouTubers have 48 hours to deliver your requested content, or everyone gets automatically refunded.</p>
+                <p>Once delivered, Youtubers receive 90% of funding and Topic Launch receives 10% of funding. If not delivered, fans are refunded.</p>
             </div>
         </div>
     </div>
