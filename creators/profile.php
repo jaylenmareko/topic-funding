@@ -1,5 +1,5 @@
 <?php
-// creators/profile.php - Creator profile with "Waiting Upload" section (simplified design)
+// creators/profile.php - Creator profile with simplified navigation
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -36,7 +36,12 @@ if (isset($_SESSION['user_id'])) {
     $is_this_creator = $db->single() ? true : false;
 }
 
-// Waiting Upload topics (funded but no content uploaded yet) - show to everyone
+// Active topics
+$db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
+$db->bind(':creator_id', $creator_id);
+$active_topics = $db->resultSet();
+
+// Waiting Upload topics (funded but no content uploaded yet)
 $db->query('
     SELECT t.*, 
            TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
@@ -50,10 +55,10 @@ $db->query('
 $db->bind(':creator_id', $creator_id);
 $waiting_upload_topics = $db->resultSet();
 
-// Active topics (still being funded)
-$db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
+// Completed topics
+$db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
 $db->bind(':creator_id', $creator_id);
-$active_topics = $db->resultSet();
+$completed_topics = $db->resultSet();
 ?>
 <!DOCTYPE html>
 <html>
@@ -73,28 +78,18 @@ $active_topics = $db->resultSet();
         .btn:hover { background: #5a6fd8; color: white; text-decoration: none; }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
-        .btn-urgent { background: #dc3545; animation: pulse 2s infinite; }
-        .btn-urgent:hover { background: #c82333; }
-        
-        /* Pulsing animation for urgent topics */
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-        }
-        
+        .content-tabs { display: flex; gap: 0; margin-bottom: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab { padding: 15px 25px; border: none; background: transparent; cursor: pointer; font-size: 16px; font-weight: 500; color: #666; transition: all 0.3s; }
+        .tab.active { background: #667eea; color: white; }
+        .tab:hover:not(.active) { background: #f8f9fa; }
+        .tab-badge { background: rgba(255,255,255,0.3); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 8px; }
+        .tab-content { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
         .topic-card { border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
         .topic-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-decoration: none; color: inherit; }
-        .topic-card.urgent { border-left: 4px solid #dc3545; background: #fff5f5; }
-        .topic-card.warning { border-left: 4px solid #ffc107; background: #fffbf0; }
-        .topic-card.normal { border-left: 4px solid #28a745; background: #f8fff8; }
         .topic-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; color: #333; }
         .topic-meta { color: #666; font-size: 14px; margin-bottom: 15px; }
         .topic-description { color: #666; line-height: 1.5; margin-bottom: 15px; }
-        .countdown { background: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 12px; }
-        .countdown.warning { background: #ffc107; color: #000; }
-        .countdown.safe { background: #28a745; }
         .funding-bar { background: #e9ecef; height: 8px; border-radius: 4px; margin: 15px 0; }
         .funding-progress { background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 4px; transition: width 0.3s; }
         .funding-info { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
@@ -105,15 +100,33 @@ $active_topics = $db->resultSet();
         .status-funded { background: #d4edda; color: #155724; }
         .status-completed { background: #cce5ff; color: #004085; }
         .empty-state { text-align: center; color: #666; padding: 40px; }
-        .deadline-warning { background: #fff3cd; padding: 10px 15px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #ffc107; }
-        .deadline-critical { background: #f8d7da; border-left-color: #dc3545; }
+        .completion-info { background: #d4edda; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .deadline-warning { background: #fff3cd; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .content-link { background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px; }
+        .btn-urgent { background: #dc3545; animation: pulse 2s infinite; }
+        .btn-urgent:hover { background: #c82333; }
+        
+        /* Pulsing animation for urgent topics */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        
+        .countdown { background: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 12px; }
+        .countdown.warning { background: #ffc107; color: #000; }
+        .countdown.safe { background: #28a745; }
+        .topic-card.urgent { border-left: 4px solid #dc3545; background: #fff5f5; }
+        .topic-card.warning { border-left: 4px solid #ffc107; background: #fffbf0; }
+        .topic-card.normal { border-left: 4px solid #28a745; background: #f8fff8; }
         .topic-actions { margin-top: 15px; }
         .section-header { margin: 40px 0 20px 0; }
-        .section-title { font-size: 24px; color: #333; margin: 0; }
+        .section-title { font-size: 20px; color: #333; margin: 0; }
         
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .creator-info { flex-direction: column; text-align: center; }
+            .content-tabs { flex-direction: column; }
             .topic-grid { grid-template-columns: 1fr; }
             .creator-actions { justify-content: center; }
         }
@@ -128,81 +141,7 @@ $active_topics = $db->resultSet();
             <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success" style="font-size: 18px; padding: 15px 30px;">Create a Topic</a>
         </div>
 
-        <!-- Waiting Upload Topics (visible to everyone) -->
-        <?php if (!empty($waiting_upload_topics)): ?>
-        <div class="section-header">
-            <h2 class="section-title">⏰ Waiting Upload (<?php echo count($waiting_upload_topics); ?>)</h2>
-        </div>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 40px;">
-            <div class="topic-grid">
-                <?php foreach ($waiting_upload_topics as $topic): ?>
-                    <?php 
-                    $hours_left = max(0, $topic->hours_remaining);
-                    $urgency_class = 'normal';
-                    $countdown_class = 'safe';
-                    
-                    if ($hours_left <= 6) {
-                        $urgency_class = 'urgent';
-                        $countdown_class = 'countdown';
-                    } elseif ($hours_left <= 24) {
-                        $urgency_class = 'warning';
-                        $countdown_class = 'warning';
-                    }
-                    ?>
-                    <div class="topic-card <?php echo $urgency_class; ?>">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <span class="countdown <?php echo $countdown_class; ?>">
-                                ⏰ <?php echo max(0, $hours_left); ?> hours left
-                            </span>
-                            <div style="font-size: 12px; color: #666;">
-                                Funded <?php echo date('M j, g:i A', strtotime($topic->funded_at)); ?>
-                            </div>
-                        </div>
-                        
-                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                        
-                        <?php if ($is_this_creator): ?>
-                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                            <strong>💰 Earnings:</strong> $<?php echo number_format($topic->current_funding * 0.9, 2); ?> (after 10% platform fee)
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if ($hours_left <= 6): ?>
-                            <div class="deadline-warning deadline-critical">
-                                <strong>🚨 URGENT:</strong> Less than 6 hours remaining<?php echo $is_this_creator ? '! Upload content now to avoid auto-refunds.' : '. Content coming very soon!'; ?>
-                            </div>
-                        <?php elseif ($hours_left <= 24): ?>
-                            <div class="deadline-warning">
-                                <strong>⚠️ Warning:</strong> Less than 24 hours remaining<?php echo $is_this_creator ? '. Please upload your content soon.' : '. Content coming soon!'; ?>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if ($is_this_creator): ?>
-                        <div class="topic-actions">
-                            <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" 
-                               class="btn <?php echo ($hours_left <= 6) ? 'btn-urgent' : 'btn-success'; ?>">
-                                🎬 Upload Content Now
-                            </a>
-                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">
-                                👁️ View Details
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- Active Topics -->
-        <?php if (!empty($active_topics)): ?>
-        <div class="section-header">
-            <h2 class="section-title">📈 Being Funded</h2>
-        </div>
-        <?php endif; ?>
-        
         <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <?php if (empty($active_topics)): ?>
                 <div class="empty-state" style="padding: 80px 20px;">
@@ -244,16 +183,82 @@ $active_topics = $db->resultSet();
                 </div>
             <?php endif; ?>
         </div>
-    </div>
 
-    <script>
-    // Auto-refresh for urgent topics (less than 6 hours remaining)
-    const urgentTopics = document.querySelectorAll('.topic-card.urgent');
-    if (urgentTopics.length > 0) {
-        setInterval(function() {
-            window.location.reload();
-        }, 300000); // Refresh every 5 minutes for urgent topics
-    }
-    </script>
+        <!-- Waiting Upload Topics -->
+        <?php if (!empty($waiting_upload_topics)): ?>
+        <div class="section-header">
+            <h2 class="section-title">⏰ Waiting Upload (<?php echo count($waiting_upload_topics); ?>)</h2>
+        </div>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div class="topic-grid">
+                <?php foreach ($waiting_upload_topics as $topic): ?>
+                    <?php 
+                    $hours_left = max(0, $topic->hours_remaining);
+                    $urgency_class = 'normal';
+                    $countdown_class = 'safe';
+                    
+                    if ($hours_left <= 6) {
+                        $urgency_class = 'urgent';
+                        $countdown_class = 'countdown';
+                    } elseif ($hours_left <= 24) {
+                        $urgency_class = 'warning';
+                        $countdown_class = 'warning';
+                    }
+                    ?>
+                    <div class="topic-card <?php echo $urgency_class; ?>">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <span class="countdown <?php echo $countdown_class; ?>">
+                                ⏰ <?php echo max(0, $hours_left); ?> hours left
+                            </span>
+                            <div style="font-size: 12px; color: #666;">
+                                Funded <?php echo date('M j, g:i A', strtotime($topic->funded_at)); ?>
+                            </div>
+                        </div>
+                        
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                        
+                        <?php if ($is_this_creator): ?>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                            <strong>💰 Earnings:</strong> $<?php echo number_format($topic->current_funding * 0.9, 2); ?> (after 10% platform fee)
+                        </div>
+                        
+                        <?php if ($hours_left <= 6): ?>
+                            <div class="deadline-warning" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+                                <strong>🚨 URGENT:</strong> Less than 6 hours remaining! Upload content now to avoid auto-refunds.
+                            </div>
+                        <?php elseif ($hours_left <= 24): ?>
+                            <div class="deadline-warning">
+                                <strong>⚠️ Warning:</strong> Less than 24 hours remaining. Please upload your content soon.
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="topic-actions">
+                            <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" 
+                               class="btn <?php echo ($hours_left <= 6) ? 'btn-urgent' : 'btn-success'; ?>">
+                                🎬 Upload Content Now
+                            </a>
+                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">
+                                👁️ View Details
+                            </a>
+                        </div>
+                        <?php else: ?>
+                        <?php if ($hours_left <= 6): ?>
+                            <div class="deadline-warning" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+                                <strong>🚨 Content coming very soon!</strong> Less than 6 hours remaining.
+                            </div>
+                        <?php elseif ($hours_left <= 24): ?>
+                            <div class="deadline-warning">
+                                <strong>⚠️ Content coming soon!</strong> Less than 24 hours remaining.
+                            </div>
+                        <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
 </body>
 </html>
