@@ -1,5 +1,5 @@
 <?php
-// config/notification_system.php - Complete version with 500 error fixes
+// config/notification_system.php - FIXED VERSION - Complete file to copy & paste
 require_once 'database.php';
 
 class NotificationSystem {
@@ -661,25 +661,31 @@ Support: support@topiclaunch.com";
     }
     
     /**
-     * Send email notification with improved SMTP handling and anti-spam headers
+     * FIXED: Send email notification with improved error handling
      */
     private function sendEmail($to, $subject, $message) {
         // For localhost testing - log emails and return true
         if (strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
             strpos($_SERVER['HTTP_HOST'] ?? '127.0.0.1', '127.0.0.1') !== false) {
-            error_log("EMAIL TO: $to | SUBJECT: $subject");
+            error_log("📧 EMAIL TO: $to | SUBJECT: $subject");
             return true; // Pretend it worked for local testing
         }
         
         // Validate email
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
-            error_log("Invalid email address: " . $to);
+            error_log("❌ Invalid email address: " . $to);
             return false;
         }
         
         // Clean up message and subject
         $message = trim($message);
         $subject = trim($subject);
+        
+        // Check if subject and message are not empty
+        if (empty($subject) || empty($message)) {
+            error_log("❌ Email subject or message is empty");
+            return false;
+        }
         
         // IMPROVED: Enhanced email headers for better deliverability
         $headers = array();
@@ -709,57 +715,88 @@ Support: support@topiclaunch.com";
         $formatted_headers = implode("\r\n", $headers);
         
         try {
+            // Log email attempt
+            error_log("📤 Attempting to send email to: " . $to . " with subject: " . $subject);
+            
             // Use PHP's mail function with improved headers
             $result = mail($to, $subject, $message, $formatted_headers);
             
             if ($result) {
-                error_log("Email sent successfully to: " . $to);
+                error_log("✅ Email sent successfully to: " . $to);
             } else {
-                error_log("Failed to send email to: " . $to);
-                error_log("Subject: " . $subject);
-                error_log("Headers: " . $formatted_headers);
+                error_log("❌ Failed to send email to: " . $to);
+                error_log("Last PHP error: " . (error_get_last()['message'] ?? 'No PHP error'));
+                
+                // Check if mail function is available
+                if (!function_exists('mail')) {
+                    error_log("PHP mail() function is not available");
+                }
             }
             
             return $result;
             
         } catch (Exception $e) {
-            error_log("Email sending error: " . $e->getMessage());
+            error_log("❌ Email sending exception: " . $e->getMessage());
             return false;
         }
     }
     
     /**
-     * Log notification for audit trail
+     * FIXED: Log notification for audit trail
      */
     private function logNotification($user_id, $type, $category, $message, $topic_id = null) {
         try {
-            $this->db->query('
-                INSERT INTO notifications (user_id, type, category, message, topic_id, created_at)
-                VALUES (:user_id, :type, :category, :message, :topic_id, NOW())
-            ');
+            // Check if notifications table exists and has required columns
+            $this->db->query('DESCRIBE notifications');
+            $columns = $this->db->resultSet();
+            
+            $has_category = false;
+            foreach ($columns as $column) {
+                if ($column->Field === 'category') {
+                    $has_category = true;
+                    break;
+                }
+            }
+            
+            if ($has_category) {
+                // New table structure with category column
+                $this->db->query('
+                    INSERT INTO notifications (user_id, type, category, message, topic_id, created_at)
+                    VALUES (:user_id, :type, :category, :message, :topic_id, NOW())
+                ');
+                $this->db->bind(':category', $category);
+            } else {
+                // Fallback for older table structure without category column
+                $this->db->query('
+                    INSERT INTO notifications (user_id, type, message, topic_id, created_at)
+                    VALUES (:user_id, :type, :message, :topic_id, NOW())
+                ');
+            }
+            
             $this->db->bind(':user_id', $user_id);
             $this->db->bind(':type', $type);
-            $this->db->bind(':category', $category);
             $this->db->bind(':message', $message);
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
+            
         } catch (Exception $e) {
             error_log("Failed to log notification: " . $e->getMessage());
+            // Non-critical error - don't fail the notification sending
         }
     }
     
     /**
-     * Create required database tables
+     * FIXED: Create required database tables
      */
     private function createNotificationTables() {
-        // Notifications table
+        // Notifications table - UPDATED VERSION
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS notifications (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT,
                     type ENUM('creator', 'contributor', 'proposer', 'admin') NOT NULL,
-                    category VARCHAR(50) NOT NULL,
+                    category VARCHAR(50) NOT NULL DEFAULT 'general',
                     message TEXT NOT NULL,
                     topic_id INT,
                     is_read TINYINT(1) DEFAULT 0,
@@ -771,8 +808,16 @@ Support: support@topiclaunch.com";
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
             $this->db->execute();
+            
+            // If table exists but missing category column, add it
+            $this->db->query("
+                ALTER TABLE notifications 
+                ADD COLUMN IF NOT EXISTS category VARCHAR(50) NOT NULL DEFAULT 'general' AFTER type
+            ");
+            $this->db->execute();
+            
         } catch (Exception $e) {
-            error_log("Failed to create notifications table: " . $e->getMessage());
+            error_log("Failed to create/update notifications table: " . $e->getMessage());
         }
         
         // Auto-refund schedule table
