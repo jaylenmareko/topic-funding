@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Improved creator dashboard with topic management controls
+// creators/dashboard.php - Improved creator dashboard with removed Recent Completed section
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -87,7 +87,7 @@ $db->query('
 $db->bind(':creator_id', $creator->id);
 $held_topics = $db->resultSet();
 
-// Get live topics being funded
+// Get live topics being funded (increased to show more)
 $db->query('
     SELECT t.*, 
            (t.current_funding / t.funding_threshold * 100) as funding_percentage,
@@ -96,22 +96,10 @@ $db->query('
     WHERE t.creator_id = :creator_id 
     AND t.status = "active"
     ORDER BY funding_percentage DESC, t.created_at DESC
-    LIMIT 5
+    LIMIT 10
 ');
 $db->bind(':creator_id', $creator->id);
 $live_topics = $db->resultSet();
-
-// Get completed topics (last 5)
-$db->query('
-    SELECT t.*, t.content_url, t.completed_at
-    FROM topics t 
-    WHERE t.creator_id = :creator_id 
-    AND t.status = "completed" 
-    ORDER BY t.completed_at DESC 
-    LIMIT 5
-');
-$db->bind(':creator_id', $creator->id);
-$completed_topics = $db->resultSet();
 ?>
 <!DOCTYPE html>
 <html>
@@ -228,8 +216,13 @@ $completed_topics = $db->resultSet();
             font-weight: bold;
         }
         
-        /* Main Grid */
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
+        /* Main Content Area */
+        .dashboard-content { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 30px; 
+            margin-bottom: 30px; 
+        }
         .dashboard-card { 
             background: white; 
             border-radius: 12px; 
@@ -346,7 +339,6 @@ $completed_topics = $db->resultSet();
         .modal-actions button { margin-left: 10px; }
         
         @media (max-width: 768px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
             .container { padding: 10px; }
             .dashboard-header { margin: 10px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -501,8 +493,8 @@ $completed_topics = $db->resultSet();
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Topics Being Funded -->
+        <!-- Single Full-Width Topics Being Funded Section -->
+        <div class="dashboard-content">
             <div class="dashboard-card">
                 <div class="card-header">
                     <h2 class="card-title">📈 Topics Being Funded</h2>
@@ -510,21 +502,24 @@ $completed_topics = $db->resultSet();
                 </div>
                 
                 <?php if (!empty($live_topics)): ?>
-                    <?php foreach ($live_topics as $topic): ?>
-                    <div class="topic-item">
-                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                        <div class="topic-meta">
-                            <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
-                            <span><?php echo $topic->contributor_count; ?> contributors</span>
+                    <!-- Show topics in a more spacious grid layout -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                        <?php foreach ($live_topics as $topic): ?>
+                        <div class="topic-item">
+                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                            <div class="topic-meta">
+                                <span>$<?php echo number_format($topic->current_funding, 2); ?> of $<?php echo number_format($topic->funding_threshold, 2); ?></span>
+                                <span><?php echo $topic->contributor_count; ?> contributors</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
+                            </div>
+                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
+                                View Topic
+                            </a>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: <?php echo min(100, $topic->funding_percentage); ?>%"></div>
-                        </div>
-                        <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">
-                            View Topic
-                        </a>
+                        <?php endforeach; ?>
                     </div>
-                    <?php endforeach; ?>
                 <?php else: ?>
                     <div class="empty-state">
                         <p>No topics currently being funded.</p>
@@ -532,33 +527,6 @@ $completed_topics = $db->resultSet();
                             <strong>💡 How it works:</strong><br>
                             Fans create topics for you automatically. Once you earn $100, we will send your earnings to your PayPal email.
                         </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Recent Completed Topics -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">✅ Recent Completed</h2>
-                    <span class="card-icon">🎬</span>
-                </div>
-                
-                <?php if (!empty($completed_topics)): ?>
-                    <?php foreach ($completed_topics as $topic): ?>
-                    <div class="topic-item" style="border-left-color: #28a745;">
-                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                        <div class="topic-meta">
-                            <span>$<?php echo number_format($topic->current_funding * 0.9, 2); ?> earned</span>
-                            <span><?php echo date('M j', strtotime($topic->completed_at)); ?></span>
-                        </div>
-                        <div style="margin-top: 10px;">
-                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary">View</a>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <p>No completed topics yet.</p>
                     </div>
                 <?php endif; ?>
             </div>
