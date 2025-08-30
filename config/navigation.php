@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation with NO fan dashboard
+// config/navigation.php - Updated navigation with clickable logo for fans
 function renderNavigation($current_page = '') {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -24,6 +24,19 @@ function renderNavigation($current_page = '') {
     if (strpos($_SERVER['REQUEST_URI'], '/creators/') !== false) $base_path = '../';
     if (strpos($_SERVER['REQUEST_URI'], '/topics/') !== false) $base_path = '../';
     if (strpos($_SERVER['REQUEST_URI'], '/dashboard/') !== false) $base_path = '../';
+    
+    // Determine logo link based on user type
+    $logo_link = $base_path . 'index.php'; // Default to home page
+    
+    if ($is_logged_in) {
+        if ($is_creator) {
+            // Creators: logo goes to their dashboard
+            $logo_link = $base_path . 'creators/dashboard.php';
+        } else {
+            // Fans: logo goes to browse creators
+            $logo_link = $base_path . 'creators/index.php';
+        }
+    }
     ?>
     
     <style>
@@ -46,9 +59,14 @@ function renderNavigation($current_page = '') {
         font-weight: bold;
         color: white;
         text-decoration: none;
-        cursor: default; /* Logo is not clickable */
+        cursor: pointer;
+        transition: opacity 0.3s;
     }
-    .nav-logo:hover { color: white; } /* No hover effect */
+    .nav-logo:hover { 
+        color: white; 
+        text-decoration: none;
+        opacity: 0.9;
+    }
     .nav-links {
         display: flex;
         align-items: center;
@@ -146,8 +164,8 @@ function renderNavigation($current_page = '') {
     
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <!-- Logo - NOT clickable, just text -->
-            <span class="nav-logo">TopicLaunch</span>
+            <!-- Clickable Logo -->
+            <a href="<?php echo $logo_link; ?>" class="nav-logo">TopicLaunch</a>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
@@ -174,8 +192,11 @@ function renderNavigation($current_page = '') {
                         </a>
                     <?php endif; ?>
                     
-                    <!-- Logout -->
-                    <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
+                    <!-- User Info & Logout -->
+                    <div class="nav-user">
+                        <span>Hi, <?php echo htmlspecialchars($username); ?>!</span>
+                        <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
+                    </div>
                     
                 <?php else: ?>
                     <!-- Navigation for Guests - Remove buttons on topic view pages -->
