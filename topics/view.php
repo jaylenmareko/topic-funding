@@ -62,7 +62,9 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         .status-badge { padding: 8px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; }
         .status-active { background: #fff3cd; color: #856404; }
         .status-funded { background: #d4edda; color: #155724; }
+        .status-on_hold { background: #e3f2fd; color: #1565c0; }
         .status-completed { background: #cce5ff; color: #004085; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
         .status-pending-approval { background: #f8d7da; color: #721c24; }
         .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         .main-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -188,6 +190,15 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                         </a>
                     </div>
                 </div>
+                <?php elseif ($topic->status === 'on_hold'): ?>
+                <div class="deadline-warning" style="background: #e3f2fd; border-color: #2196f3;">
+                    <h4 style="margin-top: 0; color: #1565c0;">⏸️ Topic on Hold</h4>
+                    <p>You have put this topic on hold to work on other content first.</p>
+                    <?php if ($topic->hold_reason): ?>
+                    <p><strong>Reason:</strong> <?php echo htmlspecialchars($topic->hold_reason); ?></p>
+                    <?php endif; ?>
+                    <p>The 48-hour deadline is paused. Resume when you're ready to create this content.</p>
+                </div>
                 <?php endif; ?>
 
                 <?php if ($topic->status === 'completed' && $topic->content_url): ?>
@@ -222,6 +233,15 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                         <h4 style="margin-top: 0;">⏰ Content Deadline</h4>
                         <p><strong><?php echo date('l, M j, Y \a\t g:i A', strtotime($topic->content_deadline)); ?></strong></p>
                         <p>The creator has committed to delivering this content by the deadline above. If content isn't delivered on time, all contributors will be automatically refunded.</p>
+                    </div>
+                    <?php elseif ($topic->status === 'on_hold'): ?>
+                    <div class="deadline-warning" style="background: #e3f2fd; border-color: #2196f3;">
+                        <h4 style="margin-top: 0; color: #1565c0;">⏸️ Creator is Working on Other Content</h4>
+                        <p>This topic has been temporarily paused by the creator to focus on higher priority content.</p>
+                        <?php if ($topic->hold_reason): ?>
+                        <p><strong>Reason:</strong> <?php echo htmlspecialchars($topic->hold_reason); ?></p>
+                        <?php endif; ?>
+                        <p>The content deadline is paused. You'll be notified when the creator resumes this topic.</p>
                     </div>
                     <?php endif; ?>
 
@@ -318,9 +338,17 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                             <div class="action-button completed">
                                 ✅ Fully Funded! Content coming soon...
                             </div>
+                        <?php elseif ($topic->status === 'on_hold'): ?>
+                            <div class="action-button completed">
+                                ⏸️ Creator Working on Other Content
+                            </div>
                         <?php elseif ($topic->status === 'completed'): ?>
                             <div class="action-button completed">
                                 ✅ Completed!
+                            </div>
+                        <?php elseif ($topic->status === 'cancelled'): ?>
+                            <div class="action-button completed">
+                                ❌ Cancelled by Creator
                             </div>
                         <?php elseif ($topic->status === 'pending_approval'): ?>
                             <div class="action-button completed">
