@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Improved creator dashboard with topic selector
+// creators/dashboard.php - Improved creator dashboard with topic management controls
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -47,7 +47,7 @@ $db->query('
     SELECT id, title, status, created_at, current_funding, funding_threshold
     FROM topics 
     WHERE creator_id = :creator_id 
-    AND status IN ("active", "funded", "completed")
+    AND status IN ("active", "funded", "completed", "on_hold")
     ORDER BY created_at DESC
 ');
 $db->bind(':creator_id', $creator->id);
@@ -74,6 +74,18 @@ $db->query('
 ');
 $db->bind(':creator_id', $creator->id);
 $urgent_topics = $db->resultSet();
+
+// Get topics on hold
+$db->query('
+    SELECT t.*, 
+           (SELECT COUNT(*) FROM contributions WHERE topic_id = t.id AND payment_status = "completed") as contributor_count
+    FROM topics t 
+    WHERE t.creator_id = :creator_id 
+    AND t.status = "on_hold"
+    ORDER BY t.held_at DESC
+');
+$db->bind(':creator_id', $creator->id);
+$held_topics = $db->resultSet();
 
 // Get live topics being funded
 $db->query('
@@ -326,6 +338,12 @@ $completed_topics = $db->resultSet();
             margin-top: 15px;
             font-size: 14px;
         }
+
+        /* Modal styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; }
+        .modal-actions { margin-top: 20px; text-align: right; }
+        .modal-actions button { margin-left: 10px; }
         
         @media (max-width: 768px) {
             .dashboard-grid { grid-template-columns: 1fr; }
@@ -383,6 +401,16 @@ $completed_topics = $db->resultSet();
             </div>
         </div>
         
+        <!-- Display messages -->
+        <?php 
+        if (isset($_GET['success'])) {
+            echo '<div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 6px; margin-bottom: 20px;">' . htmlspecialchars($_GET['success']) . '</div>';
+        }
+        if (isset($_GET['error'])) {
+            echo '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-bottom: 20px;">' . htmlspecialchars($_GET['error']) . '</div>';
+        }
+        ?>
+
         <!-- PayPal Setup Alert -->
         <?php if ($needs_paypal_setup): ?>
         <div class="paypal-alert">
@@ -393,7 +421,7 @@ $completed_topics = $db->resultSet();
             <a href="../creators/setup_paypal.php" class="paypal-alert-btn">Enter PayPal Email</a>
         </div>
         <?php endif; ?>
-        
+
         <!-- Urgent: Funded Topics Awaiting Content -->
         <?php if (!empty($urgent_topics)): ?>
         <div class="urgent-section">
@@ -415,10 +443,48 @@ $completed_topics = $db->resultSet();
                     <?php echo htmlspecialchars(substr($topic->description, 0, 150)); ?>...
                 </p>
                 <div style="margin-top: 15px;">
-                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-danger">
+                    <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" class="btn btn-success">
                         🎬 Upload Content Now
                     </a>
+                    <button onclick="showTopicActions(<?php echo $topic->id; ?>, 'funded')" class="btn btn-danger" style="margin-left: 10px;">
+                        ⏸️ Manage Topic
+                    </button>
                     <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn btn-primary" style="margin-left: 10px;">
+                        👁️ View Details
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Topics on Hold -->
+        <?php if (!empty($held_topics)): ?>
+        <div class="urgent-section" style="background: #e3f2fd; border-color: #2196f3;">
+            <div class="urgent-header">
+                <span class="urgent-icon">⏸️</span>
+                <h2 class="urgent-title" style="color: #1565c0;">Topics on Hold (<?php echo count($held_topics); ?>)</h2>
+            </div>
+            
+            <?php foreach ($held_topics as $topic): ?>
+            <div class="topic-item" style="border-left-color: #2196f3; background: #f3f9ff;">
+                <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                <div class="topic-meta">
+                    <span><strong>$<?php echo number_format($topic->current_funding, 2); ?></strong> funded</span>
+                    <span style="background: #2196f3; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 12px;">
+                        ⏸️ On Hold
+                    </span>
+                </div>
+                <?php if ($topic->hold_reason): ?>
+                    <p style="margin: 10px 0; color: #666; font-style: italic;">
+                        <strong>Reason:</strong> <?php echo htmlspecialchars($topic->hold_reason); ?>
+                    </p>
+                <?php endif; ?>
+                <div style="margin-top: 15px;">
+                    <button onclick="showTopicActions(<?php echo $topic->id; ?>, 'on_hold')" class="btn btn-primary">
+                        ▶️ Resume Topic
+                    </button>
+                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">
                         👁️ View Details
                     </a>
                 </div>
@@ -499,7 +565,118 @@ $completed_topics = $db->resultSet();
         </div>
     </div>
 
+    <!-- Topic Actions Modal -->
+    <div id="topicActionsModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Manage Topic</h3>
+            <div id="modalContent"></div>
+            <div class="modal-actions">
+                <button onclick="closeModal()" class="btn" style="background: #6c757d;">Cancel</button>
+                <div id="modalActions" style="display: inline;"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
+    let currentTopicId = null;
+    let currentStatus = null;
+
+    function showTopicActions(topicId, status) {
+        currentTopicId = topicId;
+        currentStatus = status;
+        
+        const modal = document.getElementById('topicActionsModal');
+        const title = document.getElementById('modalTitle');
+        const content = document.getElementById('modalContent');
+        const actions = document.getElementById('modalActions');
+        
+        if (status === 'funded') {
+            title.textContent = 'Manage Funded Topic';
+            content.innerHTML = `
+                <p>This topic is fully funded. What would you like to do?</p>
+                <div style="margin: 15px 0;">
+                    <label for="holdReason">Reason for putting on hold (optional):</label><br>
+                    <input type="text" id="holdReason" placeholder="e.g., Working on higher priority content" 
+                           style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 4px; font-size: 14px;">
+                    <strong>Options:</strong><br>
+                    • <strong>Put on Hold:</strong> Pause the 48-hour deadline<br>
+                    • <strong>Decline:</strong> Refund all contributors and cancel topic
+                </div>
+            `;
+            actions.innerHTML = `
+                <button onclick="performAction('hold')" class="btn" style="background: #ffc107; color: #000; margin-right: 10px;">⏸️ Put on Hold</button>
+                <button onclick="performAction('decline')" class="btn btn-danger">❌ Decline & Refund</button>
+            `;
+        } else if (status === 'on_hold') {
+            title.textContent = 'Resume Topic';
+            content.innerHTML = `
+                <p>This topic is currently on hold. Resume to get a new 48-hour deadline.</p>
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; font-size: 14px;">
+                    <strong>Resume:</strong> Topic gets a fresh 48-hour deadline starting now
+                </div>
+            `;
+            actions.innerHTML = `
+                <button onclick="performAction('resume')" class="btn btn-success">▶️ Resume Topic</button>
+                <button onclick="performAction('decline')" class="btn btn-danger" style="margin-left: 10px;">❌ Decline & Refund</button>
+            `;
+        }
+        
+        modal.style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('topicActionsModal').style.display = 'none';
+        currentTopicId = null;
+        currentStatus = null;
+    }
+
+    function performAction(action) {
+        if (!currentTopicId) return;
+        
+        let confirmMessage = '';
+        if (action === 'decline') {
+            confirmMessage = 'Are you sure you want to decline this topic? All contributors will be refunded and the topic will be cancelled. This cannot be undone.';
+        } else if (action === 'hold') {
+            confirmMessage = 'Put this topic on hold? The 48-hour deadline will be paused.';
+        } else if (action === 'resume') {
+            confirmMessage = 'Resume this topic? You will get a fresh 48-hour deadline starting now.';
+        }
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // Create and submit form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'topic_actions.php';
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = action;
+        form.appendChild(actionInput);
+        
+        const topicInput = document.createElement('input');
+        topicInput.type = 'hidden';
+        topicInput.name = 'topic_id';
+        topicInput.value = currentTopicId;
+        form.appendChild(topicInput);
+        
+        if (action === 'hold') {
+            const reasonInput = document.createElement('input');
+            reasonInput.type = 'hidden';
+            reasonInput.name = 'hold_reason';
+            reasonInput.value = document.getElementById('holdReason').value || 'Working on other content first';
+            form.appendChild(reasonInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     function updateShareUrl() {
         const selector = document.getElementById('topicSelector');
         const shareUrl = document.getElementById('shareUrl');
@@ -543,16 +720,12 @@ $completed_topics = $db->resultSet();
         });
     }
 
-    function shareOnTwitter() {
-        const shareUrl = document.getElementById('shareUrl').textContent;
-        const selector = document.getElementById('topicSelector');
-        const selectedOption = selector.options[selector.selectedIndex];
-        const topicTitle = selectedOption.getAttribute('data-title');
-        
-        const tweetText = encodeURIComponent(`🎬 Help fund my next video: "${topicTitle}" on TopicLaunch!`);
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(shareUrl)}`;
-        window.open(twitterUrl, '_blank', 'width=550,height=420');
-    }
+    // Close modal when clicking outside
+    document.getElementById('topicActionsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
 
     // Initialize the share URL on page load
     document.addEventListener('DOMContentLoaded', function() {
