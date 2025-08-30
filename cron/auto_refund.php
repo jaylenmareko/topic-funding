@@ -1,5 +1,5 @@
 <?php
-// cron/auto_refund.php - Updated for cleaned database
+// cron/auto_refund.php - Updated for cleaned database with on_hold support
 // Run this every 15 minutes via cron: */15 * * * * /usr/local/bin/php /home4/uunppite/public_html/cron/auto_refund.php
 
 set_time_limit(300); // 5 minutes max execution
@@ -18,6 +18,7 @@ try {
     $refundManager = new RefundManager();
     
     // Find topics that are past their 48-hour deadline without content
+    // UPDATED: Skip topics that are on hold - only process topics with status = "funded"
     $db->query('
         SELECT t.*, c.display_name as creator_name
         FROM topics t
@@ -148,7 +149,7 @@ try {
                 $db->bind(':id', $topic->id);
                 $db->execute();
                 
-                // UPDATED: Record processing in auto_refund_processed table (you kept this one)
+                // Record processing in auto_refund_processed table
                 $db->query('
                     INSERT INTO auto_refund_processed (topic_id, refunds_count, total_refunded, processed_at)
                     VALUES (:topic_id, :refunds_count, :total_refunded, NOW())
@@ -322,11 +323,11 @@ function sendEmail($to, $subject, $message) {
     return mail($to, $subject, $message, $headers);
 }
 
-// UPDATED: Create required tables for cleaned database
+// Create required tables for cleaned database
 function createRequiredTables() {
     $db = new Database();
     
-    // Make sure auto_refund_processed table exists (you kept this one)
+    // Make sure auto_refund_processed table exists
     $db->query("
         CREATE TABLE IF NOT EXISTS auto_refund_processed (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -340,7 +341,7 @@ function createRequiredTables() {
     ");
     $db->execute();
     
-    // Make sure refund_log table exists (you kept this one)
+    // Make sure refund_log table exists
     $db->query("
         CREATE TABLE IF NOT EXISTS refund_log (
             id INT AUTO_INCREMENT PRIMARY KEY,
