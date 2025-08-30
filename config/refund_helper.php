@@ -1,5 +1,5 @@
 <?php
-// config/refund_helper.php - 90% Partial refund management helper
+// config/refund_helper.php - 90% Partial refund management helper WITH FULL REFUND SUPPORT
 require_once 'stripe.php';
 require_once 'database.php';
 
@@ -196,6 +196,65 @@ class RefundManager {
     }
     
     /**
+     * NEW METHOD: Process full refunds for all contributions to a topic (when creator declines)
+     */
+    public function refundAllTopicContributions($topic_id, $reason = 'Creator declined this topic - full refund') {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get all completed contributions for this topic
+            $this->db->query('
+                SELECT c.*, u.email 
+                FROM contributions c 
+                JOIN users u ON c.user_id = u.id 
+                WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
+            ');
+            $this->db->bind(':topic_id', $topic_id);
+            $contributions = $this->db->resultSet();
+            
+            $results = [
+                'success' => true,
+                'refunds_processed' => 0,
+                'total_refunded' => 0,
+                'failed_refunds' => 0,
+                'details' => []
+            ];
+            
+            foreach ($contributions as $contribution) {
+                $refund_result = $this->processContributionRefund($contribution->id, $reason);
+                
+                if ($refund_result['success']) {
+                    $results['refunds_processed']++;
+                    $results['total_refunded'] += $refund_result['amount'];
+                } else {
+                    $results['failed_refunds']++;
+                }
+                
+                $results['details'][] = [
+                    'contribution_id' => $contribution->id,
+                    'amount' => $contribution->amount,
+                    'user_email' => $contribution->email,
+                    'success' => $refund_result['success'],
+                    'error' => $refund_result['error'] ?? null
+                ];
+            }
+            
+            // Update topic current funding to 0
+            $this->db->query('UPDATE topics SET current_funding = 0 WHERE id = :topic_id');
+            $this->db->bind(':topic_id', $topic_id);
+            $this->db->execute();
+            
+            $this->db->endTransaction();
+            return $results;
+            
+        } catch (Exception $e) {
+            $this->db->cancelTransaction();
+            error_log("Bulk refund error: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+    
+    /**
      * Process refunds for all topics by a creator (90% refunds)
      */
     public function refundAllCreatorTopics($creator_id, $reason = 'Creator removed - 90% refund') {
@@ -206,7 +265,7 @@ class RefundManager {
                 WHERE creator_id = :creator_id AND status IN ("active", "funded")
             ');
             $this->db->bind(':creator_id', $creator_id);
-            $topics = $db->resultSet();
+            $topics = $this->db->resultSet();
             
             $overall_results = [
                 'success' => true,
