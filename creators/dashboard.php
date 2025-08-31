@@ -53,8 +53,8 @@ $db->query('
 $db->bind(':creator_id', $creator->id);
 $shareable_topics = $db->resultSet();
 
-// Default share URL (fallback)
-$default_share_url = 'https://topiclaunch.com/';
+// Default share URL for new creators (their profile page)
+$default_share_url = 'https://topiclaunch.com/creators/profile.php?id=' . $creator->id;
 if (!empty($shareable_topics)) {
     $default_share_url = 'https://topiclaunch.com/topics/view.php?id=' . $shareable_topics[0]->id;
 }
@@ -383,10 +383,10 @@ $live_topics = $db->resultSet();
                             <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
                         </div>
                     <?php else: ?>
-                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Create topics to share with your fans!</p>
+                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Share your profile with fans so they can create topics for you!</p>
                         <div class="share-controls">
-                            <div class="share-url">No topics available to share yet</div>
-                            <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="share-btn">Create Topic</a>
+                            <div class="share-url" id="shareUrl">https://topiclaunch.com/creators/profile.php?id=<?php echo $creator->id; ?></div>
+                            <button class="share-btn" onclick="copyShareLink()">📋 Copy Link</button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -658,12 +658,7 @@ $live_topics = $db->resultSet();
     function copyShareLink() {
         const shareUrl = document.getElementById('shareUrl').textContent;
         
-        // Don't copy if there's no valid URL
-        if (!shareUrl.includes('topics/view.php')) {
-            alert('Please create a topic first to generate a shareable link!');
-            return;
-        }
-        
+        // Always allow copying since we now have a valid profile URL for new creators
         navigator.clipboard.writeText(shareUrl).then(function() {
             // Show success feedback
             const button = event.target;
