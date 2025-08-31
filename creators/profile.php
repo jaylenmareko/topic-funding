@@ -1,5 +1,5 @@
 <?php
-// creators/profile.php - Creator profile with simplified navigation
+// creators/profile.php - Creator profile with live countdown timer for waiting upload topics
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -41,15 +41,19 @@ $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "ac
 $db->bind(':creator_id', $creator_id);
 $active_topics = $db->resultSet();
 
-// Waiting Upload topics (funded but no content uploaded yet)
+// Waiting Upload topics (funded but no content uploaded yet) - with deadline timestamp
+// Exclude topics that are more than 2 hours past deadline (refunds processed, topic failed)
 $db->query('
     SELECT t.*, 
+           UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
            TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
-           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining
+           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
+           TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) as hours_past_deadline
     FROM topics t 
     WHERE t.creator_id = :creator_id 
     AND t.status = "funded" 
     AND (t.content_url IS NULL OR t.content_url = "")
+    AND TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) <= 2
     ORDER BY t.funded_at ASC
 ');
 $db->bind(':creator_id', $creator_id);
@@ -106,6 +110,43 @@ $completed_topics = $db->resultSet();
         .btn-urgent { background: #dc3545; animation: pulse 2s infinite; }
         .btn-urgent:hover { background: #c82333; }
         
+        /* Live countdown timer styles */
+        .countdown-timer { 
+            background: #dc3545; 
+            color: white; 
+            padding: 8px 16px; 
+            border-radius: 15px; 
+            font-weight: bold; 
+            font-size: 14px;
+            font-family: monospace;
+            display: inline-block;
+        }
+        .countdown-timer.warning { 
+            background: #ffc107; 
+            color: #000; 
+        }
+        .countdown-timer.safe { 
+            background: #28a745; 
+        }
+        .countdown-timer.expired {
+            background: #6c757d;
+            animation: none;
+            font-family: Arial, sans-serif;
+        }
+        .refund-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            border-left: 4px solid #dc3545;
+        }
+        .topic-fading {
+            opacity: 0.6;
+            transition: opacity 2s ease-out;
+        }
+        
         /* Pulsing animation for urgent topics */
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
@@ -113,9 +154,6 @@ $completed_topics = $db->resultSet();
             100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
         
-        .countdown { background: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 12px; }
-        .countdown.warning { background: #ffc107; color: #000; }
-        .countdown.safe { background: #28a745; }
         .topic-card.urgent { border-left: 4px solid #dc3545; background: #fff5f5; }
         .topic-card.warning { border-left: 4px solid #ffc107; background: #fffbf0; }
         .topic-card.normal { border-left: 4px solid #28a745; background: #f8fff8; }
@@ -194,26 +232,23 @@ $completed_topics = $db->resultSet();
             <div class="topic-grid">
                 <?php foreach ($waiting_upload_topics as $topic): ?>
                     <?php 
-                    $hours_left = max(0, $topic->hours_remaining);
                     $urgency_class = 'normal';
                     $countdown_class = 'safe';
-                    
-                    if ($hours_left <= 6) {
-                        $urgency_class = 'urgent';
-                        $countdown_class = 'countdown';
-                    } elseif ($hours_left <= 24) {
-                        $urgency_class = 'warning';
-                        $countdown_class = 'warning';
-                    }
                     ?>
                     <div class="topic-card <?php echo $urgency_class; ?>">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <span class="countdown <?php echo $countdown_class; ?>">
-                                ⏰ <?php echo max(0, $hours_left); ?> hours left
-                            </span>
+                            <div class="countdown-timer <?php echo $countdown_class; ?>" 
+                                 data-deadline="<?php echo $topic->deadline_timestamp; ?>"
+                                 id="countdown-<?php echo $topic->id; ?>">
+                                Creator has 00:00:00 to create content
+                            </div>
                             <div style="font-size: 12px; color: #666;">
                                 Funded <?php echo date('M j, g:i A', strtotime($topic->funded_at)); ?>
                             </div>
+                        </div>
+                        
+                        <div class="refund-message" id="refund-message-<?php echo $topic->id; ?>" style="display: none;">
+                            💰 <strong>Deadline expired.</strong> 90% refunds are being processed automatically. Contributors will receive their refunds within 5-10 business days.
                         </div>
                         
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
@@ -224,35 +259,15 @@ $completed_topics = $db->resultSet();
                             <strong>💰 Earnings:</strong> $<?php echo number_format($topic->current_funding * 0.9, 2); ?> (after 10% platform fee)
                         </div>
                         
-                        <?php if ($hours_left <= 6): ?>
-                            <div class="deadline-warning" style="background: #f8d7da; border-left: 4px solid #dc3545;">
-                                <strong>🚨 URGENT:</strong> Less than 6 hours remaining! Upload content now to avoid auto-refunds.
-                            </div>
-                        <?php elseif ($hours_left <= 24): ?>
-                            <div class="deadline-warning">
-                                <strong>⚠️ Warning:</strong> Less than 24 hours remaining. Please upload your content soon.
-                            </div>
-                        <?php endif; ?>
-                        
                         <div class="topic-actions">
                             <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" 
-                               class="btn <?php echo ($hours_left <= 6) ? 'btn-urgent' : 'btn-success'; ?>">
+                               class="btn btn-urgent">
                                 🎬 Upload Content Now
                             </a>
                             <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">
                                 👁️ View Details
                             </a>
                         </div>
-                        <?php else: ?>
-                        <?php if ($hours_left <= 6): ?>
-                            <div class="deadline-warning" style="background: #f8d7da; border-left: 4px solid #dc3545;">
-                                <strong>🚨 Content coming very soon!</strong> Less than 6 hours remaining.
-                            </div>
-                        <?php elseif ($hours_left <= 24): ?>
-                            <div class="deadline-warning">
-                                <strong>⚠️ Content coming soon!</strong> Less than 24 hours remaining.
-                            </div>
-                        <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
@@ -260,5 +275,121 @@ $completed_topics = $db->resultSet();
         </div>
         <?php endif; ?>
     </div>
+
+    <script>
+    // Live countdown timer functionality
+    function updateCountdowns() {
+        const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
+        
+        countdownElements.forEach(element => {
+            const deadline = parseInt(element.getAttribute('data-deadline')) * 1000; // Convert to milliseconds
+            const now = new Date().getTime();
+            const timeLeft = deadline - now;
+            const topicCard = element.closest('.topic-card');
+            const topicId = element.id.replace('countdown-', '');
+            const refundMessage = document.getElementById(`refund-message-${topicId}`);
+            
+            if (timeLeft > 0) {
+                // Calculate time remaining
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                // Format time
+                const formattedTime = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+                
+                element.textContent = `Creator has ${formattedTime} to create content`;
+                
+                // Hide refund message while countdown is active
+                if (refundMessage) {
+                    refundMessage.style.display = 'none';
+                }
+                
+                // Update styling based on time remaining
+                element.classList.remove('expired', 'warning', 'safe');
+                
+                if (hours <= 1) {
+                    element.classList.add('expired');
+                    element.style.animation = 'pulse 1s infinite';
+                } else if (hours <= 6) {
+                    element.classList.add('warning');
+                } else {
+                    element.classList.add('safe');
+                }
+                
+                // Update topic card styling
+                if (topicCard) {
+                    topicCard.classList.remove('urgent', 'warning', 'normal', 'topic-fading');
+                    if (hours <= 1) {
+                        topicCard.classList.add('urgent');
+                    } else if (hours <= 6) {
+                        topicCard.classList.add('warning');
+                    } else {
+                        topicCard.classList.add('normal');
+                    }
+                }
+                
+            } else {
+                // Time expired - calculate hours past deadline
+                const hoursPastDeadline = Math.abs(timeLeft) / (1000 * 60 * 60);
+                
+                if (hoursPastDeadline >= 2) {
+                    // Topic should fade out and be removed after 2 hours
+                    if (topicCard) {
+                        topicCard.style.display = 'none';
+                    }
+                } else {
+                    // Show expired state with refund message
+                    element.textContent = 'Deadline expired';
+                    element.classList.remove('warning', 'safe');
+                    element.classList.add('expired');
+                    element.style.animation = 'none';
+                    
+                    // Show refund message
+                    if (refundMessage) {
+                        refundMessage.style.display = 'block';
+                    }
+                    
+                    // Update topic card styling - make it fade as it approaches removal
+                    if (topicCard) {
+                        topicCard.classList.remove('warning', 'normal');
+                        topicCard.classList.add('urgent', 'topic-fading');
+                    }
+                }
+            }
+        });
+        
+        // Check if all topics in waiting upload section are hidden
+        const waitingSection = document.querySelector('.section-title');
+        if (waitingSection && waitingSection.textContent.includes('Waiting Upload')) {
+            const allTopicCards = document.querySelectorAll('.topic-card');
+            const visibleCards = Array.from(allTopicCards).filter(card => 
+                card.style.display !== 'none' && 
+                card.closest('.topic-grid')?.previousElementSibling?.textContent?.includes('Waiting Upload')
+            );
+            
+            if (visibleCards.length === 0) {
+                // Hide the entire waiting upload section if no topics are visible
+                const waitingUploadSection = waitingSection.closest('.section-header')?.nextElementSibling;
+                if (waitingUploadSection) {
+                    waitingUploadSection.style.display = 'none';
+                    waitingSection.closest('.section-header').style.display = 'none';
+                }
+            }
+        }
+    }
+    
+    // Update countdown immediately and then every second
+    updateCountdowns();
+    setInterval(updateCountdowns, 1000);
+    
+    // Auto-refresh page every 10 minutes to sync with server state
+    setInterval(function() {
+        window.location.reload();
+    }, 600000); // 10 minutes
+    </script>
 </body>
 </html>
