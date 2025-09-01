@@ -167,6 +167,11 @@ $completed_topics = $db->resultSet();
             .content-tabs { flex-direction: column; }
             .topic-grid { grid-template-columns: 1fr; }
             .creator-actions { justify-content: center; }
+            
+            /* Hide profile picture on mobile to prevent overlap */
+            .container > div:first-child > div:last-child {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -174,9 +179,25 @@ $completed_topics = $db->resultSet();
     <?php renderNavigation('browse_creators'); ?>
 
     <div class="container">
-        <!-- Create a Topic Button -->
-        <div style="text-align: center; margin: 80px 0 50px 0;">
+        <!-- Create a Topic Button with Profile Picture aligned -->
+        <div style="text-align: center; margin: 80px 0 50px 0; position: relative;">
             <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="btn btn-success" style="font-size: 18px; padding: 15px 30px;">Create a Topic</a>
+            
+            <!-- Creator Profile Picture - Same horizontal level as button, aligned right -->
+            <div style="position: absolute; top: 50%; right: 0; transform: translateY(-50%); text-align: center;">
+                <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
+                        <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                             alt="<?php echo htmlspecialchars($creator->display_name); ?>" 
+                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
+                    <?php endif; ?>
+                </div>
+                <div style="margin-top: 8px; font-size: 14px; color: #666;">
+                    @<?php echo htmlspecialchars($creator->display_name); ?>
+                </div>
+            </div>
         </div>
 
         <!-- Active Topics -->
