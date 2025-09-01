@@ -229,14 +229,14 @@ if ($_POST) {
             <div class="form-group">
                 <label>Funding Goal ($):</label>
                 <input type="number" name="funding_threshold" id="funding_threshold" 
-                       value="0" min="0" max="1000" step="0.01" required>
+                       value="0" min="0" max="1000" step="1" required>
                 <small>💡 Set to $0 to try the platform free! Creator gets exposure, you get content risk-free.</small>
             </div>
 
             <div class="form-group" id="paymentSection">
                 <label>Your Payment ($):</label>
                 <input type="number" name="initial_contribution" id="initial_contribution" 
-                       min="0" step="0.01" placeholder="0 for free topic">
+                       min="0" step="1" placeholder="0 for free topic">
                 <small>Minimum $5 for paid topics, or $0 for free</small>
             </div>
 
@@ -269,36 +269,50 @@ if ($_POST) {
     </div>
 
     <script>
-    // Update preview in real-time
+    // Only update preview when funding threshold changes
+    document.getElementById('funding_threshold').addEventListener('input', function() {
+        const goal = parseInt(this.value) || 0;
+        
+        // Only auto-set payment to 0 for free topics
+        if (goal == 0) {
+            document.getElementById('initial_contribution').value = '0';
+        }
+        
+        updatePreview();
+    });
+
+    // Track when user types in payment field
+    document.getElementById('initial_contribution').addEventListener('input', function() {
+        updatePreview();
+    });
+
+    // Simple preview update function
     function updatePreview() {
-        const goal = parseFloat(document.getElementById('funding_threshold').value) || 0;
-        const payment = parseFloat(document.getElementById('initial_contribution').value) || 0;
+        const goal = parseInt(document.getElementById('funding_threshold').value) || 0;
+        const payment = parseInt(document.getElementById('initial_contribution').value) || 0;
         const remaining = Math.max(0, goal - payment);
         const percentage = goal > 0 ? Math.round((payment / goal) * 100) : 0;
 
-        document.getElementById('goalAmount').textContent = '$' + goal.toFixed(0);
-        document.getElementById('yourPayment').textContent = '$' + payment.toFixed(2);
-        document.getElementById('remaining').textContent = '$' + remaining.toFixed(2);
+        // Update display only
+        document.getElementById('goalAmount').textContent = '$' + goal;
+        document.getElementById('yourPayment').textContent = '$' + payment;
+        document.getElementById('remaining').textContent = '$' + remaining;
         document.getElementById('percentage').textContent = percentage + '%';
 
-        // Show preview if values are entered
+        // Show/hide preview
         if (goal > 0 && payment > 0) {
             document.getElementById('fundingPreview').style.display = 'block';
         } else {
             document.getElementById('fundingPreview').style.display = 'none';
         }
 
-        // Update button text and validation
+        // Update button
         const submitBtn = document.getElementById('submitBtn');
-        
         if (goal == 0) {
-            // Free topic
             submitBtn.textContent = '🆓 Create Free Topic';
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
-            document.getElementById('initial_contribution').value = '0';
         } else {
-            // Paid topic
             submitBtn.textContent = '💳 Create Topic & Pay';
             const minPayment = Math.max(5, goal * 0.1);
             
@@ -312,13 +326,10 @@ if ($_POST) {
         }
     }
 
-    document.getElementById('funding_threshold').addEventListener('input', updatePreview);
-    document.getElementById('initial_contribution').addEventListener('input', updatePreview);
-
     // Form submission
     document.getElementById('topicForm').addEventListener('submit', function(e) {
-        const goal = parseFloat(document.getElementById('funding_threshold').value);
-        const payment = parseFloat(document.getElementById('initial_contribution').value);
+        const goal = parseInt(document.getElementById('funding_threshold').value);
+        const payment = parseInt(document.getElementById('initial_contribution').value);
 
         if (goal == 0) {
             if (!confirm(`Create FREE topic for <?php echo addslashes($creator->display_name); ?>?\n\nNo payment needed - topic will go live immediately!`)) {
@@ -327,7 +338,7 @@ if ($_POST) {
             }
             document.getElementById('submitBtn').innerHTML = '⏳ Creating Free Topic...';
         } else {
-            if (!confirm(`Create topic for <?php echo addslashes($creator->display_name); ?> with $${payment.toFixed(2)} payment?\n\nTopic will go live immediately!`)) {
+            if (!confirm(`Create topic for <?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately!`)) {
                 e.preventDefault();
                 return;
             }
@@ -337,7 +348,7 @@ if ($_POST) {
         document.getElementById('submitBtn').disabled = true;
     });
 
-    // Initial validation
+    // Initial update
     updatePreview();
     </script>
 </body>
