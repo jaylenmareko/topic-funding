@@ -79,7 +79,7 @@ if (isset($_GET['error'])) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>YouTuber Dashboard - TopicLaunch</title>
+    <title>Create Content, Get Paid - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -104,12 +104,6 @@ if (isset($_GET['error'])) {
             color: #333;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
-        }
-        
-        .subtitle {
-            font-size: 18px;
-            color: #666;
-            font-weight: 400;
         }
         
         /* Messages */
@@ -221,12 +215,52 @@ if (isset($_GET['error'])) {
         .funding-amount {
             font-size: 28px;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
         
-        .funding-label {
-            font-size: 14px;
-            opacity: 0.8;
+        .get-paid-btn {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .get-paid-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .get-paid-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Progress bar for active topics */
+        .funding-progress-container {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            right: 30px;
+        }
+        
+        .funding-progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .funding-progress-fill {
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            border-radius: 3px;
+            transition: width 0.5s ease;
         }
         
         /* Side Navigation Buttons */
@@ -282,52 +316,6 @@ if (isset($_GET['error'])) {
             font-size: 24px;
             margin-bottom: 10px;
             color: #333;
-        }
-        
-        /* Action Button */
-        .action-section {
-            text-align: center;
-            padding: 0 30px 40px;
-        }
-        
-        .get-paid-button {
-            background: linear-gradient(135deg, #00b894, #00a085);
-            color: white;
-            padding: 20px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 20px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0,184,148,0.3);
-            min-width: 200px;
-        }
-        
-        .get-paid-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,184,148,0.4);
-            background: linear-gradient(135deg, #00a085, #008f75);
-        }
-        
-        .get-paid-button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-        
-        .get-paid-button:disabled {
-            background: #ccc !important;
-            cursor: not-allowed !important;
-            transform: none !important;
-            box-shadow: none !important;
-            color: #999 !important;
-        }
-        
-        /* Swipe Instructions */
-        .swipe-instructions {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 14px;
         }
         
         /* Upload Modal */
@@ -430,19 +418,6 @@ if (isset($_GET['error'])) {
             transform: translateY(-1px);
         }
         
-        /* Topic counter */
-        .topic-counter {
-            position: absolute;
-            top: -40px;
-            right: 0;
-            background: rgba(102,126,234,0.1);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #667eea;
-            font-weight: 500;
-        }
-        
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard-header {
@@ -469,29 +444,22 @@ if (isset($_GET['error'])) {
                 font-size: 20px;
             }
             
-            .get-paid-button {
-                padding: 18px 35px;
-                font-size: 18px;
-            }
-            
             .modal-content {
                 padding: 30px 25px;
             }
             
-            @media (max-width: 768px) {
-                .swipe-nav {
-                    width: 45px;
-                    height: 70px;
-                    font-size: 20px;
-                }
-                
-                .swipe-nav.left {
-                    left: 10px;
-                }
-                
-                .swipe-nav.right {
-                    right: 10px;
-                }
+            .swipe-nav {
+                width: 45px;
+                height: 70px;
+                font-size: 20px;
+            }
+            
+            .swipe-nav.left {
+                left: 10px;
+            }
+            
+            .swipe-nav.right {
+                right: 10px;
             }
         }
     </style>
@@ -509,8 +477,7 @@ if (isset($_GET['error'])) {
 
     <!-- Header -->
     <div class="dashboard-header">
-        <h1 class="main-title">YouTuber Dashboard</h1>
-        <p class="subtitle">Create Content, Get Paid</p>
+        <h1 class="main-title">Create Content, Get Paid</h1>
     </div>
 
     <!-- Topic Swipe Section -->
@@ -532,21 +499,41 @@ if (isset($_GET['error'])) {
                                 <?php else: ?>
                                     🔥 Funded
                                 <?php endif; ?>
-                            <?php elseif ($topic->status === 'active'): ?>
-                                $<?php echo number_format($topic->current_funding, 0); ?>/$<?php echo number_format($topic->funding_threshold, 0); ?>
                             <?php elseif ($topic->status === 'on_hold'): ?>
                                 ⏸️ On Hold
                             <?php else: ?>
-                                <?php echo ucfirst($topic->status); ?>
+                                Active
                             <?php endif; ?>
                         </div>
+                        
                         <div class="topic-content">
                             <h3 class="topic-title" onclick="showDescription(<?php echo $topic->id; ?>)"><?php echo htmlspecialchars($topic->title); ?></h3>
                             <div class="topic-funding">
                                 <div class="funding-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
-                                <div class="funding-label">You'll earn after upload</div>
+                                <?php if ($topic->status === 'funded'): ?>
+                                    <button class="get-paid-btn" onclick="openUploadModal(<?php echo $topic->id; ?>, '<?php echo addslashes($topic->title); ?>')">
+                                        Get Paid
+                                    </button>
+                                <?php else: ?>
+                                    <div style="font-size: 14px; opacity: 0.8;">
+                                        Click to get paid
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
+                        
+                        <!-- Progress bar for active topics only -->
+                        <?php if ($topic->status === 'active'): ?>
+                            <?php 
+                            $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
+                            $progress_percent = min($progress_percent, 100);
+                            ?>
+                            <div class="funding-progress-container">
+                                <div class="funding-progress-bar">
+                                    <div class="funding-progress-fill" style="width: <?php echo $progress_percent; ?>%"></div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -557,19 +544,6 @@ if (isset($_GET['error'])) {
                 </div>
             <?php endif; ?>
         </div>
-
-        <?php if (!empty($all_topics)): ?>
-        <div class="swipe-instructions">
-            Tap for description • Swipe to navigate
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- Action Section -->
-    <div class="action-section">
-        <button class="get-paid-button" id="getPaidButton" <?php echo empty($funded_topics) ? 'disabled' : ''; ?>>
-            <?php echo empty($funded_topics) ? 'No Funded Topics' : 'Get Paid 💰'; ?>
-        </button>
     </div>
 
     <!-- Upload Modal -->
@@ -624,6 +598,12 @@ if (isset($_GET['error'])) {
             }
         }
 
+        function openUploadModal(topicId, topicTitle) {
+            document.getElementById('modalTopicTitle').textContent = topicTitle;
+            document.getElementById('modalTopicId').value = topicId;
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+
         class TopicSwiper {
             constructor() {
                 this.container = document.getElementById('swipeContainer');
@@ -635,7 +615,6 @@ if (isset($_GET['error'])) {
                 this.currentCard = null;
                 
                 this.init();
-                this.updateCounter();
             }
             
             init() {
@@ -657,6 +636,11 @@ if (isset($_GET['error'])) {
             
             handleStart(e) {
                 if (this.currentIndex >= this.cards.length) return;
+                
+                // Don't start drag if clicking on button
+                if (e.target.classList.contains('get-paid-btn') || e.target.closest('.get-paid-btn')) {
+                    return;
+                }
                 
                 this.isDragging = true;
                 this.currentCard = this.cards[this.currentIndex];
@@ -726,8 +710,6 @@ if (isset($_GET['error'])) {
                 setTimeout(() => {
                     this.cards[this.currentIndex].style.display = 'none';
                     this.currentIndex++;
-                    this.updateCounter();
-                    this.updateButton();
                     
                     // Animate remaining cards
                     this.cards.slice(this.currentIndex).forEach((card, index) => {
@@ -735,30 +717,6 @@ if (isset($_GET['error'])) {
                         card.style.zIndex = this.cards.length - this.currentIndex - index;
                     });
                 }, 300);
-            }
-            
-            updateCounter() {
-                const counter = document.getElementById('topicCounter');
-                if (this.currentIndex < this.cards.length) {
-                    counter.textContent = `${this.currentIndex + 1} of ${this.cards.length}`;
-                } else {
-                    counter.style.display = 'none';
-                }
-            }
-            
-            updateButton() {
-                const button = document.getElementById('getPaidButton');
-                if (this.currentIndex >= this.cards.length) {
-                    button.textContent = 'No More Topics';
-                    button.disabled = true;
-                }
-            }
-            
-            getCurrentTopic() {
-                if (this.currentIndex < this.cards.length) {
-                    return this.cards[this.currentIndex];
-                }
-                return null;
             }
         }
         
@@ -768,27 +726,6 @@ if (isset($_GET['error'])) {
         // Side button handlers
         document.getElementById('swipeLeft').addEventListener('click', () => swiper.swipeLeft());
         document.getElementById('swipeRight').addEventListener('click', () => swiper.swipeRight());
-        
-        // Get Paid button handler - only works for funded topics
-        document.getElementById('getPaidButton').addEventListener('click', function() {
-            if (this.disabled) return;
-            
-            const currentTopic = swiper.getCurrentTopic();
-            if (currentTopic) {
-                // Check if current topic is funded
-                const statusElement = currentTopic.querySelector('.topic-status');
-                const isFunded = statusElement.textContent.includes('Funded') || statusElement.textContent.includes('hours left');
-                
-                if (isFunded) {
-                    const topicTitle = currentTopic.querySelector('.topic-title').textContent;
-                    document.getElementById('modalTopicTitle').textContent = topicTitle;
-                    document.getElementById('modalTopicId').value = currentTopic.dataset.topicId;
-                    document.getElementById('uploadModal').style.display = 'block';
-                } else {
-                    alert('This topic is not fully funded yet. You can only upload content for funded topics.');
-                }
-            }
-        });
         
         // Form submission
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
@@ -830,9 +767,9 @@ if (isset($_GET['error'])) {
                         closeModal();
                         
                         // Remove current card and move to next
-                        const currentTopic = swiper.getCurrentTopic();
-                        if (currentTopic) {
-                            currentTopic.classList.add('swiped-right');
+                        const currentCard = swiper.cards[swiper.currentIndex];
+                        if (currentCard) {
+                            currentCard.classList.add('swiped-right');
                             swiper.nextCard();
                         }
                         
@@ -846,9 +783,9 @@ if (isset($_GET['error'])) {
                         // Assume success if no clear error
                         alert('Content uploaded successfully!');
                         closeModal();
-                        const currentTopic = swiper.getCurrentTopic();
-                        if (currentTopic) {
-                            currentTopic.classList.add('swiped-right');
+                        const currentCard = swiper.cards[swiper.currentIndex];
+                        if (currentCard) {
+                            currentCard.classList.add('swiped-right');
                             swiper.nextCard();
                         }
                     }
