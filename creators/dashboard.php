@@ -28,40 +28,40 @@ if (!$creator) {
     exit;
 }
 
-// Get only fully funded topics for the swipe interface
+// Get all topics including funded ones for the swipe interface
 $db->query('
     SELECT t.*, 
            TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
            (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining
     FROM topics t 
     WHERE t.creator_id = :creator_id 
-    AND t.status = "funded"
+    AND t.status IN ("active", "funded")
     AND (t.content_url IS NULL OR t.content_url = "")
-    ORDER BY t.funded_at ASC
-');
-$db->bind(':creator_id', $creator->id);
-$funded_topics = $db->resultSet();
-
-// Get all other topics for display when clicking
-$db->query('
-    SELECT t.*, 
-           TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
-           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining
-    FROM topics t 
-    WHERE t.creator_id = :creator_id 
-    AND t.status IN ("active", "on_hold")
     ORDER BY 
         CASE 
-            WHEN t.status = "on_hold" THEN 1
+            WHEN t.status = "funded" THEN 1
             WHEN t.status = "active" THEN 2
         END,
-        t.created_at DESC
+        t.funded_at ASC, t.created_at DESC
 ');
 $db->bind(':creator_id', $creator->id);
-$other_topics = $db->resultSet();
+$all_topics = $db->resultSet();
 
-// Combine for display (funded topics first)
-$all_topics = array_merge($funded_topics, $other_topics);
+// Get topics on hold
+$db->query('
+    SELECT t.*, 
+           TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
+           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining
+    FROM topics t 
+    WHERE t.creator_id = :creator_id 
+    AND t.status = "on_hold"
+    ORDER BY t.created_at DESC
+');
+$db->bind(':creator_id', $creator->id);
+$on_hold_topics = $db->resultSet();
+
+// Combine all topics (funded/active first, then on hold)
+$all_topics = array_merge($all_topics, $on_hold_topics);
 
 // Handle any success/error messages
 $message = '';
@@ -188,6 +188,18 @@ if (isset($_GET['error'])) {
             backdrop-filter: blur(10px);
         }
         
+        .topic-status.funded {
+            background: rgba(40, 167, 69, 0.3);
+            color: #fff;
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        
         .topic-content {
             flex: 1;
             display: flex;
@@ -203,6 +215,16 @@ if (isset($_GET['error'])) {
             margin-bottom: 20px;
             line-height: 1.3;
             cursor: pointer;
+        }
+        
+        .funding-display {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
         }
         
         .topic-funding {
@@ -239,6 +261,18 @@ if (isset($_GET['error'])) {
         
         .get-paid-btn:active {
             transform: translateY(0);
+        }
+        
+        .get-paid-btn.funded {
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 4px 20px rgba(40, 167, 69, 0.4); }
+            100% { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         }
         
         /* Progress bar for active topics */
@@ -490,12 +524,12 @@ if (isset($_GET['error'])) {
             <?php if (!empty($all_topics)): ?>
                 <?php foreach ($all_topics as $index => $topic): ?>
                     <div class="topic-card" data-topic-id="<?php echo $topic->id; ?>" style="<?php echo $index > 0 ? 'transform: scale(' . (1 - $index * 0.05) . ') translateY(' . ($index * 10) . 'px); z-index: ' . (count($all_topics) - $index) . ';' : ''; ?>">
-                        <div class="topic-status">
+                        <div class="topic-status <?php echo $topic->status === 'funded' ? 'funded' : ''; ?>">
                             <?php if ($topic->status === 'funded'): ?>
                                 <?php 
                                 $hours_remaining = max(0, $topic->hours_remaining ?? 0);
                                 if ($hours_remaining > 0): ?>
-                                    ⏰ <?php echo $hours_remaining; ?> hours left
+                                    🔥 Funded - <?php echo $hours_remaining; ?>h left
                                 <?php else: ?>
                                     🔥 Funded
                                 <?php endif; ?>
@@ -508,11 +542,17 @@ if (isset($_GET['error'])) {
                         
                         <div class="topic-content">
                             <h3 class="topic-title" onclick="showDescription(<?php echo $topic->id; ?>)"><?php echo htmlspecialchars($topic->title); ?></h3>
+                            
+                            <!-- Funding Display above the funding box -->
+                            <div class="funding-display">
+                                $<?php echo number_format($topic->current_funding, 0); ?> / $<?php echo number_format($topic->funding_threshold, 0); ?>
+                            </div>
+                            
                             <div class="topic-funding">
                                 <div class="funding-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
                                 <?php if ($topic->status === 'funded'): ?>
-                                    <button class="get-paid-btn" onclick="openUploadModal(<?php echo $topic->id; ?>, '<?php echo addslashes($topic->title); ?>')">
-                                        Get Paid
+                                    <button class="get-paid-btn funded" onclick="openUploadModal(<?php echo $topic->id; ?>, '<?php echo addslashes($topic->title); ?>')">
+                                        Get Paid Now!
                                     </button>
                                 <?php else: ?>
                                     <div style="font-size: 14px; opacity: 0.8;">
