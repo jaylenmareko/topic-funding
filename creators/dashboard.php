@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Clean creator dashboard
+// creators/dashboard.php - Clean creator dashboard with fixed button positioning
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -45,14 +45,15 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         .error { background: #f8d7da; color: #721c24; padding: 15px 30px; text-align: center; }
         
         .container { padding: 40px 30px; max-width: 500px; margin: 0 auto; position: relative; }
-        .swipe-area { position: relative; height: 400px; }
+        .swipe-area { position: relative; height: 450px; }
         
         .card {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px; padding: 40px 30px 80px 30px; color: white;
-            display: flex; flex-direction: column; justify-content: flex-start;
-            cursor: grab; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 20px; padding: 30px; color: white;
+            display: flex; flex-direction: column;
+            cursor: grab; transition: all 0.3s ease; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         
         .card.empty {
@@ -60,14 +61,28 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             color: #6c757d; cursor: default;
         }
         
-        .card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
-        .card.empty:hover { transform: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .card:hover { 
+            transform: translateY(-5px) scale(1.02); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
+        }
+        .card.empty:hover { 
+            transform: none; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        }
         
         .status {
-            background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px;
-            font-size: 14px; font-weight: 500; align-self: flex-start; backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.2); 
+            padding: 8px 16px; 
+            border-radius: 20px;
+            font-size: 14px; 
+            font-weight: 500; 
+            align-self: flex-start; 
+            margin-bottom: 20px;
         }
-        .status.funded { background: rgba(40, 167, 69, 0.3); animation: pulse 2s infinite; }
+        .status.funded { 
+            background: rgba(40, 167, 69, 0.3); 
+            animation: pulse 2s infinite; 
+        }
         
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
@@ -75,7 +90,12 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
         }
         
-        .content { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 20px 0; }
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
         
         .click-hint {
             cursor: pointer;
@@ -84,45 +104,38 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             margin-bottom: 10px;
             transition: opacity 0.3s ease;
         }
-        .click-hint:hover {
-            opacity: 1;
-        }
+        .click-hint:hover { opacity: 1; }
         
         .topic-title {
-            font-size: 24px; font-weight: 600; margin-bottom: 20px; line-height: 1.3;
-            cursor: pointer; min-height: 60px; display: flex; align-items: center;
-            justify-content: center; text-align: center; transition: all 0.3s ease;
-        }
-        
-        .funding-box {
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .earning-display {
-            text-align: center;
-            padding: 15px;
-            border-radius: 15px;
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 25px; 
+            line-height: 1.3;
+            cursor: pointer; 
+            min-height: 60px; 
+            display: flex; 
+            align-items: center;
+            justify-content: center; 
+            text-align: center; 
             transition: all 0.3s ease;
         }
         
-        /* Unfunded topics - looks completely inactive */
-        .earning-display.inactive {
+        .earning-display {
             background: rgba(255,255,255,0.05);
             border: 2px dashed rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.5);
-            cursor: not-allowed;
-            filter: grayscale(100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
         }
         
-        /* Funded topics - vibrant and clickable */
         .earning-display.funded {
             background: rgba(40, 167, 69, 0.9);
             border: 2px solid rgba(40, 167, 69, 1);
             color: white;
             cursor: pointer;
             animation: glow 2s infinite;
-            filter: none;
         }
         
         .earning-display.funded:hover {
@@ -148,78 +161,92 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             font-weight: 500;
         }
         
-        /* Topic Action Buttons */
         .topic-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 15px;
+            margin-bottom: 25px;
         }
+        
         .action-btn {
-            padding: 6px 12px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 15px;
-            font-size: 12px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        .decline-btn {
-            background: rgba(220, 53, 69, 0.8);
+            background: rgba(220, 53, 69, 0.9);
             color: white;
         }
-        .decline-btn:hover {
+        .action-btn:hover {
             background: rgba(220, 53, 69, 1);
             transform: translateY(-1px);
         }
-        .hold-btn {
-            background: rgba(255, 193, 7, 0.8);
+        .action-btn.hold {
+            background: rgba(255, 193, 7, 0.9);
             color: #000;
         }
-        .hold-btn:hover {
+        .action-btn.hold:hover {
             background: rgba(255, 193, 7, 1);
-            transform: translateY(-1px);
         }
-        .resume-btn {
-            background: rgba(40, 167, 69, 0.8);
+        .action-btn.resume {
+            background: rgba(40, 167, 69, 0.9);
             color: white;
         }
-        .resume-btn:hover {
+        .action-btn.resume:hover {
             background: rgba(40, 167, 69, 1);
-            transform: translateY(-1px);
         }
         
-        .progress-area {
-            position: absolute; bottom: 20px; left: 30px; right: 30px;
+        .funding-progress {
+            margin-top: auto;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
         }
         
         .funding-display {
-            color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 600;
-            margin-bottom: 5px; text-align: center;
+            color: rgba(255,255,255,0.9); 
+            font-size: 14px; 
+            font-weight: 600;
+            margin-bottom: 8px; 
+            text-align: center;
         }
         
         .progress-bar {
-            height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden;
+            height: 6px; 
+            background: rgba(255,255,255,0.3); 
+            border-radius: 3px; 
+            overflow: hidden;
         }
         
         .progress-fill {
-            height: 100%; background: rgba(255,255,255,0.8); border-radius: 3px;
+            height: 100%; 
+            background: rgba(255,255,255,0.8); 
+            border-radius: 3px;
             transition: width 0.5s ease;
         }
         
         .nav-btn {
-            position: absolute; top: 50%; transform: translateY(-50%);
-            width: 40px; height: 60px; background: rgba(0,0,0,0.1);
-            border: none; border-radius: 10px; color: rgba(255,255,255,0.7);
-            font-size: 20px; cursor: pointer; backdrop-filter: blur(10px);
+            position: absolute; 
+            top: 50%; 
+            transform: translateY(-50%);
+            width: 40px; 
+            height: 60px; 
+            background: rgba(0,0,0,0.1);
+            border: none; 
+            border-radius: 10px; 
+            color: rgba(255,255,255,0.7);
+            font-size: 20px; 
+            cursor: pointer;
         }
-        .nav-btn:hover { background: rgba(0,0,0,0.2); color: white; }
+        .nav-btn:hover { 
+            background: rgba(0,0,0,0.2); 
+            color: white; 
+        }
         .nav-btn.left { left: -60px; }
         .nav-btn.right { right: -60px; }
         
-        /* Mobile hamburger menu */
         .mobile-menu-btn {
             position: fixed;
             top: 20px;
@@ -232,7 +259,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             font-size: 18px;
             cursor: pointer;
             z-index: 1001;
-            backdrop-filter: blur(10px);
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             display: none;
         }
@@ -250,9 +276,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             box-shadow: -5px 0 15px rgba(0,0,0,0.3);
         }
         
-        .mobile-menu.open {
-            right: 0;
-        }
+        .mobile-menu.open { right: 0; }
         
         .mobile-menu-item {
             display: block;
@@ -264,7 +288,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             border-radius: 10px;
             font-weight: bold;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
         }
         
         .mobile-menu-item:hover {
@@ -292,30 +315,19 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             visibility: visible;
         }
         
-        /* Mobile styles */
         @media (max-width: 768px) {
             .header { padding: 30px 20px; }
             .title { font-size: 28px; }
             .container { padding: 30px 20px; }
-            .swipe-area { height: 350px; }
-            .card { padding: 30px 25px 100px 25px; }
-            .topic-title { font-size: 20px; }
+            .swipe-area { height: 420px; }
+            .card { padding: 25px; }
+            .topic-title { font-size: 20px; min-height: 45px; }
             .nav-btn { width: 45px; height: 70px; }
             .nav-btn.left { left: 10px; }
             .nav-btn.right { right: 10px; }
-            
-            /* Show mobile menu button */
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            /* Adjust progress area positioning */
-            .progress-area {
-                bottom: 40px;
-            }
+            .mobile-menu-btn { display: block; }
         }
         
-        /* Hide main nav mobile toggle for creators */
         .topiclaunch-nav .nav-mobile-toggle { display: none !important; }
     </style>
 </head>
@@ -351,48 +363,46 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                             <div class="status">⏸️ On Hold</div>
                         <?php endif; ?>
                         
-                        <div class="content">
-                            <div>
-                                <div class="click-hint" onclick="toggle(<?php echo $topic->id; ?>)">Tap for details</div>
-                                <h3 class="topic-title" onclick="toggle(<?php echo $topic->id; ?>)" id="title-<?php echo $topic->id; ?>">
-                                    <?php echo htmlspecialchars($topic->title); ?>
-                                </h3>
+                        <div class="card-content">
+                            <!-- Title Section -->
+                            <div class="click-hint" onclick="toggle(<?php echo $topic->id; ?>)">Tap for details</div>
+                            <h3 class="topic-title" onclick="toggle(<?php echo $topic->id; ?>)" id="title-<?php echo $topic->id; ?>">
+                                <?php echo htmlspecialchars($topic->title); ?>
+                            </h3>
+                            
+                            <!-- Earnings Display -->
+                            <div class="earning-display <?php echo $topic->status === 'funded' ? 'funded' : ''; ?>" 
+                                 <?php if ($topic->status === 'funded'): ?>onclick="window.location.href='../creators/upload_content.php?topic=<?php echo $topic->id; ?>'"<?php endif; ?>>
+                                <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
+                                <div class="earning-text"><?php echo $topic->status === 'funded' ? 'Upload & Get Paid' : 'Potential Earnings'; ?></div>
                             </div>
                             
-                            <div class="funding-box">
-                                <div class="earning-display <?php echo $topic->status === 'funded' ? 'funded' : 'inactive'; ?>" 
-                                     <?php if ($topic->status === 'funded'): ?>onclick="window.location.href='../creators/upload_content.php?topic=<?php echo $topic->id; ?>'"<?php endif; ?>>
-                                    <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
-                                    <div class="earning-text"><?php echo $topic->status === 'funded' ? 'Upload & Get Paid' : 'Potential Earnings'; ?></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Topic Action Buttons -->
+                            <!-- Action Buttons (Between Earnings and Progress Bar) -->
                             <div class="topic-actions">
                                 <?php if ($topic->status === 'active'): ?>
-                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn decline-btn">
+                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
                                         ❌ Decline
                                     </button>
                                 <?php elseif ($topic->status === 'funded'): ?>
-                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn decline-btn">
+                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
                                         ❌ Decline
                                     </button>
-                                    <button onclick="holdTopic(<?php echo $topic->id; ?>)" class="action-btn hold-btn">
+                                    <button onclick="holdTopic(<?php echo $topic->id; ?>)" class="action-btn hold">
                                         ⏸️ Hold
                                     </button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
-                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn decline-btn">
+                                    <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
                                         ❌ Decline
                                     </button>
-                                    <button onclick="resumeTopic(<?php echo $topic->id; ?>)" class="action-btn resume-btn">
+                                    <button onclick="resumeTopic(<?php echo $topic->id; ?>)" class="action-btn resume">
                                         ▶️ Resume
                                     </button>
                                 <?php endif; ?>
                             </div>
-                        </div>
-                        
-                        <?php if ($topic->status === 'active'): ?>
-                            <div class="progress-area">
+                            
+                            <!-- Progress Bar (Only for active topics) -->
+                            <?php if ($topic->status === 'active'): ?>
+                            <div class="funding-progress">
                                 <div class="funding-display">
                                     $<?php echo number_format($topic->current_funding, 0); ?> / $<?php echo number_format($topic->funding_threshold, 0); ?>
                                 </div>
@@ -400,12 +410,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                     <div class="progress-fill" style="width: <?php echo min(100, ($topic->current_funding / $topic->funding_threshold) * 100); ?>%"></div>
                                 </div>
                             </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="card empty">
-                    <div class="content">
+                    <div class="card-content">
                         <h3 class="topic-title">No Active Topics</h3>
                         <div style="font-size: 16px; opacity: 0.7; margin-top: 20px;">
                             Fans haven't created any topics for you yet. Share your profile to get started!
@@ -416,7 +427,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         </div>
     </div>
     
-    <!-- Mobile Menu Button (only shows on mobile) -->
+    <!-- Mobile Menu Button -->
     <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
     
     <!-- Mobile Menu Overlay -->
@@ -426,6 +437,9 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
     <div class="mobile-menu" id="mobileMenu">
         <a href="edit.php?id=<?php echo $creator->id; ?>" class="mobile-menu-item">
             ✏️ Edit Profile
+        </a>
+        <a href="../auth/logout.php" class="mobile-menu-item">
+            🚪 Logout
         </a>
     </div>
 
@@ -467,13 +481,8 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        function swipeLeft() { 
-            swipe('left'); 
-        }
-        
-        function swipeRight() { 
-            swipe('right'); 
-        }
+        function swipeLeft() { swipe('left'); }
+        function swipeRight() { swipe('right'); }
 
         function swipe(direction) {
             if (currentIndex >= cards.length) return;
@@ -485,6 +494,9 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 currentIndex++;
                 updateStack();
                 updateNavButtons();
+        
+        // Initial height calculation
+        setTimeout(updateSwipeAreaHeight, 100);
             }, 300);
         }
 
@@ -496,7 +508,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        // Topic action functions
         function declineTopic(topicId) {
             if (confirm('Are you sure you want to decline this topic? All contributors will be fully refunded.')) {
                 submitTopicAction(topicId, 'decline');
@@ -545,7 +556,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             form.submit();
         }
 
-        // Mobile menu functions
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
             const overlay = document.querySelector('.mobile-overlay');
@@ -560,15 +570,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             overlay.classList.remove('open');
         }
 
-        // Initialize nav buttons
         updateNavButtons();
 
-        // Swipe gestures - Updated to prevent swipe on interactive elements
+        // Prevent swipe when clicking buttons
         cards.forEach(card => {
             let startX = 0, currentX = 0, isDragging = false;
             
             card.addEventListener('touchstart', e => {
-                // Prevent swipe if touching interactive elements
                 if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint')) return;
                 startX = e.touches[0].clientX;
                 isDragging = true;
@@ -593,6 +601,12 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                     card.style.opacity = '1';
                 }
             });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.action-btn')) {
+                e.stopPropagation();
+            }
         });
     </script>
 </body>
