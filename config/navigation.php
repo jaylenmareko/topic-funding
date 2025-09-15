@@ -1,6 +1,6 @@
 <?php
 // config/navigation.php - Updated navigation with clickable logo for fans
-function renderNavigation($current_page = '') {
+function renderNavigation($current_page = '', $is_profile_page = false) {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
     $user_id = $_SESSION['user_id'] ?? 0;
@@ -199,8 +199,9 @@ function renderNavigation($current_page = '') {
                     </div>
                     
                 <?php else: ?>
-                    <!-- Navigation for Guests - Remove buttons on topic view pages -->
-                    <?php if (strpos($_SERVER['REQUEST_URI'], '/topics/view.php') === false): ?>
+                    <!-- Navigation for Guests -->
+                    <?php if (!$is_profile_page): ?>
+                        <!-- Only show these buttons when NOT on a profile page -->
                         <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
                             📺 Join as Creator
                         </a>
