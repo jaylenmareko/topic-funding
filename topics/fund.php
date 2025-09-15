@@ -1,17 +1,13 @@
 <?php
-// topics/fund.php - Updated to use webhooks instead of redirects
+// topics/fund.php - Updated to allow guests to fund and redirect to signup
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
-    exit;
-}
-
+// Allow both logged-in and guest users
+$is_logged_in = isset($_SESSION['user_id']);
 $helper = new DatabaseHelper();
 $topic_id = isset($_GET['id']) ? InputSanitizer::sanitizeInt($_GET['id']) : 0;
 
@@ -36,8 +32,10 @@ $errors = [];
 $success = '';
 
 if ($_POST) {
-    // CSRF Protection
-    CSRFProtection::requireValidToken();
+    // CSRF Protection - only for logged-in users
+    if ($is_logged_in) {
+        CSRFProtection::requireValidToken();
+    }
     
     $amount = InputSanitizer::sanitizeFloat($_POST['amount']);
     
@@ -50,21 +48,44 @@ if ($_POST) {
         $errors[] = "Please enter a valid amount";
     }
     
-    // Check if user has already contributed to this topic (optional limit)
-    $db = new Database();
-    $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
-    $db->bind(':topic_id', $topic_id);
-    $db->bind(':user_id', $_SESSION['user_id']);
-    $existing_contributions = $db->single()->count;
-    
-    if ($existing_contributions >= 3) {
-        $errors[] = "You can only contribute up to 3 times per topic.";
+    // For logged-in users, check contribution limits
+    if ($is_logged_in) {
+        $db = new Database();
+        $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
+        $db->bind(':topic_id', $topic_id);
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $existing_contributions = $db->single()->count;
+        
+        if ($existing_contributions >= 3) {
+            $errors[] = "You can only contribute up to 3 times per topic.";
+        }
     }
     
     // Process payment if no errors
     if (empty($errors)) {
         try {
-            // Create Stripe Checkout Session with webhook URLs
+            // Create metadata for both logged-in and guest users
+            $metadata = [
+                'type' => 'topic_funding',
+                'topic_id' => $topic_id,
+                'amount' => $amount,
+                'is_guest' => $is_logged_in ? 'false' : 'true'
+            ];
+            
+            // Add user ID if logged in
+            if ($is_logged_in) {
+                $metadata['user_id'] = $_SESSION['user_id'];
+            }
+            
+            // Create success URL based on user status
+            if ($is_logged_in) {
+                $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
+            } else {
+                // For guests, redirect to signup after payment
+                $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_funded=1&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id;
+            }
+            
+            // Create Stripe Checkout Session
             $session = \Stripe\Checkout\Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
@@ -79,16 +100,10 @@ if ($_POST) {
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                // Use simple success/cancel URLs that don't trigger Mod_Security
-                'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id,
+                'success_url' => $success_url,
                 'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_funding&topic_id=' . $topic_id,
-                'metadata' => [
-                    'type' => 'topic_funding',
-                    'topic_id' => $topic_id,
-                    'user_id' => $_SESSION['user_id'],
-                    'amount' => $amount,
-                ],
-                'customer_email' => $_SESSION['email'] ?? null,
+                'metadata' => $metadata,
+                'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
             ]);
             
             // Redirect to Stripe Checkout
@@ -97,10 +112,10 @@ if ($_POST) {
             
         } catch (\Stripe\Exception\ApiErrorException $e) {
             $errors[] = "Payment processing error. Please try again.";
-            error_log("Stripe error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            error_log("Stripe error: " . $e->getMessage());
         } catch (Exception $e) {
             $errors[] = "An error occurred. Please try again.";
-            error_log("Funding error for user " . $_SESSION['user_id'] . ": " . $e->getMessage());
+            error_log("Funding error: " . $e->getMessage());
         }
     }
 }
@@ -153,6 +168,7 @@ sort($suggested_amounts);
         .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; }
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
         .payment-note { background: #e3f2fd; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .guest-notice { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
         .recent-contributors { margin-top: 30px; }
         .contributor-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
         .contributor-item:last-child { border-bottom: none; }
@@ -165,7 +181,6 @@ sort($suggested_amounts);
         .stripe-powered { text-align: center; margin-top: 15px; color: #666; font-size: 12px; }
         .secure-badge { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 15px; color: #28a745; }
         .security-features { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
-        .rate-limit-warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
         
         @media (max-width: 768px) {
             .container { padding: 10px; }
@@ -191,6 +206,12 @@ sort($suggested_amounts);
                 <div class="success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
+            <?php if (!$is_logged_in): ?>
+                <div class="guest-notice">
+                    <strong>💡 Almost there!</strong> After your payment, you'll be asked to create a free account to track your contribution and get notified when the content is ready.
+                </div>
+            <?php endif; ?>
+
             <?php if ($topic->status === 'active'): ?>
 
                 <div class="secure-badge">
@@ -199,7 +220,9 @@ sort($suggested_amounts);
                 </div>
 
                 <form method="POST" id="fundingForm">
-                    <?php echo CSRFProtection::getTokenField(); ?>
+                    <?php if ($is_logged_in): ?>
+                        <?php echo CSRFProtection::getTokenField(); ?>
+                    <?php endif; ?>
                     
                     <div class="form-section">
                         <div class="custom-amount">
