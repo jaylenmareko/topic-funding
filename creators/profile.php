@@ -4,11 +4,8 @@ session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
-    exit;
-}
+// Check if user is logged in - allow guests to view profiles
+$is_logged_in = isset($_SESSION['user_id']);
 
 $helper = new DatabaseHelper();
 $creator_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -24,17 +21,27 @@ if (!$creator) {
     exit;
 }
 
-// Get creator's topics by status
-$db = new Database();
-
-// Check if current user is this creator
-$is_this_creator = false;
-if (isset($_SESSION['user_id'])) {
+// Only check for creator redirect if user is logged in
+if ($is_logged_in) {
+    // Check if current user is this creator - if so, redirect to dashboard
+    $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND id = :creator_id AND is_active = 1');
     $db->bind(':user_id', $_SESSION['user_id']);
     $db->bind(':creator_id', $creator_id);
     $is_this_creator = $db->single() ? true : false;
+
+    // Redirect creators to their own dashboard
+    if ($is_this_creator) {
+        header('Location: ../creators/dashboard.php');
+        exit;
+    }
+} else {
+    // For non-logged-in users, set is_this_creator to false
+    $is_this_creator = false;
 }
+
+// Get creator's topics by status
+$db = new Database();
 
 // Active topics
 $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
@@ -176,7 +183,7 @@ $completed_topics = $db->resultSet();
     </style>
 </head>
 <body>
-    <?php renderNavigation('browse_creators'); ?>
+    <?php renderNavigation('browse_creators', true); // Pass true to indicate this is a profile page ?>
 
     <div class="container">
         <!-- Create a Topic Button with Profile Picture aligned -->
@@ -274,22 +281,6 @@ $completed_topics = $db->resultSet();
                         
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                        
-                        <?php if ($is_this_creator): ?>
-                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                            <strong>💰 Earnings:</strong> $<?php echo number_format($topic->current_funding * 0.9, 2); ?> (after 10% platform fee)
-                        </div>
-                        
-                        <div class="topic-actions">
-                            <a href="../creators/upload_content.php?topic=<?php echo $topic->id; ?>" 
-                               class="btn btn-urgent">
-                                🎬 Upload Content Now
-                            </a>
-                            <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="btn" style="margin-left: 10px;">
-                                👁️ View Details
-                            </a>
-                        </div>
-                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
