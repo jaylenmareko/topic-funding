@@ -1,5 +1,5 @@
 <?php
-// topics/create.php - Guest-friendly topic creation
+// topics/create.php - Guest-friendly topic creation - NO FREE TOPICS, $1 MINIMUM
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -39,7 +39,7 @@ if ($_POST) {
     $funding_threshold = (float)$_POST['funding_threshold'];
     $initial_contribution = (float)$_POST['initial_contribution'];
     
-    // Validation
+    // Validation - NO FREE TOPICS ALLOWED
     if (empty($title) || strlen($title) < 10) {
         $errors[] = "Topic title required (10+ characters)";
     }
@@ -48,134 +48,67 @@ if ($_POST) {
         $errors[] = "Description required (30+ characters)";
     }
     
-    if ($funding_threshold < 0 || $funding_threshold > 1000) {
-        $errors[] = "Funding goal must be $0-$1000 (Set $0 for free topics!)";
+    // UPDATED: No free topics, minimum $1
+    if ($funding_threshold < 1 || $funding_threshold > 1000) {
+        $errors[] = "Funding goal must be $1-$1000";
     }
     
-    // Handle $0 topics (free topics)
-    if ($funding_threshold == 0) {
-        $initial_contribution = 0; // No payment needed for free topics
-    } else {
-        // Validation for paid topics
-        if ($initial_contribution < 5 || $initial_contribution > $funding_threshold) {
-            $errors[] = "Initial payment must be $5-" . $funding_threshold;
-        } elseif ($initial_contribution < ($funding_threshold * 0.1)) {
-            $errors[] = "Initial payment must be at least 10% of goal";
-        }
+    // UPDATED: Minimum $1 payment required
+    if ($initial_contribution < 1 || $initial_contribution > $funding_threshold) {
+        $errors[] = "Initial payment must be $1-" . $funding_threshold;
+    } elseif ($initial_contribution < ($funding_threshold * 0.1)) {
+        $errors[] = "Initial payment must be at least 10% of goal";
     }
     
     // Process topic creation if no errors
     if (empty($errors)) {
         try {
-            if ($funding_threshold == 0) {
-                // Create free topic directly - no payment needed
-                $db = new Database();
-                $db->beginTransaction();
-                
-                // For guests creating free topics, we need a temporary user_id
-                if (!$is_logged_in) {
-                    // Create a temporary user for this guest
-                    $temp_email = 'guest_' . time() . '@temp.topiclaunch.com';
-                    $temp_username = 'guest_' . time();
-                    
-                    $db->query('
-                        INSERT INTO users (username, email, password_hash, full_name, is_active) 
-                        VALUES (:username, :email, :password_hash, :full_name, 0)
-                    ');
-                    $db->bind(':username', $temp_username);
-                    $db->bind(':email', $temp_email);
-                    $db->bind(':password_hash', password_hash('temp', PASSWORD_DEFAULT));
-                    $db->bind(':full_name', 'Guest User');
-                    $db->execute();
-                    
-                    $guest_user_id = $db->lastInsertId();
-                } else {
-                    $guest_user_id = $_SESSION['user_id'];
-                }
-                
-                // Create the topic (status = funded, no approval needed for free topics)
-                $db->query('
-                    INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
-                    VALUES (:creator_id, :user_id, :title, :description, 0, "funded", 0, NOW())
-                ');
-                $db->bind(':creator_id', $creator_id);
-                $db->bind(':user_id', $guest_user_id);
-                $db->bind(':title', $title);
-                $db->bind(':description', $description);
-                $db->execute();
-                
-                $topic_id = $db->lastInsertId();
-                
-                // Set content deadline for free topic (48 hours)
-                $db->query('
-                    UPDATE topics 
-                    SET funded_at = NOW(), content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR)
-                    WHERE id = :topic_id
-                ');
-                $db->bind(':topic_id', $topic_id);
-                $db->execute();
-                
-                $db->endTransaction();
-                
-                // Store success message in session for display
-                $_SESSION['topic_created'] = [
-                    'title' => $title,
-                    'creator_name' => $creator->display_name,
-                    'is_free' => true
-                ];
-                
-                // Redirect to creator profile to see the waiting upload topic
-                header('Location: ../creators/profile.php?id=' . $creator_id . '&created=1');
-                exit;
-                
-            } else {
-                // Create paid topic with Stripe payment
-                $metadata = [
-                    'type' => 'topic_creation',
-                    'creator_id' => $creator_id,
-                    'title' => $title,
-                    'description' => $description,
-                    'funding_threshold' => $funding_threshold,
-                    'initial_contribution' => $initial_contribution,
-                    'is_guest' => $is_logged_in ? 'false' : 'true'
-                ];
-                
-                // Add user ID if logged in
-                if ($is_logged_in) {
-                    $metadata['user_id'] = $_SESSION['user_id'];
-                }
-                
-                // Create different success URLs for guests vs logged-in users
-                if ($is_logged_in) {
-                    $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation';
-                } else {
-                    // For guests, redirect to signup after payment with topic creation data
-                    $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_created=1&session_id={CHECKOUT_SESSION_ID}&creator_id=' . $creator_id;
-                }
-                
-                $session = \Stripe\Checkout\Session::create([
-                    'payment_method_types' => ['card'],
-                    'line_items' => [[
-                        'price_data' => [
-                            'currency' => STRIPE_CURRENCY,
-                            'product_data' => [
-                                'name' => 'Create Topic: ' . $title,
-                                'description' => 'Fund this topic idea for ' . $creator->display_name,
-                            ],
-                            'unit_amount' => $initial_contribution * 100,
-                        ],
-                        'quantity' => 1,
-                    ]],
-                    'mode' => 'payment',
-                    'success_url' => $success_url,
-                    'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
-                    'metadata' => $metadata,
-                    'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
-                ]);
-                
-                header('Location: ' . $session->url);
-                exit;
+            // All topics now require payment - create Stripe session
+            $metadata = [
+                'type' => 'topic_creation',
+                'creator_id' => $creator_id,
+                'title' => $title,
+                'description' => $description,
+                'funding_threshold' => $funding_threshold,
+                'initial_contribution' => $initial_contribution,
+                'is_guest' => $is_logged_in ? 'false' : 'true'
+            ];
+            
+            // Add user ID if logged in
+            if ($is_logged_in) {
+                $metadata['user_id'] = $_SESSION['user_id'];
             }
+            
+            // Create different success URLs for guests vs logged-in users
+            if ($is_logged_in) {
+                $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation';
+            } else {
+                // For guests, redirect to signup after payment with topic creation data
+                $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_created=1&session_id={CHECKOUT_SESSION_ID}&creator_id=' . $creator_id;
+            }
+            
+            $session = \Stripe\Checkout\Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => STRIPE_CURRENCY,
+                        'product_data' => [
+                            'name' => 'Create Topic: ' . $title,
+                            'description' => 'Fund this topic idea for ' . $creator->display_name,
+                        ],
+                        'unit_amount' => $initial_contribution * 100,
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => $success_url,
+                'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
+                'metadata' => $metadata,
+                'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
+            ]);
+            
+            header('Location: ' . $session->url);
+            exit;
             
         } catch (Exception $e) {
             $errors[] = "Topic creation error. Please try again.";
@@ -312,22 +245,22 @@ if ($_POST) {
                 <div class="form-group">
                     <label>Funding Goal ($):</label>
                     <input type="number" name="funding_threshold" id="funding_threshold" 
-                           value="0" min="0" max="1000" step="1" required>
-                    <small>💡 Set to $0 for free topics! Or set a higher amount for premium content requests.</small>
+                           value="10" min="1" max="1000" step="1" required>
+                    <small>Minimum $1 required. Higher amounts for premium content requests.</small>
                 </div>
 
-                <div class="form-group" id="paymentSection">
+                <div class="form-group">
                     <label>Your Payment ($):</label>
                     <input type="number" name="initial_contribution" id="initial_contribution" 
-                           min="0" step="1" placeholder="0 for free topic">
-                    <small>Minimum $5 for paid topics, or $0 for free</small>
+                           min="1" step="1" placeholder="Minimum $1" required>
+                    <small>Minimum $1 required</small>
                 </div>
 
-                <div class="funding-preview" id="fundingPreview" style="display: none;">
+                <div class="funding-preview" id="fundingPreview">
                     <h4>💰 Funding Summary</h4>
                     <div class="funding-stats">
                         <div class="stat">
-                            <div class="stat-number" id="goalAmount">$0</div>
+                            <div class="stat-number" id="goalAmount">$10</div>
                             <div class="stat-label">Goal</div>
                         </div>
                         <div class="stat">
@@ -335,7 +268,7 @@ if ($_POST) {
                             <div class="stat-label">Your Payment</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-number" id="remaining">$0</div>
+                            <div class="stat-number" id="remaining">$10</div>
                             <div class="stat-label">Community Funds</div>
                         </div>
                         <div class="stat">
@@ -346,7 +279,7 @@ if ($_POST) {
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    🆓 Create Free Topic
+                    💳 Create Topic & Pay
                 </button>
             </form>
         </div>
@@ -359,13 +292,18 @@ if ($_POST) {
     </div>
 
     <script>
-    // Only update preview when funding threshold changes
+    // Update preview when funding threshold changes
     document.getElementById('funding_threshold').addEventListener('input', function() {
         const goal = parseInt(this.value) || 0;
         
-        // Only auto-set payment to 0 for free topics
-        if (goal == 0) {
-            document.getElementById('initial_contribution').value = '0';
+        // Auto-set minimum payment when goal changes
+        const paymentField = document.getElementById('initial_contribution');
+        const currentPayment = parseInt(paymentField.value) || 0;
+        
+        // If current payment is less than minimum (10% of goal or $1), auto-adjust
+        const minPayment = Math.max(1, Math.ceil(goal * 0.1));
+        if (currentPayment < minPayment) {
+            paymentField.value = minPayment;
         }
         
         updatePreview();
@@ -376,48 +314,36 @@ if ($_POST) {
         updatePreview();
     });
 
-    // Simple preview update function
+    // Preview update function
     function updatePreview() {
         const goal = parseInt(document.getElementById('funding_threshold').value) || 0;
         const payment = parseInt(document.getElementById('initial_contribution').value) || 0;
         const remaining = Math.max(0, goal - payment);
         const percentage = goal > 0 ? Math.round((payment / goal) * 100) : 0;
 
-        // Update display only
-        document.getElementById('goalAmount').textContent = ' + goal;
-        document.getElementById('yourPayment').textContent = ' + payment;
-        document.getElementById('remaining').textContent = ' + remaining;
+        // Update display
+        document.getElementById('goalAmount').textContent = '$' + goal;
+        document.getElementById('yourPayment').textContent = '$' + payment;
+        document.getElementById('remaining').textContent = '$' + remaining;
         document.getElementById('percentage').textContent = percentage + '%';
-
-        // Show/hide preview
-        if (goal > 0 && payment > 0) {
-            document.getElementById('fundingPreview').style.display = 'block';
-        } else {
-            document.getElementById('fundingPreview').style.display = 'none';
-        }
 
         // Update button
         const submitBtn = document.getElementById('submitBtn');
-        if (goal == 0) {
-            submitBtn.textContent = '🆓 Create Free Topic';
+        
+        <?php if ($is_logged_in): ?>
+        submitBtn.textContent = '💳 Create Topic & Pay $' + payment;
+        <?php else: ?>
+        submitBtn.textContent = '💳 Pay $' + payment + ' & Create Account';
+        <?php endif; ?>
+        
+        const minPayment = Math.max(1, goal * 0.1);
+        
+        if (payment >= minPayment && payment <= goal && goal >= 1) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
         } else {
-            <?php if ($is_logged_in): ?>
-            submitBtn.textContent = '💳 Create Topic & Pay';
-            <?php else: ?>
-            submitBtn.textContent = '💳 Pay & Create Account';
-            <?php endif; ?>
-            
-            const minPayment = Math.max(5, goal * 0.1);
-            
-            if (payment >= minPayment && payment <= goal) {
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.style.opacity = '0.6';
-            }
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
         }
     }
 
@@ -426,30 +352,34 @@ if ($_POST) {
         const goal = parseInt(document.getElementById('funding_threshold').value);
         const payment = parseInt(document.getElementById('initial_contribution').value);
 
-        if (goal == 0) {
-            if (!confirm(`Create FREE topic for @<?php echo addslashes($creator->display_name); ?>?\n\nNo payment needed - topic will go live immediately!`)) {
-                e.preventDefault();
-                return;
-            }
-            document.getElementById('submitBtn').innerHTML = '⏳ Creating Free Topic...';
-        } else {
-            <?php if ($is_logged_in): ?>
-            const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with ${payment} payment?\n\nTopic will go live immediately!`;
-            <?php else: ?>
-            const confirmText = `Pay ${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
-            <?php endif; ?>
-            
-            if (!confirm(confirmText)) {
-                e.preventDefault();
-                return;
-            }
-            document.getElementById('submitBtn').innerHTML = '⏳ Processing Payment...';
+        if (goal < 1) {
+            e.preventDefault();
+            alert('Minimum funding goal is $1');
+            return;
         }
 
+        if (payment < 1) {
+            e.preventDefault();
+            alert('Minimum payment is $1');
+            return;
+        }
+
+        <?php if ($is_logged_in): ?>
+        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately!`;
+        <?php else: ?>
+        const confirmText = `Pay $${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
+        <?php endif; ?>
+        
+        if (!confirm(confirmText)) {
+            e.preventDefault();
+            return;
+        }
+        document.getElementById('submitBtn').innerHTML = '⏳ Processing Payment...';
         document.getElementById('submitBtn').disabled = true;
     });
 
-    // Initial update
+    // Set initial values and update
+    document.getElementById('initial_contribution').value = '1';
     updatePreview();
     </script>
 </body>
