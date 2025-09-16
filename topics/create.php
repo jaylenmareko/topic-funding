@@ -166,11 +166,6 @@ if ($_POST) {
         .btn:hover { background: #218838; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
-        .funding-preview { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .funding-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .stat { text-align: center; padding: 15px; background: white; border-radius: 6px; }
-        .stat-number { font-size: 18px; font-weight: bold; color: #28a745; }
-        .stat-label { font-size: 12px; color: #666; }
         small { color: #666; font-size: 14px; }
         .guest-notice { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         
@@ -232,14 +227,12 @@ if ($_POST) {
                     <input type="text" name="title" required minlength="10" maxlength="100" 
                            placeholder="What should they make a video about?"
                            value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-                    <small>Be specific! Example: "How to edit videos for beginners"</small>
                 </div>
 
                 <div class="form-group">
                     <label>Description:</label>
                     <textarea name="description" required minlength="30" 
                               placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-                    <small>The more details, the better content you'll get!</small>
                 </div>
 
                 <div class="form-group">
@@ -256,30 +249,8 @@ if ($_POST) {
                     <small>Minimum $1 required</small>
                 </div>
 
-                <div class="funding-preview" id="fundingPreview">
-                    <h4>💰 Funding Summary</h4>
-                    <div class="funding-stats">
-                        <div class="stat">
-                            <div class="stat-number" id="goalAmount">$10</div>
-                            <div class="stat-label">Goal</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="yourPayment">$0</div>
-                            <div class="stat-label">Your Payment</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="remaining">$10</div>
-                            <div class="stat-label">Community Funds</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="percentage">0%</div>
-                            <div class="stat-label">Initially Funded</div>
-                        </div>
-                    </div>
-                </div>
-
                 <button type="submit" class="btn" id="submitBtn">
-                    💳 Create Topic & Pay
+                    Create Topic
                 </button>
             </form>
         </div>
@@ -306,35 +277,23 @@ if ($_POST) {
             paymentField.value = minPayment;
         }
         
-        updatePreview();
+        updateButtons();
     });
 
     // Track when user types in payment field
     document.getElementById('initial_contribution').addEventListener('input', function() {
-        updatePreview();
+        updateButtons();
     });
 
-    // Preview update function
-    function updatePreview() {
+    // Button update function
+    function updateButtons() {
         const goal = parseInt(document.getElementById('funding_threshold').value) || 0;
         const payment = parseInt(document.getElementById('initial_contribution').value) || 0;
-        const remaining = Math.max(0, goal - payment);
-        const percentage = goal > 0 ? Math.round((payment / goal) * 100) : 0;
 
-        // Update display
-        document.getElementById('goalAmount').textContent = '$' + goal;
-        document.getElementById('yourPayment').textContent = '$' + payment;
-        document.getElementById('remaining').textContent = '$' + remaining;
-        document.getElementById('percentage').textContent = percentage + '%';
-
-        // Update button
+        // Update submit button
         const submitBtn = document.getElementById('submitBtn');
         
-        <?php if ($is_logged_in): ?>
-        submitBtn.textContent = '💳 Create Topic & Pay $' + payment;
-        <?php else: ?>
-        submitBtn.textContent = '💳 Pay $' + payment + ' & Create Account';
-        <?php endif; ?>
+        submitBtn.textContent = 'Create Topic';
         
         const minPayment = Math.max(1, goal * 0.1);
         
@@ -380,7 +339,7 @@ if ($_POST) {
 
     // Set initial values and update
     document.getElementById('initial_contribution').value = '1';
-    updatePreview();
+    updateButtons();
     </script>
 </body>
 </html>
