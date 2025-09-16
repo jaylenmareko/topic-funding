@@ -607,18 +607,18 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                             <div class="topic-actions">
                                 <?php if ($topic->status === 'active'): ?>
                                     <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
-                                        ❌ Decline
+                                        Decline
                                     </button>
                                 <?php elseif ($topic->status === 'funded'): ?>
                                     <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
-                                        ❌ Decline
+                                        Decline
                                     </button>
                                     <button onclick="holdTopic(<?php echo $topic->id; ?>)" class="action-btn hold">
-                                        ⏸️ Hold
+                                        Hold
                                     </button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
                                     <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
-                                        ❌ Decline
+                                        Decline
                                     </button>
                                     <button onclick="resumeTopic(<?php echo $topic->id; ?>)" class="action-btn resume">
                                         ▶️ Resume
