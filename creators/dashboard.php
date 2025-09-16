@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Updated with countdown timer and inline upload form
+// creators/dashboard.php - Creator dashboard with fixed swiping system
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -206,7 +206,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             transition: all 0.3s ease;
         }
         
-        /* Countdown Timer Styles */
         .countdown-timer {
             font-family: 'Courier New', monospace;
             font-weight: bold;
@@ -254,7 +253,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             font-weight: 500;
         }
         
-        /* Upload Form Styles */
         .upload-form {
             display: none;
             background: rgba(255,255,255,0.1);
@@ -540,16 +538,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                         <?php endif; ?>
                         
                         <div class="card-content">
-                            <!-- Title Section -->
                             <div class="click-hint" onclick="toggle(<?php echo $topic->id; ?>)">Tap for details</div>
                             <h3 class="topic-title" onclick="toggle(<?php echo $topic->id; ?>)" id="title-<?php echo $topic->id; ?>">
                                 <?php echo htmlspecialchars($topic->title); ?>
                             </h3>
                             
-                            <!-- Upload Messages -->
                             <div id="upload-messages-<?php echo $topic->id; ?>"></div>
                             
-                            <!-- Earnings Display / Upload Form -->
                             <?php if ($topic->status === 'funded'): ?>
                                 <div class="earning-display funded" 
                                      onclick="showUploadForm(<?php echo $topic->id; ?>)"
@@ -558,7 +553,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                     <div class="earning-text">Upload & Get Paid</div>
                                 </div>
                                 
-                                <!-- Upload Form (Hidden by default) -->
                                 <form class="upload-form" id="upload-form-<?php echo $topic->id; ?>" method="POST">
                                     <input type="hidden" name="topic_id" value="<?php echo $topic->id; ?>">
                                     <input type="url" 
@@ -581,7 +575,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                 </div>
                             <?php endif; ?>
                             
-                            <!-- Action Buttons -->
                             <div class="topic-actions">
                                 <?php if ($topic->status === 'active'): ?>
                                     <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
@@ -604,7 +597,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                 <?php endif; ?>
                             </div>
                             
-                            <!-- Progress Bar (Only for active topics) -->
                             <?php if ($topic->status === 'active'): ?>
                             <div class="funding-progress">
                                 <div class="funding-display">
@@ -627,11 +619,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                         </div>
                         
                         <div style="margin-top: 30px;">
-                            <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" 
-                               style="background: rgba(255,255,255,0.2); color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block; margin-bottom: 15px;">
-                                📺 View My Profile
-                            </a>
-                            <br>
                             <button onclick="copyProfileLink()" 
                                     style="background: rgba(255,255,255,0.1); color: white; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer;" 
                                     id="copyLinkBtn">
@@ -644,13 +631,10 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         </div>
     </div>
     
-    <!-- Mobile Menu Button -->
     <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
     
-    <!-- Mobile Menu Overlay -->
     <div class="mobile-overlay" onclick="closeMobileMenu()"></div>
     
-    <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <a href="edit.php?id=<?php echo $creator->id; ?>" class="mobile-menu-item">
             ✏️ Edit Profile
@@ -661,78 +645,84 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
     </div>
 
     <script>
-        // Topics data and swiping system
         const topics = {<?php foreach ($topics as $t): ?>'<?php echo $t->id; ?>': {title: <?php echo json_encode($t->title); ?>, desc: <?php echo json_encode($t->description); ?>, showing: 'title'},<?php endforeach; ?>};
         let currentIndex = 0;
         const totalTopics = <?php echo count($topics); ?>;
         const cards = Array.from(document.querySelectorAll('.card'));
 
-        // Simple infinite swiping system
-        function showCard(index) {
-            cards.forEach((card, i) => {
-                if (i === index) {
-                    // Front card
-                    card.style.transform = 'scale(1) translateY(0px)';
-                    card.style.zIndex = '100';
-                    card.style.opacity = '1';
-                    card.style.pointerEvents = 'auto';
-                    card.style.display = 'block';
-                } else if (i === (index + 1) % totalTopics) {
-                    // Second card
-                    card.style.transform = 'scale(0.95) translateY(10px)';
-                    card.style.zIndex = '99';
-                    card.style.opacity = '0.8';
-                    card.style.pointerEvents = 'none';
-                    card.style.display = 'block';
-                } else if (i === (index + 2) % totalTopics && totalTopics > 2) {
-                    // Third card
-                    card.style.transform = 'scale(0.9) translateY(20px)';
-                    card.style.zIndex = '98';
-                    card.style.opacity = '0.6';
-                    card.style.pointerEvents = 'none';
-                    card.style.display = 'block';
-                } else {
-                    // Hidden cards
-                    card.style.display = 'none';
-                }
+        function initializeCards() {
+            cards.forEach((card, index) => {
+                updateCardPosition(card, index);
             });
+        }
+
+        function updateCardPosition(card, cardIndex) {
+            const relativeIndex = (cardIndex - currentIndex + totalTopics) % totalTopics;
+            
+            if (relativeIndex === 0) {
+                card.style.transform = 'scale(1) translateY(0px)';
+                card.style.zIndex = '100';
+                card.style.opacity = '1';
+                card.style.pointerEvents = 'auto';
+                card.style.display = 'block';
+            } else if (relativeIndex === 1) {
+                card.style.transform = 'scale(0.95) translateY(10px)';
+                card.style.zIndex = '99';
+                card.style.opacity = '0.8';
+                card.style.pointerEvents = 'none';
+                card.style.display = 'block';
+            } else if (relativeIndex === 2 && totalTopics > 2) {
+                card.style.transform = 'scale(0.9) translateY(20px)';
+                card.style.zIndex = '98';
+                card.style.opacity = '0.6';
+                card.style.pointerEvents = 'none';
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        function getCurrentCard() {
+            return cards[currentIndex];
         }
 
         function swipeLeft() {
             if (totalTopics <= 1) return;
             
-            const currentCard = cards[currentIndex];
-            
-            // Animate current card out
+            const currentCard = getCurrentCard();
+            currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
             currentCard.style.transform = 'translateX(-150%) rotate(-30deg)';
             currentCard.style.opacity = '0';
             
             setTimeout(() => {
                 currentIndex = (currentIndex + 1) % totalTopics;
-                showCard(currentIndex);
-                
-                // Reset the card that was swiped
+                currentCard.style.transition = '';
                 currentCard.style.transform = '';
                 currentCard.style.opacity = '1';
+                
+                cards.forEach((card, index) => {
+                    updateCardPosition(card, index);
+                });
             }, 300);
         }
 
         function swipeRight() {
             if (totalTopics <= 1) return;
             
-            const currentCard = cards[currentIndex];
-            
-            // Animate current card out
+            const currentCard = getCurrentCard();
+            currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
             currentCard.style.transform = 'translateX(150%) rotate(30deg)';
             currentCard.style.opacity = '0';
             
             setTimeout(() => {
                 currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
-                showCard(currentIndex);
-                
-                // Reset the card that was swiped
+                currentCard.style.transition = '';
                 currentCard.style.transform = '';
                 currentCard.style.opacity = '1';
+                
+                cards.forEach((card, index) => {
+                    updateCardPosition(card, index);
+                });
             }, 300);
         }
 
@@ -751,52 +741,72 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        function getCurrentCard() {
-            return cards[currentIndex];
-        }
+        // Touch system
+        let startX = 0, currentX = 0, isDragging = false;
+        const swipeArea = document.getElementById('swipeArea');
 
-        function swipeLeft() { 
-            if (totalTopics <= 1) return;
-            swipe('left'); 
-        }
-
-        function swipeRight() { 
-            if (totalTopics <= 1) return;
-            swipe('right'); 
-        }
-
-        function swipe(direction) {
-            if (totalTopics <= 1) return;
-            
-            const currentCard = getCurrentCard();
-            
-            // Animate current card out
-            currentCard.style.transform = direction === 'left' 
-                ? 'translateX(-150%) rotate(-30deg)' 
-                : 'translateX(150%) rotate(30deg)';
-            currentCard.style.opacity = '0';
-            
-            // Update current index with infinite loop
-            if (direction === 'left') {
-                currentIndex = (currentIndex + 1) % totalTopics;
-            } else {
-                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
-            }
-            
-            setTimeout(() => {
-                // Reset the swiped card and update all positions
-                currentCard.style.transform = '';
-                currentCard.style.opacity = '1';
+        if (swipeArea) {
+            swipeArea.addEventListener('touchstart', (e) => {
+                if (totalTopics <= 1) return;
                 
-                // Update all card positions based on new current index
-                cards.forEach((card, cardIndex) => {
-                    const relativeIndex = (cardIndex - currentIndex + totalTopics) % totalTopics;
-                    updateCardPosition(card, relativeIndex);
-                });
-            }, 300);
+                const touch = e.touches[0];
+                const currentCard = getCurrentCard();
+                const rect = currentCard.getBoundingClientRect();
+                
+                if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                    touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                    
+                    if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form')) {
+                        return;
+                    }
+                    
+                    startX = touch.clientX;
+                    isDragging = true;
+                    currentCard.style.transition = '';
+                    e.preventDefault();
+                }
+            }, {passive: false});
+            
+            swipeArea.addEventListener('touchmove', (e) => {
+                if (!isDragging || totalTopics <= 1) return;
+                
+                currentX = e.touches[0].clientX;
+                const deltaX = currentX - startX;
+                const currentCard = getCurrentCard();
+                
+                if (Math.abs(deltaX) > 5) {
+                    currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
+                    currentCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
+                }
+                
+                e.preventDefault();
+            }, {passive: false});
+            
+            swipeArea.addEventListener('touchend', () => {
+                if (!isDragging || totalTopics <= 1) return;
+                
+                isDragging = false;
+                const deltaX = currentX - startX;
+                const currentCard = getCurrentCard();
+                
+                if (Math.abs(deltaX) > 100) {
+                    if (deltaX > 0) {
+                        swipeRight();
+                    } else {
+                        swipeLeft();
+                    }
+                } else {
+                    currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                    currentCard.style.transform = 'scale(1) translateY(0px)';
+                    currentCard.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        currentCard.style.transition = '';
+                    }, 300);
+                }
+            });
         }
 
-        // Copy profile link function
         function copyProfileLink() {
             const profileUrl = window.location.origin + '/creators/profile.php?id=<?php echo $creator->id; ?>';
             
@@ -846,7 +856,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        // Display upload messages
         <?php if ($upload_message): ?>
         showUploadMessage(<?php echo $_POST['topic_id'] ?? 0; ?>, '<?php echo addslashes($upload_message); ?>', 'success');
         <?php endif; ?>
@@ -865,7 +874,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        // Countdown Timer Function
         function updateCountdowns() {
             const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
             
@@ -886,7 +894,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                     
                     element.textContent = formattedTime;
                     
-                    // Change colors based on time remaining
                     element.classList.remove('expired', 'warning', 'safe');
                     
                     if (hours <= 1) {
@@ -904,33 +911,19 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             });
         }
 
-        // Upload Form Functions
         function showUploadForm(topicId) {
-            document.getElementById(`earning-display-${topicId}`).style.display = 'none';
-            document.getElementById(`upload-form-${topicId}`).classList.add('active');
+            const currentCard = getCurrentCard();
+            const currentTopicId = currentCard.getAttribute('data-topic');
+            
+            if (currentTopicId == topicId) {
+                document.getElementById(`earning-display-${topicId}`).style.display = 'none';
+                document.getElementById(`upload-form-${topicId}`).classList.add('active');
+            }
         }
 
         function hideUploadForm(topicId) {
             document.getElementById(`earning-display-${topicId}`).style.display = 'block';
             document.getElementById(`upload-form-${topicId}`).classList.remove('active');
-        }
-
-        function updateNavButtons() {
-            const leftBtn = document.querySelector('.nav-btn.left');
-            const rightBtn = document.querySelector('.nav-btn.right');
-            
-            if (!leftBtn || !rightBtn) return;
-            
-            // Always show navigation buttons when there are multiple topics
-            if (totalTopics > 1) {
-                leftBtn.style.display = 'block';
-                rightBtn.style.display = 'block';
-                leftBtn.classList.remove('disabled');
-                rightBtn.classList.remove('disabled');
-            } else {
-                leftBtn.style.display = 'none';
-                rightBtn.style.display = 'none';
-            }
         }
 
         function toggle(id) {
@@ -949,52 +942,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 el.style.fontSize = '24px';
                 topic.showing = 'title';
             }
-        }
-
-        function swipeLeft() { 
-            if (totalTopics <= 1) return;
-            swipe('left'); 
-        }
-
-        function swipeRight() { 
-            if (totalTopics <= 1) return;
-            swipe('right'); 
-        }
-
-        function swipe(direction) {
-            if (totalTopics <= 1) return;
-            
-            const currentCard = getCurrentCard();
-            
-            // Animate current card out
-            currentCard.style.transform = direction === 'left' 
-                ? 'translateX(-150%) rotate(-30deg)' 
-                : 'translateX(150%) rotate(30deg)';
-            currentCard.style.opacity = '0';
-            
-            // Update current index with infinite loop
-            if (direction === 'left') {
-                currentIndex = (currentIndex + 1) % totalTopics;
-            } else {
-                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
-            }
-            
-            setTimeout(() => {
-                // Reset the swiped card and update all positions
-                currentCard.style.transform = '';
-                currentCard.style.opacity = '1';
-                
-                cards.forEach((card, index) => {
-                    updateCardPosition(card, index);
-                });
-            }, 300);
-        }
-
-        function updateStack() {
-            // This function is replaced by updateCardPosition in the new system
-            cards.forEach((card, index) => {
-                updateCardPosition(card, index);
-            });
         }
 
         function declineTopic(topicId) {
@@ -1059,84 +1006,12 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             overlay.classList.remove('open');
         }
 
-        // Initialize everything
-        showCard(currentIndex);
-        updateNavButtons();
-        updateCountdowns();
-        setInterval(updateCountdowns, 1000); // Update countdown every second
-
-        // Touch/drag system for infinite swiping
-        let startX = 0, currentX = 0, isDragging = false;
-        
-        // Add touch listeners to the swipe area
-        const swipeArea = document.getElementById('swipeArea');
-        
-        swipeArea.addEventListener('touchstart', (e) => {
-            // Only start drag if we have multiple topics
-            if (totalTopics <= 1) return;
-            
-            const touch = e.touches[0];
-            const currentCard = getCurrentCard();
-            const rect = currentCard.getBoundingClientRect();
-            
-            // Check if touch is on the current card
-            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-                
-                // Don't start drag if touching interactive elements
-                if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form')) {
-                    return;
-                }
-                
-                startX = touch.clientX;
-                isDragging = true;
-                e.preventDefault();
-            }
-        }, {passive: false});
-        
-        swipeArea.addEventListener('touchmove', (e) => {
-            if (!isDragging || totalTopics <= 1) return;
-            
-            currentX = e.touches[0].clientX;
-            const deltaX = currentX - startX;
-            const currentCard = getCurrentCard();
-            
-            // Apply transform to current card only
-            currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
-            currentCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
-            
-            e.preventDefault();
-        }, {passive: false});
-        
-        swipeArea.addEventListener('touchend', () => {
-            if (!isDragging || totalTopics <= 1) return;
-            
-            isDragging = false;
-            const deltaX = currentX - startX;
-            const currentCard = getCurrentCard();
-            
-            if (Math.abs(deltaX) > 100) {
-                // Trigger swipe
-                if (deltaX > 0) {
-                    swipeRight(); // Swipe right
-                } else {
-                    swipeLeft(); // Swipe left
-                }
-            } else {
-                // Reset position
-                currentCard.style.transform = 'scale(1) translateY(0px)';
-                currentCard.style.opacity = '1';
-            }
-        });
-
-        // Prevent event bubbling on interactive elements
         document.addEventListener('click', function(e) {
             if (e.target.closest('.action-btn, .upload-form, .earning-display.funded')) {
                 e.stopPropagation();
             }
         });
 
-        // Form submission handling
         document.querySelectorAll('form.upload-form').forEach(form => {
             form.addEventListener('submit', function(e) {
                 const submitBtn = this.querySelector('.upload-btn.submit');
@@ -1156,6 +1031,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 submitBtn.innerHTML = '⏳ Uploading...';
                 submitBtn.disabled = true;
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCards();
+            updateNavButtons();
+            updateCountdowns();
+            setInterval(updateCountdowns, 1000);
         });
     </script>
 </body>
