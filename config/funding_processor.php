@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - Updated to handle guest payments
+// config/funding_processor.php - Updated to handle ONLY paid topics (no free topics)
 require_once 'database.php';
 require_once 'notification_system.php';
 
@@ -65,7 +65,6 @@ class FundingProcessor {
             
             // Handle guest vs logged-in user
             if ($is_guest) {
-                // For guests, we need to create a temporary user or handle differently
                 $user_id = $this->handleGuestUser($payment_intent_id, $amount);
             } else {
                 $user_id = $metadata->user_id;
@@ -126,128 +125,6 @@ class FundingProcessor {
             $fully_funded = false;
             if ($topic_after && $topic_after->current_funding >= $topic_after->funding_threshold) {
                 error_log("Topic is now fully funded! Updating status and sending notifications...");
-                
-                // Update topic status to funded
-                $this->db->query('
-                    UPDATE topics 
-                    SET status = "funded", 
-                        funded_at = NOW(), 
-                        content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR) 
-                    WHERE id = :topic_id
-                ');
-                $this->db->bind(':topic_id', $topic_id);
-                $this->db->execute();
-                
-                $fully_funded = true;
-                
-                // Commit transaction BEFORE sending notifications
-                $this->db->endTransaction();
-                
-                // Send funding notifications AFTER transaction is committed
-                try {
-                    error_log("Sending funding notifications for topic: " . $topic_id);
-                    $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
-                    error_log("Notification result: " . json_encode($notification_result));
-                    
-                    if ($notification_result['success']) {
-                        error_log("Funding notifications sent successfully");
-                    } else {
-                        error_log("Notification sending failed: " . $notification_result['error']);
-                    }
-                } catch (Exception $e) {
-                    error_log("Notification error: " . $e->getMessage());
-                    // Don't fail the payment for notification errors
-                }
-            } else {
-                // Commit transaction if not fully funded
-                $this->db->endTransaction();
-                error_log("Topic not yet fully funded - need $" . ($topic_after->funding_threshold - $topic_after->current_funding) . " more");
-            }
-            
-            error_log("Topic funding processed successfully");
-            
-            return [
-                'success' => true, 
-                'contribution_id' => $contribution_id,
-                'topic_id' => $topic_id,
-                'fully_funded' => $fully_funded,
-                'new_total' => $topic_after->current_funding,
-                'threshold' => $topic_after->funding_threshold,
-                'is_guest' => $is_guest,
-                'user_id' => $user_id
-            ];
-            
-        } catch (Exception $e) {
-            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
-                $this->db->cancelTransaction();
-            }
-            error_log("Topic funding processing error: " . $e->getMessage());
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-    
-    private function processTopicCreation($metadata, $payment_intent_id) {
-        try {
-            $creator_id = $metadata->creator_id;
-            $title = $metadata->title;
-            $description = $metadata->description;
-            $funding_threshold = floatval($metadata->funding_threshold);
-            $initial_contribution = floatval($metadata->initial_contribution);
-            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
-            
-            // Handle guest vs logged-in user
-            if ($is_guest) {
-                $user_id = $this->handleGuestUser($payment_intent_id, $initial_contribution);
-            } else {
-                $user_id = $metadata->user_id;
-            }
-            
-            error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution, Guest: " . ($is_guest ? 'yes' : 'no'));
-            
-            // Check if already processed
-            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
-            $this->db->bind(':payment_id', $payment_intent_id);
-            if ($this->db->single()) {
-                error_log("Payment already processed: " . $payment_intent_id);
-                return ['success' => true, 'message' => 'Payment already processed'];
-            }
-            
-            $this->db->beginTransaction();
-            
-            // Create the topic (status = active, no approval needed)
-            $this->db->query('
-                INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
-                VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "active", :initial_funding, NOW())
-            ');
-            $this->db->bind(':creator_id', $creator_id);
-            $this->db->bind(':user_id', $user_id);
-            $this->db->bind(':title', $title);
-            $this->db->bind(':description', $description);
-            $this->db->bind(':funding_threshold', $funding_threshold);
-            $this->db->bind(':initial_funding', $initial_contribution);
-            $this->db->execute();
-            
-            $topic_id = $this->db->lastInsertId();
-            error_log("Created topic ID: " . $topic_id);
-            
-            // Create the initial contribution record
-            $this->db->query('
-                INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
-                VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
-            ');
-            $this->db->bind(':topic_id', $topic_id);
-            $this->db->bind(':user_id', $user_id);
-            $this->db->bind(':amount', $initial_contribution);
-            $this->db->bind(':payment_id', $payment_intent_id);
-            $this->db->execute();
-            
-            error_log("Created initial contribution");
-            
-            // Check if topic is immediately fully funded
-            $fully_funded = $initial_contribution >= $funding_threshold;
-            
-            if ($fully_funded) {
-                error_log("Topic is immediately fully funded! Updating status...");
                 
                 // Update topic status to funded
                 $this->db->query('
@@ -387,4 +264,131 @@ class FundingProcessor {
 // Initialize guest payment tables
 $processor = new FundingProcessor();
 $processor->createGuestPaymentTables();
-?>
+?> id = :topic_id
+                ');
+                $this->db->bind(':topic_id', $topic_id);
+                $this->db->execute();
+                
+                $fully_funded = true;
+                
+                // Commit transaction BEFORE sending notifications
+                $this->db->endTransaction();
+                
+                // Send funding notifications AFTER transaction is committed
+                try {
+                    error_log("Sending funding notifications for topic: " . $topic_id);
+                    $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
+                    error_log("Notification result: " . json_encode($notification_result));
+                    
+                    if ($notification_result['success']) {
+                        error_log("Funding notifications sent successfully");
+                    } else {
+                        error_log("Notification sending failed: " . $notification_result['error']);
+                    }
+                } catch (Exception $e) {
+                    error_log("Notification error: " . $e->getMessage());
+                    // Don't fail the payment for notification errors
+                }
+            } else {
+                // Commit transaction if not fully funded
+                $this->db->endTransaction();
+                error_log("Topic not yet fully funded - need $" . ($topic_after->funding_threshold - $topic_after->current_funding) . " more");
+            }
+            
+            error_log("Topic funding processed successfully");
+            
+            return [
+                'success' => true, 
+                'contribution_id' => $contribution_id,
+                'topic_id' => $topic_id,
+                'fully_funded' => $fully_funded,
+                'new_total' => $topic_after->current_funding,
+                'threshold' => $topic_after->funding_threshold,
+                'is_guest' => $is_guest,
+                'user_id' => $user_id
+            ];
+            
+        } catch (Exception $e) {
+            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
+                $this->db->cancelTransaction();
+            }
+            error_log("Topic funding processing error: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+    
+    private function processTopicCreation($metadata, $payment_intent_id) {
+        try {
+            $creator_id = $metadata->creator_id;
+            $title = $metadata->title;
+            $description = $metadata->description;
+            $funding_threshold = floatval($metadata->funding_threshold);
+            $initial_contribution = floatval($metadata->initial_contribution);
+            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
+            
+            // REMOVED: Free topic logic - all topics now require payment
+            if ($initial_contribution < 1) {
+                throw new Exception("Minimum payment of $1 required for topic creation");
+            }
+            
+            // Handle guest vs logged-in user
+            if ($is_guest) {
+                $user_id = $this->handleGuestUser($payment_intent_id, $initial_contribution);
+            } else {
+                $user_id = $metadata->user_id;
+            }
+            
+            error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution, Guest: " . ($is_guest ? 'yes' : 'no'));
+            
+            // Check if already processed
+            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+            $this->db->bind(':payment_id', $payment_intent_id);
+            if ($this->db->single()) {
+                error_log("Payment already processed: " . $payment_intent_id);
+                return ['success' => true, 'message' => 'Payment already processed'];
+            }
+            
+            $this->db->beginTransaction();
+            
+            // Create the topic (status = active, no approval needed)
+            $this->db->query('
+                INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
+                VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "active", :initial_funding, NOW())
+            ');
+            $this->db->bind(':creator_id', $creator_id);
+            $this->db->bind(':user_id', $user_id);
+            $this->db->bind(':title', $title);
+            $this->db->bind(':description', $description);
+            $this->db->bind(':funding_threshold', $funding_threshold);
+            $this->db->bind(':initial_funding', $initial_contribution);
+            $this->db->execute();
+            
+            $topic_id = $this->db->lastInsertId();
+            error_log("Created topic ID: " . $topic_id);
+            
+            // Create the initial contribution record
+            $this->db->query('
+                INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
+                VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
+            ');
+            $this->db->bind(':topic_id', $topic_id);
+            $this->db->bind(':user_id', $user_id);
+            $this->db->bind(':amount', $initial_contribution);
+            $this->db->bind(':payment_id', $payment_intent_id);
+            $this->db->execute();
+            
+            error_log("Created initial contribution");
+            
+            // Check if topic is immediately fully funded
+            $fully_funded = $initial_contribution >= $funding_threshold;
+            
+            if ($fully_funded) {
+                error_log("Topic is immediately fully funded! Updating status...");
+                
+                // Update topic status to funded
+                $this->db->query('
+                    UPDATE topics 
+                    SET status = "funded", 
+                        funded_at = NOW(), 
+                        content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR) 
+                    WHERE
