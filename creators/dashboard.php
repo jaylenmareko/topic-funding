@@ -1,8 +1,9 @@
 <?php
-// creators/dashboard.php - Clean creator dashboard with fixed button positioning
+// creators/dashboard.php - Updated with countdown timer and inline upload form
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
+require_once '../config/notification_system.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -21,8 +22,90 @@ if (!$creator) {
     exit;
 }
 
-// Get topics
-$db->query('SELECT t.*, TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded, (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining FROM topics t WHERE t.creator_id = :creator_id AND t.status IN ("active", "funded", "on_hold") AND (t.content_url IS NULL OR t.content_url = "") ORDER BY CASE WHEN t.status = "funded" THEN 1 WHEN t.status = "active" THEN 2 WHEN t.status = "on_hold" THEN 3 END, t.funded_at ASC, t.created_at DESC');
+// Handle content upload
+$upload_message = '';
+$upload_error = '';
+
+if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && isset($_POST['content_url'])) {
+    $topic_id = (int)$_POST['topic_id'];
+    $content_url = trim($_POST['content_url']);
+    
+    // Validation
+    if (empty($content_url)) {
+        $upload_error = "Content URL is required";
+    } elseif (!filter_var($content_url, FILTER_VALIDATE_URL)) {
+        $upload_error = "Please enter a valid URL";
+    } else {
+        // Verify topic belongs to this creator and is funded
+        $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
+        $db->bind(':topic_id', $topic_id);
+        $db->bind(':creator_id', $creator->id);
+        $topic_check = $db->single();
+        
+        if (!$topic_check) {
+            $upload_error = "Topic not found or not eligible for upload";
+        } else {
+            // Check if deadline has passed
+            $deadline_passed = strtotime($topic_check->content_deadline) < time();
+            
+            if ($deadline_passed) {
+                $upload_error = "Sorry, the 48-hour deadline has passed";
+            } else {
+                try {
+                    $db->beginTransaction();
+                    
+                    // Update topic with content
+                    $db->query('
+                        UPDATE topics 
+                        SET content_url = :content_url, 
+                            status = "completed", 
+                            completed_at = NOW()
+                        WHERE id = :topic_id
+                    ');
+                    $db->bind(':content_url', $content_url);
+                    $db->bind(':topic_id', $topic_id);
+                    $db->execute();
+                    
+                    // Notify all contributors
+                    $notificationSystem = new NotificationSystem();
+                    $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
+                    
+                    $db->endTransaction();
+                    
+                    $upload_message = "✅ Content uploaded successfully! Contributors have been notified.";
+                    
+                } catch (Exception $e) {
+                    $db->cancelTransaction();
+                    $upload_error = "Failed to upload content. Please try again.";
+                    error_log("Content upload error: " . $e->getMessage());
+                }
+            }
+        }
+    }
+}
+
+// Get topics with enhanced deadline calculation and proper ordering
+$db->query('
+    SELECT t.*, 
+           UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
+           TIMESTAMPDIFF(SECOND, NOW(), t.content_deadline) as seconds_remaining,
+           TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
+           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
+           (t.current_funding * 0.9) as potential_earnings
+    FROM topics t 
+    WHERE t.creator_id = :creator_id 
+    AND t.status IN ("active", "funded", "on_hold") 
+    AND (t.content_url IS NULL OR t.content_url = "") 
+    ORDER BY 
+        CASE 
+            WHEN t.status = "funded" THEN 1 
+            WHEN t.status = "active" THEN 2 
+            WHEN t.status = "on_hold" THEN 3 
+        END, 
+        potential_earnings DESC,
+        t.funded_at ASC, 
+        t.created_at DESC
+');
 $db->bind(':creator_id', $creator->id);
 $topics = $db->resultSet();
 
@@ -43,6 +126,9 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         
         .message { background: #d4edda; color: #155724; padding: 15px 30px; text-align: center; }
         .error { background: #f8d7da; color: #721c24; padding: 15px 30px; text-align: center; }
+        
+        .upload-message { background: #d4edda; color: #155724; padding: 10px 15px; margin: 10px 0; border-radius: 6px; font-size: 14px; }
+        .upload-error { background: #f8d7da; color: #721c24; padding: 10px 15px; margin: 10px 0; border-radius: 6px; font-size: 14px; }
         
         .container { padding: 40px 30px; max-width: 500px; margin: 0 auto; position: relative; }
         .swipe-area { position: relative; height: 450px; }
@@ -120,6 +206,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             transition: all 0.3s ease;
         }
         
+        /* Countdown Timer Styles */
+        .countdown-timer {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: inherit;
+        }
+        
         .earning-display {
             background: rgba(255,255,255,0.05);
             border: 2px dashed rgba(255,255,255,0.2);
@@ -159,6 +252,74 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         .earning-text { 
             font-size: 14px; 
             font-weight: 500;
+        }
+        
+        /* Upload Form Styles */
+        .upload-form {
+            display: none;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-form.active {
+            display: block;
+        }
+        
+        .upload-form input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .upload-form input[type="url"]::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .upload-form input[type="url"]:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .upload-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .upload-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-btn.submit {
+            background: #28a745;
+            color: white;
+        }
+        
+        .upload-btn.submit:hover {
+            background: #218838;
+        }
+        
+        .upload-btn.cancel {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .upload-btn.cancel:hover {
+            background: rgba(255,255,255,0.3);
         }
         
         .topic-actions {
@@ -231,21 +392,28 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             position: absolute; 
             top: 50%; 
             transform: translateY(-50%);
-            width: 40px; 
-            height: 60px; 
-            background: rgba(0,0,0,0.1);
+            width: 50px; 
+            height: 70px; 
+            background: rgba(0,0,0,0.3);
             border: none; 
-            border-radius: 10px; 
-            color: rgba(255,255,255,0.7);
-            font-size: 20px; 
+            border-radius: 12px; 
+            color: white;
+            font-size: 24px; 
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
         .nav-btn:hover { 
-            background: rgba(0,0,0,0.2); 
-            color: white; 
+            background: rgba(0,0,0,0.5); 
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         }
-        .nav-btn.left { left: -60px; }
-        .nav-btn.right { right: -60px; }
+        .nav-btn.left { left: -70px; }
+        .nav-btn.right { right: -70px; }
         
         .mobile-menu-btn {
             position: fixed;
@@ -322,10 +490,16 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             .swipe-area { height: 420px; }
             .card { padding: 25px; }
             .topic-title { font-size: 20px; min-height: 45px; }
-            .nav-btn { width: 45px; height: 70px; }
-            .nav-btn.left { left: 10px; }
-            .nav-btn.right { right: 10px; }
+            .nav-btn { 
+                width: 45px; 
+                height: 60px; 
+                font-size: 20px;
+                background: rgba(0,0,0,0.4);
+            }
+            .nav-btn.left { left: 15px; }
+            .nav-btn.right { right: 15px; }
             .mobile-menu-btn { display: block; }
+            .upload-buttons { flex-direction: column; }
         }
         
         .topiclaunch-nav .nav-mobile-toggle { display: none !important; }
@@ -353,11 +527,13 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             
             <?php if (!empty($topics)): ?>
                 <?php foreach ($topics as $index => $topic): ?>
-                    <div class="card" data-topic="<?php echo $topic->id; ?>" style="<?php echo $index > 0 ? 'transform: scale(' . (1 - $index * 0.05) . ') translateY(' . ($index * 10) . 'px); z-index: ' . (count($topics) - $index) . ';' : ''; ?>">
+                    <div class="card" data-topic="<?php echo $topic->id; ?>" data-index="<?php echo $index; ?>">
                         
                         <?php if ($topic->status === 'funded'): ?>
                             <div class="status funded">
-                                🔥 Funded<?php if ($topic->hours_remaining > 0): ?> - <?php echo $topic->hours_remaining; ?>h left<?php endif; ?>
+                                Funded<?php if ($topic->hours_remaining > 0): ?> - <span class="countdown-timer" 
+                                 data-deadline="<?php echo $topic->deadline_timestamp; ?>"
+                                 id="countdown-<?php echo $topic->id; ?>">00:00:00</span> left<?php endif; ?>
                             </div>
                         <?php elseif ($topic->status === 'on_hold'): ?>
                             <div class="status">⏸️ On Hold</div>
@@ -370,14 +546,42 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                 <?php echo htmlspecialchars($topic->title); ?>
                             </h3>
                             
-                            <!-- Earnings Display -->
-                            <div class="earning-display <?php echo $topic->status === 'funded' ? 'funded' : ''; ?>" 
-                                 <?php if ($topic->status === 'funded'): ?>onclick="window.location.href='../creators/upload_content.php?topic=<?php echo $topic->id; ?>'"<?php endif; ?>>
-                                <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
-                                <div class="earning-text"><?php echo $topic->status === 'funded' ? 'Upload & Get Paid' : 'Potential Earnings'; ?></div>
-                            </div>
+                            <!-- Upload Messages -->
+                            <div id="upload-messages-<?php echo $topic->id; ?>"></div>
                             
-                            <!-- Action Buttons (Between Earnings and Progress Bar) -->
+                            <!-- Earnings Display / Upload Form -->
+                            <?php if ($topic->status === 'funded'): ?>
+                                <div class="earning-display funded" 
+                                     onclick="showUploadForm(<?php echo $topic->id; ?>)"
+                                     id="earning-display-<?php echo $topic->id; ?>">
+                                    <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
+                                    <div class="earning-text">Upload & Get Paid</div>
+                                </div>
+                                
+                                <!-- Upload Form (Hidden by default) -->
+                                <form class="upload-form" id="upload-form-<?php echo $topic->id; ?>" method="POST">
+                                    <input type="hidden" name="topic_id" value="<?php echo $topic->id; ?>">
+                                    <input type="url" 
+                                           name="content_url" 
+                                           placeholder="https://youtube.com/watch?v=..." 
+                                           required>
+                                    <div class="upload-buttons">
+                                        <button type="submit" name="upload_content" class="upload-btn submit">
+                                            🎬 Complete Topic
+                                        </button>
+                                        <button type="button" onclick="hideUploadForm(<?php echo $topic->id; ?>)" class="upload-btn cancel">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            <?php else: ?>
+                                <div class="earning-display">
+                                    <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
+                                    <div class="earning-text">Potential Earnings</div>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Action Buttons -->
                             <div class="topic-actions">
                                 <?php if ($topic->status === 'active'): ?>
                                     <button onclick="declineTopic(<?php echo $topic->id; ?>)" class="action-btn">
@@ -421,6 +625,19 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                         <div style="font-size: 16px; opacity: 0.7; margin-top: 20px;">
                             Fans haven't created any topics for you yet. Share your profile to get started!
                         </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" 
+                               style="background: rgba(255,255,255,0.2); color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; display: inline-block; margin-bottom: 15px;">
+                                📺 View My Profile
+                            </a>
+                            <br>
+                            <button onclick="copyProfileLink()" 
+                                    style="background: rgba(255,255,255,0.1); color: white; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer;" 
+                                    id="copyLinkBtn">
+                                📋 Copy Profile Link
+                            </button>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -444,9 +661,259 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
     </div>
 
     <script>
+        // Topics data and swiping system
         const topics = {<?php foreach ($topics as $t): ?>'<?php echo $t->id; ?>': {title: <?php echo json_encode($t->title); ?>, desc: <?php echo json_encode($t->description); ?>, showing: 'title'},<?php endforeach; ?>};
         let currentIndex = 0;
-        const cards = document.querySelectorAll('.card');
+        const totalTopics = <?php echo count($topics); ?>;
+        const cards = Array.from(document.querySelectorAll('.card'));
+
+        // Simple infinite swiping system
+        function showCard(index) {
+            cards.forEach((card, i) => {
+                if (i === index) {
+                    // Front card
+                    card.style.transform = 'scale(1) translateY(0px)';
+                    card.style.zIndex = '100';
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.display = 'block';
+                } else if (i === (index + 1) % totalTopics) {
+                    // Second card
+                    card.style.transform = 'scale(0.95) translateY(10px)';
+                    card.style.zIndex = '99';
+                    card.style.opacity = '0.8';
+                    card.style.pointerEvents = 'none';
+                    card.style.display = 'block';
+                } else if (i === (index + 2) % totalTopics && totalTopics > 2) {
+                    // Third card
+                    card.style.transform = 'scale(0.9) translateY(20px)';
+                    card.style.zIndex = '98';
+                    card.style.opacity = '0.6';
+                    card.style.pointerEvents = 'none';
+                    card.style.display = 'block';
+                } else {
+                    // Hidden cards
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function swipeLeft() {
+            if (totalTopics <= 1) return;
+            
+            const currentCard = cards[currentIndex];
+            
+            // Animate current card out
+            currentCard.style.transform = 'translateX(-150%) rotate(-30deg)';
+            currentCard.style.opacity = '0';
+            
+            setTimeout(() => {
+                currentIndex = (currentIndex + 1) % totalTopics;
+                showCard(currentIndex);
+                
+                // Reset the card that was swiped
+                currentCard.style.transform = '';
+                currentCard.style.opacity = '1';
+            }, 300);
+        }
+
+        function swipeRight() {
+            if (totalTopics <= 1) return;
+            
+            const currentCard = cards[currentIndex];
+            
+            // Animate current card out
+            currentCard.style.transform = 'translateX(150%) rotate(30deg)';
+            currentCard.style.opacity = '0';
+            
+            setTimeout(() => {
+                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
+                showCard(currentIndex);
+                
+                // Reset the card that was swiped
+                currentCard.style.transform = '';
+                currentCard.style.opacity = '1';
+            }, 300);
+        }
+
+        function updateNavButtons() {
+            const leftBtn = document.querySelector('.nav-btn.left');
+            const rightBtn = document.querySelector('.nav-btn.right');
+            
+            if (leftBtn && rightBtn) {
+                if (totalTopics > 1) {
+                    leftBtn.style.display = 'flex';
+                    rightBtn.style.display = 'flex';
+                } else {
+                    leftBtn.style.display = 'none';
+                    rightBtn.style.display = 'none';
+                }
+            }
+        }
+
+        function getCurrentCard() {
+            return cards[currentIndex];
+        }
+
+        function swipeLeft() { 
+            if (totalTopics <= 1) return;
+            swipe('left'); 
+        }
+
+        function swipeRight() { 
+            if (totalTopics <= 1) return;
+            swipe('right'); 
+        }
+
+        function swipe(direction) {
+            if (totalTopics <= 1) return;
+            
+            const currentCard = getCurrentCard();
+            
+            // Animate current card out
+            currentCard.style.transform = direction === 'left' 
+                ? 'translateX(-150%) rotate(-30deg)' 
+                : 'translateX(150%) rotate(30deg)';
+            currentCard.style.opacity = '0';
+            
+            // Update current index with infinite loop
+            if (direction === 'left') {
+                currentIndex = (currentIndex + 1) % totalTopics;
+            } else {
+                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
+            }
+            
+            setTimeout(() => {
+                // Reset the swiped card and update all positions
+                currentCard.style.transform = '';
+                currentCard.style.opacity = '1';
+                
+                // Update all card positions based on new current index
+                cards.forEach((card, cardIndex) => {
+                    const relativeIndex = (cardIndex - currentIndex + totalTopics) % totalTopics;
+                    updateCardPosition(card, relativeIndex);
+                });
+            }, 300);
+        }
+
+        // Copy profile link function
+        function copyProfileLink() {
+            const profileUrl = window.location.origin + '/creators/profile.php?id=<?php echo $creator->id; ?>';
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(profileUrl).then(() => {
+                    showCopyFeedback();
+                }).catch(() => {
+                    fallbackCopyText(profileUrl);
+                });
+            } else {
+                fallbackCopyText(profileUrl);
+            }
+        }
+
+        function fallbackCopyText(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback();
+            } catch (err) {
+                console.error('Failed to copy');
+                alert('Could not copy link. Please copy manually: ' + text);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopyFeedback() {
+            const btn = document.getElementById('copyLinkBtn');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = 'rgba(40, 167, 69, 0.3)';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'rgba(255,255,255,0.1)';
+                }, 2000);
+            }
+        }
+
+        // Display upload messages
+        <?php if ($upload_message): ?>
+        showUploadMessage(<?php echo $_POST['topic_id'] ?? 0; ?>, '<?php echo addslashes($upload_message); ?>', 'success');
+        <?php endif; ?>
+        
+        <?php if ($upload_error): ?>
+        showUploadMessage(<?php echo $_POST['topic_id'] ?? 0; ?>, '<?php echo addslashes($upload_error); ?>', 'error');
+        <?php endif; ?>
+
+        function showUploadMessage(topicId, message, type) {
+            const messageContainer = document.getElementById(`upload-messages-${topicId}`);
+            if (messageContainer) {
+                messageContainer.innerHTML = `<div class="upload-${type}">${message}</div>`;
+                setTimeout(() => {
+                    messageContainer.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Countdown Timer Function
+        function updateCountdowns() {
+            const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
+            
+            countdownElements.forEach(element => {
+                const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
+                const now = new Date().getTime();
+                const timeLeft = deadline - now;
+                
+                if (timeLeft > 0) {
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    const formattedTime = 
+                        String(hours).padStart(2, '0') + ':' + 
+                        String(minutes).padStart(2, '0') + ':' + 
+                        String(seconds).padStart(2, '0');
+                    
+                    element.textContent = formattedTime;
+                    
+                    // Change colors based on time remaining
+                    element.classList.remove('expired', 'warning', 'safe');
+                    
+                    if (hours <= 1) {
+                        element.classList.add('expired');
+                    } else if (hours <= 6) {
+                        element.classList.add('warning');
+                    } else {
+                        element.classList.add('safe');
+                    }
+                } else {
+                    element.textContent = 'EXPIRED';
+                    element.classList.remove('warning', 'safe');
+                    element.classList.add('expired');
+                }
+            });
+        }
+
+        // Upload Form Functions
+        function showUploadForm(topicId) {
+            document.getElementById(`earning-display-${topicId}`).style.display = 'none';
+            document.getElementById(`upload-form-${topicId}`).classList.add('active');
+        }
+
+        function hideUploadForm(topicId) {
+            document.getElementById(`earning-display-${topicId}`).style.display = 'block';
+            document.getElementById(`upload-form-${topicId}`).classList.remove('active');
+        }
 
         function updateNavButtons() {
             const leftBtn = document.querySelector('.nav-btn.left');
@@ -454,12 +921,15 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             
             if (!leftBtn || !rightBtn) return;
             
-            if (cards.length <= 1 || currentIndex >= cards.length - 1) {
-                leftBtn.classList.add('disabled');
-                rightBtn.classList.add('disabled');
-            } else {
+            // Always show navigation buttons when there are multiple topics
+            if (totalTopics > 1) {
+                leftBtn.style.display = 'block';
+                rightBtn.style.display = 'block';
                 leftBtn.classList.remove('disabled');
                 rightBtn.classList.remove('disabled');
+            } else {
+                leftBtn.style.display = 'none';
+                rightBtn.style.display = 'none';
             }
         }
 
@@ -481,31 +951,50 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             }
         }
 
-        function swipeLeft() { swipe('left'); }
-        function swipeRight() { swipe('right'); }
+        function swipeLeft() { 
+            if (totalTopics <= 1) return;
+            swipe('left'); 
+        }
+
+        function swipeRight() { 
+            if (totalTopics <= 1) return;
+            swipe('right'); 
+        }
 
         function swipe(direction) {
-            if (currentIndex >= cards.length) return;
-            const card = cards[currentIndex];
-            card.style.transform = direction === 'left' ? 'translateX(-150%) rotate(-30deg)' : 'translateX(150%) rotate(30deg)';
-            card.style.opacity = '0';
+            if (totalTopics <= 1) return;
+            
+            const currentCard = getCurrentCard();
+            
+            // Animate current card out
+            currentCard.style.transform = direction === 'left' 
+                ? 'translateX(-150%) rotate(-30deg)' 
+                : 'translateX(150%) rotate(30deg)';
+            currentCard.style.opacity = '0';
+            
+            // Update current index with infinite loop
+            if (direction === 'left') {
+                currentIndex = (currentIndex + 1) % totalTopics;
+            } else {
+                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
+            }
+            
             setTimeout(() => {
-                card.style.display = 'none';
-                currentIndex++;
-                updateStack();
-                updateNavButtons();
-        
-        // Initial height calculation
-        setTimeout(updateSwipeAreaHeight, 100);
+                // Reset the swiped card and update all positions
+                currentCard.style.transform = '';
+                currentCard.style.opacity = '1';
+                
+                cards.forEach((card, index) => {
+                    updateCardPosition(card, index);
+                });
             }, 300);
         }
 
         function updateStack() {
-            for (let i = currentIndex; i < cards.length; i++) {
-                const index = i - currentIndex;
-                cards[i].style.transform = `scale(${1 - index * 0.05}) translateY(${index * 10}px)`;
-                cards[i].style.zIndex = cards.length - index;
-            }
+            // This function is replaced by updateCardPosition in the new system
+            cards.forEach((card, index) => {
+                updateCardPosition(card, index);
+            });
         }
 
         function declineTopic(topicId) {
@@ -570,43 +1059,103 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             overlay.classList.remove('open');
         }
 
+        // Initialize everything
+        showCard(currentIndex);
         updateNavButtons();
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000); // Update countdown every second
 
-        // Prevent swipe when clicking buttons
-        cards.forEach(card => {
-            let startX = 0, currentX = 0, isDragging = false;
+        // Touch/drag system for infinite swiping
+        let startX = 0, currentX = 0, isDragging = false;
+        
+        // Add touch listeners to the swipe area
+        const swipeArea = document.getElementById('swipeArea');
+        
+        swipeArea.addEventListener('touchstart', (e) => {
+            // Only start drag if we have multiple topics
+            if (totalTopics <= 1) return;
             
-            card.addEventListener('touchstart', e => {
-                if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint')) return;
-                startX = e.touches[0].clientX;
-                isDragging = true;
-            }, {passive: true});
+            const touch = e.touches[0];
+            const currentCard = getCurrentCard();
+            const rect = currentCard.getBoundingClientRect();
             
-            card.addEventListener('touchmove', e => {
-                if (!isDragging) return;
-                currentX = e.touches[0].clientX;
-                const deltaX = currentX - startX;
-                card.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
-                card.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
-            }, {passive: true});
-            
-            card.addEventListener('touchend', () => {
-                if (!isDragging) return;
-                isDragging = false;
-                const deltaX = currentX - startX;
-                if (Math.abs(deltaX) > 100) {
-                    swipe(deltaX > 0 ? 'right' : 'left');
-                } else {
-                    card.style.transform = '';
-                    card.style.opacity = '1';
+            // Check if touch is on the current card
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                
+                // Don't start drag if touching interactive elements
+                if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form')) {
+                    return;
                 }
-            });
+                
+                startX = touch.clientX;
+                isDragging = true;
+                e.preventDefault();
+            }
+        }, {passive: false});
+        
+        swipeArea.addEventListener('touchmove', (e) => {
+            if (!isDragging || totalTopics <= 1) return;
+            
+            currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            const currentCard = getCurrentCard();
+            
+            // Apply transform to current card only
+            currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
+            currentCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
+            
+            e.preventDefault();
+        }, {passive: false});
+        
+        swipeArea.addEventListener('touchend', () => {
+            if (!isDragging || totalTopics <= 1) return;
+            
+            isDragging = false;
+            const deltaX = currentX - startX;
+            const currentCard = getCurrentCard();
+            
+            if (Math.abs(deltaX) > 100) {
+                // Trigger swipe
+                if (deltaX > 0) {
+                    swipeRight(); // Swipe right
+                } else {
+                    swipeLeft(); // Swipe left
+                }
+            } else {
+                // Reset position
+                currentCard.style.transform = 'scale(1) translateY(0px)';
+                currentCard.style.opacity = '1';
+            }
         });
 
+        // Prevent event bubbling on interactive elements
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn')) {
+            if (e.target.closest('.action-btn, .upload-form, .earning-display.funded')) {
                 e.stopPropagation();
             }
+        });
+
+        // Form submission handling
+        document.querySelectorAll('form.upload-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('.upload-btn.submit');
+                const urlInput = this.querySelector('input[type="url"]');
+                
+                if (!urlInput.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter a content URL');
+                    return;
+                }
+                
+                if (!confirm('Upload this content and mark topic as completed?')) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                submitBtn.innerHTML = '⏳ Uploading...';
+                submitBtn.disabled = true;
+            });
         });
     </script>
 </body>
