@@ -1,6 +1,5 @@
 <?php
-// config/funding_processor.php - Fixed for topic funding with proper notification handling
-
+// config/funding_processor.php - Updated to handle guest payments
 require_once 'database.php';
 require_once 'notification_system.php';
 
@@ -61,10 +60,18 @@ class FundingProcessor {
     private function processTopicFunding($metadata, $payment_intent_id) {
         try {
             $topic_id = $metadata->topic_id;
-            $user_id = $metadata->user_id;
             $amount = floatval($metadata->amount);
+            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
             
-            error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount");
+            // Handle guest vs logged-in user
+            if ($is_guest) {
+                // For guests, we need to create a temporary user or handle differently
+                $user_id = $this->handleGuestUser($payment_intent_id, $amount);
+            } else {
+                $user_id = $metadata->user_id;
+            }
+            
+            error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount, Guest: " . ($is_guest ? 'yes' : 'no'));
             
             // Check if already processed
             $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
@@ -165,7 +172,9 @@ class FundingProcessor {
                 'topic_id' => $topic_id,
                 'fully_funded' => $fully_funded,
                 'new_total' => $topic_after->current_funding,
-                'threshold' => $topic_after->funding_threshold
+                'threshold' => $topic_after->funding_threshold,
+                'is_guest' => $is_guest,
+                'user_id' => $user_id
             ];
             
         } catch (Exception $e) {
@@ -180,13 +189,20 @@ class FundingProcessor {
     private function processTopicCreation($metadata, $payment_intent_id) {
         try {
             $creator_id = $metadata->creator_id;
-            $user_id = $metadata->user_id;
             $title = $metadata->title;
             $description = $metadata->description;
             $funding_threshold = floatval($metadata->funding_threshold);
             $initial_contribution = floatval($metadata->initial_contribution);
+            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
             
-            error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution");
+            // Handle guest vs logged-in user
+            if ($is_guest) {
+                $user_id = $this->handleGuestUser($payment_intent_id, $initial_contribution);
+            } else {
+                $user_id = $metadata->user_id;
+            }
+            
+            error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution, Guest: " . ($is_guest ? 'yes' : 'no'));
             
             // Check if already processed
             $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
@@ -269,7 +285,9 @@ class FundingProcessor {
             return [
                 'success' => true, 
                 'topic_id' => $topic_id,
-                'fully_funded' => $fully_funded
+                'fully_funded' => $fully_funded,
+                'is_guest' => $is_guest,
+                'user_id' => $user_id
             ];
             
         } catch (Exception $e) {
@@ -281,6 +299,47 @@ class FundingProcessor {
         }
     }
     
+    /**
+     * Handle guest user creation for payments
+     */
+    private function handleGuestUser($payment_intent_id, $amount) {
+        try {
+            // Create a temporary guest user that will be claimed when they register
+            $guest_email = 'guest_' . time() . '_' . substr($payment_intent_id, -8) . '@temp.topiclaunch.com';
+            $guest_username = 'guest_' . time() . '_' . substr($payment_intent_id, -8);
+            
+            $this->db->query('
+                INSERT INTO users (username, email, password_hash, full_name, is_active, is_guest) 
+                VALUES (:username, :email, :password_hash, :full_name, 0, 1)
+            ');
+            $this->db->bind(':username', $guest_username);
+            $this->db->bind(':email', $guest_email);
+            $this->db->bind(':password_hash', password_hash('temp_' . $payment_intent_id, PASSWORD_DEFAULT));
+            $this->db->bind(':full_name', 'Guest User');
+            $this->db->execute();
+            
+            $guest_user_id = $this->db->lastInsertId();
+            
+            // Store guest payment info for later account claiming
+            $this->db->query('
+                INSERT INTO guest_payments (guest_user_id, payment_intent_id, amount, created_at)
+                VALUES (:guest_user_id, :payment_intent_id, :amount, NOW())
+            ');
+            $this->db->bind(':guest_user_id', $guest_user_id);
+            $this->db->bind(':payment_intent_id', $payment_intent_id);
+            $this->db->bind(':amount', $amount);
+            $this->db->execute();
+            
+            error_log("Created guest user ID: " . $guest_user_id . " for payment: " . $payment_intent_id);
+            
+            return $guest_user_id;
+            
+        } catch (Exception $e) {
+            error_log("Failed to create guest user: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
     public function handlePaymentFailure($payment_intent_id, $error_message) {
         error_log("Payment failed: $payment_intent_id - $error_message");
         
@@ -289,5 +348,43 @@ class FundingProcessor {
         
         return ['success' => true]; // Always return success for webhook
     }
+    
+    /**
+     * Create required tables for guest payment handling
+     */
+    public function createGuestPaymentTables() {
+        try {
+            // Add is_guest column to users table if it doesn't exist
+            $this->db->query("
+                ALTER TABLE users 
+                ADD COLUMN IF NOT EXISTS is_guest TINYINT(1) DEFAULT 0
+            ");
+            $this->db->execute();
+            
+            // Create guest_payments table
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS guest_payments (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    guest_user_id INT NOT NULL,
+                    payment_intent_id VARCHAR(255) NOT NULL,
+                    amount DECIMAL(10,2) NOT NULL,
+                    claimed_by_user_id INT NULL,
+                    claimed_at TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_guest_user (guest_user_id),
+                    INDEX idx_payment_intent (payment_intent_id),
+                    INDEX idx_claimed_by (claimed_by_user_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            $this->db->execute();
+            
+        } catch (Exception $e) {
+            error_log("Failed to create guest payment tables: " . $e->getMessage());
+        }
+    }
 }
+
+// Initialize guest payment tables
+$processor = new FundingProcessor();
+$processor->createGuestPaymentTables();
 ?>
