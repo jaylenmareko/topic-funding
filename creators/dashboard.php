@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Creator dashboard with fixed swiping system
+// creators/dashboard.php - Creator dashboard with FIXED empty state and profile link
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -481,6 +481,33 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             visibility: visible;
         }
         
+        /* FIXED: Copy Profile Link Button */
+        .copy-profile-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            display: inline-block;
+            width: auto;
+            min-width: 180px;
+        }
+        
+        .copy-profile-btn:hover {
+            background: #218838;
+            border-color: #1e7e34;
+        }
+        
+        .copy-profile-btn.copied {
+            background: #20c997;
+            border-color: #1abc9c;
+        }
+        
         @media (max-width: 768px) {
             .header { padding: 30px 20px; }
             .title { font-size: 28px; }
@@ -520,8 +547,10 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
 
     <div class="container">
         <div class="swipe-area" id="swipeArea">
-            <button class="nav-btn left" onclick="swipeLeft()">‹</button>
-            <button class="nav-btn right" onclick="swipeRight()">›</button>
+            <?php if (!empty($topics)): ?>
+                <button class="nav-btn left" onclick="swipeLeft()">‹</button>
+                <button class="nav-btn right" onclick="swipeRight()">›</button>
+            <?php endif; ?>
             
             <?php if (!empty($topics)): ?>
                 <?php foreach ($topics as $index => $topic): ?>
@@ -611,20 +640,17 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
+                <!-- FIXED: Empty state with profile link and better styling -->
                 <div class="card empty">
                     <div class="card-content">
                         <h3 class="topic-title">No Active Topics</h3>
-                        <div style="font-size: 16px; opacity: 0.7; margin-top: 20px;">
+                        <div style="font-size: 16px; opacity: 0.7; margin: 20px 0;">
                             Fans haven't created any topics for you yet. Share your profile to get started!
                         </div>
                         
-                        <div style="margin-top: 30px;">
-                            <button onclick="copyProfileLink()" 
-                                    style="background: rgba(255,255,255,0.1); color: white; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer;" 
-                                    id="copyLinkBtn">
-                                📋 Copy Profile Link
-                            </button>
-                        </div>
+                        <button onclick="copyProfileLink()" class="copy-profile-btn" id="copyLinkBtn">
+                            Copy Profile Link
+                        </button>
                     </div>
                 </div>
             <?php endif; ?>
@@ -651,12 +677,27 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         const cards = Array.from(document.querySelectorAll('.card'));
 
         function initializeCards() {
+            if (totalTopics === 0) {
+                // For empty state, just show the single card
+                const emptyCard = document.querySelector('.card.empty');
+                if (emptyCard) {
+                    emptyCard.style.transform = 'scale(1) translateY(0px)';
+                    emptyCard.style.zIndex = '100';
+                    emptyCard.style.opacity = '1';
+                    emptyCard.style.pointerEvents = 'auto';
+                    emptyCard.style.display = 'block';
+                }
+                return;
+            }
+            
             cards.forEach((card, index) => {
                 updateCardPosition(card, index);
             });
         }
 
         function updateCardPosition(card, cardIndex) {
+            if (totalTopics === 0) return; // Don't process if no topics
+            
             const relativeIndex = (cardIndex - currentIndex + totalTopics) % totalTopics;
             
             if (relativeIndex === 0) {
@@ -683,6 +724,9 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         }
 
         function getCurrentCard() {
+            if (totalTopics === 0) {
+                return document.querySelector('.card.empty');
+            }
             return cards[currentIndex];
         }
 
@@ -745,12 +789,14 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         let startX = 0, currentX = 0, isDragging = false;
         const swipeArea = document.getElementById('swipeArea');
 
-        if (swipeArea) {
+        if (swipeArea && totalTopics > 0) {
             swipeArea.addEventListener('touchstart', (e) => {
                 if (totalTopics <= 1) return;
                 
                 const touch = e.touches[0];
                 const currentCard = getCurrentCard();
+                if (!currentCard) return;
+                
                 const rect = currentCard.getBoundingClientRect();
                 
                 if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
@@ -773,6 +819,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 currentX = e.touches[0].clientX;
                 const deltaX = currentX - startX;
                 const currentCard = getCurrentCard();
+                if (!currentCard) return;
                 
                 if (Math.abs(deltaX) > 5) {
                     currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
@@ -788,6 +835,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 isDragging = false;
                 const deltaX = currentX - startX;
                 const currentCard = getCurrentCard();
+                if (!currentCard) return;
                 
                 if (Math.abs(deltaX) > 100) {
                     if (deltaX > 0) {
@@ -807,6 +855,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             });
         }
 
+        // FIXED: Copy profile link function
         function copyProfileLink() {
             const profileUrl = window.location.origin + '/creators/profile.php?id=<?php echo $creator->id; ?>';
             
@@ -847,11 +896,11 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             if (btn) {
                 const originalText = btn.textContent;
                 btn.textContent = '✅ Copied!';
-                btn.style.background = 'rgba(40, 167, 69, 0.3)';
+                btn.classList.add('copied');
                 
                 setTimeout(() => {
                     btn.textContent = originalText;
-                    btn.style.background = 'rgba(255,255,255,0.1)';
+                    btn.classList.remove('copied');
                 }, 2000);
             }
         }
