@@ -1,14 +1,20 @@
 <?php
-// auth/register.php - Updated to redirect fans to browse creators (no dashboard) or return_to URL
+// auth/register.php - Updated to handle guest post-payment signup
 session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Get return_to parameter for redirect after registration
-$return_to = isset($_GET['return_to']) ? $_GET['return_to'] : '';
+// Get parameters for post-payment signup
+$topic_funded = isset($_GET['topic_funded']);
+$topic_created = isset($_GET['topic_created']);
+$session_id = $_GET['session_id'] ?? '';
+$topic_id = $_GET['topic_id'] ?? 0;
+$creator_id = $_GET['creator_id'] ?? 0;
+$amount = $_GET['amount'] ?? 0;
+$return_to = $_GET['return_to'] ?? '';
 
-// Redirect if already logged in - Check if they're a creator first
+// Check if already logged in and redirect appropriately
 if (isset($_SESSION['user_id'])) {
     $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
@@ -16,13 +22,13 @@ if (isset($_SESSION['user_id'])) {
     $is_creator = $db->single();
     
     if ($is_creator) {
-        header('Location: ../creators/dashboard.php'); // Creators go to dashboard
+        header('Location: ../creators/dashboard.php');
     } else {
         // Fans go to return_to URL or browse creators
         if ($return_to) {
             header('Location: ..' . $return_to);
         } else {
-            header('Location: ../creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+            header('Location: ../creators/index.php');
         }
     }
     exit;
@@ -323,10 +329,18 @@ if ($_POST) {
                 // Regenerate session ID for security
                 session_regenerate_id(true);
                 
-                // REDIRECT FANS TO return_to URL or browse creators (NO DASHBOARD)
-                if ($return_to) {
+                // Handle post-payment redirects
+                if ($topic_funded && $topic_id) {
+                    // Redirect to topic view page
+                    header('Location: ../topics/view.php?id=' . $topic_id . '&welcome=1');
+                } elseif ($topic_created && $creator_id) {
+                    // Redirect to creator profile
+                    header('Location: ../creators/profile.php?id=' . $creator_id . '&created=1');
+                } elseif ($return_to) {
+                    // Redirect to return_to URL
                     header('Location: ..' . $return_to);
                 } else {
+                    // Default redirect to browse creators
                     header('Location: ../creators/index.php');
                 }
                 exit;
@@ -336,45 +350,101 @@ if ($_POST) {
         }
     }
 }
+
+// Get topic info for display if post-payment signup
+$topic_info = null;
+$creator_info = null;
+
+if (($topic_funded || $topic_created) && $topic_id) {
+    try {
+        $helper = new DatabaseHelper();
+        $topic_info = $helper->getTopicById($topic_id);
+    } catch (Exception $e) {
+        // Ignore error, just don't show topic info
+    }
+}
+
+if ($topic_created && $creator_id) {
+    try {
+        $creator_info = $helper->getCreatorById($creator_id);
+    } catch (Exception $e) {
+        // Ignore error, just don't show creator info
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Join TopicLaunch</title>
+    <title><?php echo $topic_funded ? 'Complete Your Account - Payment Successful!' : 'Join TopicLaunch'; ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        
+        /* Guest-friendly navigation */
+        .guest-nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .nav-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success-icon { font-size: 48px; margin-bottom: 15px; }
+        .header h1 { margin: 0 0 10px 0; color: #333; }
+        .header p { margin: 0; color: #666; }
+        
+        .payment-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .topic-summary { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .topic-title { font-weight: bold; color: #1976d2; margin-bottom: 5px; }
+        
         .user-type-indicator { 
             background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; 
             color: white; 
             padding: 10px 20px; 
-            border-radius: 20px; 
-            margin-bottom: 20px; 
+            border-radius: 20px;
+            font-size: 14px; 
+            font-weight: 500; 
             text-align: center; 
-            font-weight: bold; 
+            margin-bottom: 20px; 
         }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="email"], input[type="password"] { 
-            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        
+        .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        input[type="text"], input[type="email"], input[type="password"], input[type="file"] { 
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px;
         }
-        .btn { background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        .btn { background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { opacity: 0.9; }
-        .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 10px; }
-        .links { text-align: center; margin-top: 20px; }
-        .password-requirements { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
-        .requirement { color: #666; font-size: 12px; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
+        .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
+        .requirement { color: #666; font-size: 12px; margin-top: 5px; }
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
+        
         .youtube-handle-group { position: relative; }
         .youtube-at-symbol { 
             position: absolute; 
             left: 0px; 
             top: 0px; 
             background: #f8f9fa; 
-            padding: 8px 12px; 
-            border-radius: 4px 0 0 4px; 
+            padding: 12px; 
+            border-radius: 6px 0 0 6px; 
             border: 1px solid #ddd; 
             border-right: none; 
             color: #666; 
@@ -386,104 +456,176 @@ if ($_POST) {
             position: relative;
             z-index: 1;
         }
+        
+        .login-link { text-align: center; margin-top: 20px; }
+        .login-link a { color: #007bff; text-decoration: none; }
+        .login-link a:hover { text-decoration: underline; }
+        
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .header, .form-container { padding: 20px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="user-type-indicator">
-            <?php if ($user_type === 'creator'): ?>
-                📺 YouTuber Registration
-            <?php else: ?>
-                💰 Fan Registration
-            <?php endif; ?>
+    <!-- Guest-friendly navigation -->
+    <nav class="guest-nav">
+        <div class="nav-container">
+            <span class="nav-logo">TopicLaunch</span>
         </div>
-    </div>
-    
-    <?php if (!empty($errors)): ?>
-        <div class="errors">
+    </nav>
+
+    <div class="container">
+        <?php if ($topic_funded): ?>
+        <!-- Post-payment success message -->
+        <div class="payment-success">
+            <div class="success-icon">✅</div>
+            <h3 style="margin: 0 0 10px 0;">Payment Successful!</h3>
+            <p style="margin: 0;">Thank you for funding this topic! Complete your account to track your contribution.</p>
+        </div>
+        
+        <?php if ($topic_info): ?>
+        <div class="topic-summary">
+            <div class="topic-title"><?php echo htmlspecialchars($topic_info->title); ?></div>
+            <div style="color: #666; font-size: 14px;">
+                By <?php echo htmlspecialchars($topic_info->creator_name); ?>
+                <?php if ($amount): ?>• Your contribution: $<?php echo number_format($amount, 2); ?><?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <?php elseif ($topic_created): ?>
+        <!-- Post-topic creation message -->
+        <div class="payment-success">
+            <div class="success-icon">🎉</div>
+            <h3 style="margin: 0 0 10px 0;">Topic Created Successfully!</h3>
+            <p style="margin: 0;">Your payment was processed and topic is now live! Complete your account to track it.</p>
+        </div>
+        
+        <?php if ($creator_info): ?>
+        <div class="topic-summary">
+            <div style="color: #666; font-size: 14px;">
+                Topic created for @<?php echo htmlspecialchars($creator_info->display_name); ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <?php else: ?>
+        <!-- Normal signup header -->
+        <div class="header">
+            <div class="user-type-indicator">
+                <?php if ($user_type === 'creator'): ?>
+                    📺 YouTuber Registration
+                <?php else: ?>
+                    💰 Fan Registration
+                <?php endif; ?>
+            </div>
+            <h1><?php echo $user_type === 'creator' ? 'Join as YouTuber' : 'Join as Fan'; ?></h1>
+            <p><?php echo $user_type === 'creator' ? 'Get paid for creating requested content' : 'Fund topics from your favorite creators'; ?></p>
+        </div>
+        <?php endif; ?>
+        
+        <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-    
-    <form method="POST" id="registrationForm" enctype="multipart/form-data">
-        <?php echo CSRFProtection::getTokenField(); ?>
-        
-        <!-- Pass through return_to parameter -->
-        <?php if ($return_to): ?>
-            <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($return_to); ?>">
         <?php endif; ?>
         
-        <?php if ($user_type === 'creator'): ?>
-            <!-- Profile Image for Creators -->
-            <div class="form-group">
-                <label for="profile_image">Profile Image (Optional):</label>
-                <input type="file" id="profile_image" name="profile_image" accept="image/*">
-                <div class="requirement">JPG, PNG, or GIF. Max 2MB. Can add later.</div>
-            </div>
+        <div class="form-container">
+            <form method="POST" id="registrationForm" enctype="multipart/form-data">
+                <?php echo CSRFProtection::getTokenField(); ?>
+                
+                <!-- Pass through parameters for post-payment signup -->
+                <?php if ($topic_funded): ?>
+                    <input type="hidden" name="topic_funded" value="1">
+                    <input type="hidden" name="topic_id" value="<?php echo htmlspecialchars($topic_id); ?>">
+                    <input type="hidden" name="amount" value="<?php echo htmlspecialchars($amount); ?>">
+                <?php endif; ?>
+                
+                <?php if ($topic_created): ?>
+                    <input type="hidden" name="topic_created" value="1">
+                    <input type="hidden" name="creator_id" value="<?php echo htmlspecialchars($creator_id); ?>">
+                <?php endif; ?>
+                
+                <?php if ($return_to): ?>
+                    <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($return_to); ?>">
+                <?php endif; ?>
+                
+                <?php if ($user_type === 'creator'): ?>
+                    <!-- Profile Image for Creators -->
+                    <div class="form-group">
+                        <label for="profile_image">Profile Image (Optional):</label>
+                        <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                        <div class="requirement">JPG, PNG, or GIF. Max 2MB. Can add later.</div>
+                    </div>
 
-            <!-- YouTube Handle for Creators -->
-            <div class="form-group">
-                <label>YouTube Handle:</label>
-                <div class="youtube-handle-group">
-                    <span class="youtube-at-symbol">@</span>
-                    <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
-                           value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>" 
-                           required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
-                           title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
-                           placeholder="MrBeast">
+                    <!-- YouTube Handle for Creators -->
+                    <div class="form-group">
+                        <label>YouTube Handle:</label>
+                        <div class="youtube-handle-group">
+                            <span class="youtube-at-symbol">@</span>
+                            <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
+                                   value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>" 
+                                   required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
+                                   title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
+                                   placeholder="MrBeast">
+                        </div>
+                        <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+                    </div>
+
+                    <!-- PayPal Email for Creators -->
+                    <div class="form-group">
+                        <label>PayPal Email (for payments):</label>
+                        <input type="email" name="paypal_email" id="paypal_email" 
+                               value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>" 
+                               required placeholder="your-paypal@email.com">
+                    </div>
+                <?php else: ?>
+                    <!-- Regular Username for Fans -->
+                    <div class="form-group">
+                        <label>Username:</label>
+                        <input type="text" name="username" id="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
+                        <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
+                    </div>
+                <?php endif; ?>
+                
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" name="email" id="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
                 </div>
-                <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+                
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" id="password" required minlength="8">
+                    <div id="password-requirements" style="margin-top: 8px;">
+                        <div class="requirement" id="length-req">• At least 8 characters</div>
+                        <div class="requirement" id="letter-req">• At least one letter</div>
+                        <div class="requirement" id="number-req">• At least one number</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Confirm Password:</label>
+                    <input type="password" name="confirm_password" id="confirm_password" required>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    <?php if ($topic_funded || $topic_created): ?>
+                        Complete Account
+                    <?php elseif ($user_type === 'creator'): ?>
+                        📺 Create YouTuber Account
+                    <?php else: ?>
+                        💰 Create Account & Browse YouTubers
+                    <?php endif; ?>
+                </button>
+            </form>
+            
+            <?php if (!$topic_funded && !$topic_created): ?>
+            <div class="login-link">
+                <a href="login.php<?php echo $return_to ? '?return_to=' . urlencode($return_to) : ''; ?>">Already have an account? Login here</a>
             </div>
-
-            <!-- PayPal Email for Creators -->
-            <div class="form-group">
-                <label>PayPal Email (for payments):</label>
-                <input type="email" name="paypal_email" id="paypal_email" 
-                       value="<?php echo isset($_POST['paypal_email']) ? htmlspecialchars($_POST['paypal_email']) : ''; ?>" 
-                       required placeholder="your-paypal@email.com">
-            </div>
-        <?php else: ?>
-            <!-- Regular Username for Fans -->
-            <div class="form-group">
-                <label>Username:</label>
-                <input type="text" name="username" id="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required pattern="[a-zA-Z0-9_]{3,}" title="3+ characters, letters, numbers, and underscores only">
-                <div class="requirement">3+ characters, letters, numbers, and underscores only</div>
-            </div>
-        <?php endif; ?>
-        
-        <div class="form-group">
-            <label>Email:</label>
-            <input type="email" name="email" id="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Password:</label>
-            <input type="password" name="password" id="password" required minlength="8">
-            <div class="password-requirements">
-                <div class="requirement" id="length-req">• At least 8 characters</div>
-                <div class="requirement" id="letter-req">• At least one letter</div>
-                <div class="requirement" id="number-req">• At least one number</div>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>Confirm Password:</label>
-            <input type="password" name="confirm_password" id="confirm_password" required>
-        </div>
-        
-        <button type="submit" class="btn" id="submitBtn">
-            <?php if ($user_type === 'creator'): ?>
-                📺 Create YouTuber Account
-            <?php else: ?>
-                💰 Create Account & Browse YouTubers
             <?php endif; ?>
-        </button>
-    </form>
-
-    <div class="links">
-        <a href="login.php<?php echo $return_to ? '?return_to=' . urlencode($return_to) : ''; ?>">Already have an account? Login here</a>
+        </div>
     </div>
 
     <script>
@@ -645,7 +787,11 @@ if ($_POST) {
     
     // Form submission feedback
     document.getElementById('registrationForm').addEventListener('submit', function() {
+        <?php if ($topic_funded || $topic_created): ?>
+        submitBtn.innerHTML = '⏳ Completing Account...';
+        <?php else: ?>
         submitBtn.innerHTML = '⏳ Creating Account...';
+        <?php endif; ?>
         submitBtn.disabled = true;
     });
     
