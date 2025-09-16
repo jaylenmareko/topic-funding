@@ -1,5 +1,5 @@
 <?php
-// topics/fund.php - Updated to allow guests to fund and redirect to signup
+// topics/fund.php - Updated to enforce $1 minimum (no free contributions)
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -39,7 +39,7 @@ if ($_POST) {
     
     $amount = InputSanitizer::sanitizeFloat($_POST['amount']);
     
-    // Validation
+    // UPDATED: Enforce $1 minimum (no free contributions)
     if ($amount < 1) {
         $errors[] = "Minimum contribution is $1";
     } elseif ($amount > 1000) {
@@ -128,10 +128,10 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
 // Get recent contributions
 $contributions = $helper->getTopicContributions($topic_id);
 
-// Suggested contribution amounts
-$suggested_amounts = [5, 10, 25];
-if ($remaining > 0 && $remaining <= 500) {
-    $suggested_amounts[] = $remaining; // Add "fund the rest" option
+// UPDATED: Suggested contribution amounts (minimum $1)
+$suggested_amounts = [1, 5, 10, 25];
+if ($remaining > 0 && $remaining <= 500 && $remaining >= 1) {
+    $suggested_amounts[] = ceil($remaining); // Add "fund the rest" option
 }
 $suggested_amounts = array_unique($suggested_amounts);
 sort($suggested_amounts);
@@ -277,7 +277,7 @@ sort($suggested_amounts);
                 </div>
 
                 <div class="form-section">
-                    <h3>Choose Your Contribution</h3>
+                    <h3>Choose Your Contribution (Minimum $1)</h3>
                     <div class="amount-buttons">
                         <?php foreach ($suggested_amounts as $amount): ?>
                             <button type="button" class="amount-btn" onclick="selectAmount(<?php echo $amount; ?>)">
@@ -294,7 +294,7 @@ sort($suggested_amounts);
                     
                     <div class="form-section">
                         <div class="custom-amount">
-                            <input type="number" name="amount" id="customAmount" placeholder="Enter custom amount ($1-$1000)" min="1" max="1000" step="1" required>
+                            <input type="number" name="amount" id="customAmount" placeholder="Enter amount ($1-$1000)" min="1" max="1000" step="1" required>
                         </div>
                     </div>
 
@@ -336,6 +336,7 @@ sort($suggested_amounts);
         const amount = parseFloat(document.getElementById('customAmount').value);
         const submitBtn = document.getElementById('submitBtn');
         
+        // UPDATED: Minimum $1 required
         if (amount >= 1 && amount <= 1000) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
@@ -359,6 +360,7 @@ sort($suggested_amounts);
     document.getElementById('fundingForm').addEventListener('submit', function(e) {
         const amount = parseFloat(document.getElementById('customAmount').value);
         
+        // UPDATED: $1 minimum validation
         if (!amount || amount < 1) {
             e.preventDefault();
             alert('Please enter a valid amount ($1 minimum)');
@@ -387,6 +389,9 @@ sort($suggested_amounts);
         submitBtn.innerHTML = '⏳ Processing...';
         submitBtn.disabled = true;
     });
+    
+    // Set initial minimum value
+    document.getElementById('customAmount').value = '1';
     
     // Initial validation
     validateForm();
