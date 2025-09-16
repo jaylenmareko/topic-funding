@@ -1,16 +1,13 @@
 <?php
-// topics/create.php - Simplified topic creation with pre-selected creator
+// topics/create.php - Guest-friendly topic creation
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
 require_once '../config/csrf.php';
 require_once '../config/sanitizer.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
-    exit;
-}
+// Allow both logged-in users and guests
+$is_logged_in = isset($_SESSION['user_id']);
 
 $helper = new DatabaseHelper();
 $creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
@@ -32,8 +29,10 @@ $errors = [];
 $success = '';
 
 if ($_POST) {
-    // CSRF Protection
-    CSRFProtection::requireValidToken();
+    // CSRF Protection - only for logged-in users
+    if ($is_logged_in) {
+        CSRFProtection::requireValidToken();
+    }
     
     $title = InputSanitizer::sanitizeString($_POST['title']);
     $description = InputSanitizer::sanitizeString($_POST['description']);
@@ -73,13 +72,34 @@ if ($_POST) {
                 $db = new Database();
                 $db->beginTransaction();
                 
+                // For guests creating free topics, we need a temporary user_id
+                if (!$is_logged_in) {
+                    // Create a temporary user for this guest
+                    $temp_email = 'guest_' . time() . '@temp.topiclaunch.com';
+                    $temp_username = 'guest_' . time();
+                    
+                    $db->query('
+                        INSERT INTO users (username, email, password_hash, full_name, is_active) 
+                        VALUES (:username, :email, :password_hash, :full_name, 0)
+                    ');
+                    $db->bind(':username', $temp_username);
+                    $db->bind(':email', $temp_email);
+                    $db->bind(':password_hash', password_hash('temp', PASSWORD_DEFAULT));
+                    $db->bind(':full_name', 'Guest User');
+                    $db->execute();
+                    
+                    $guest_user_id = $db->lastInsertId();
+                } else {
+                    $guest_user_id = $_SESSION['user_id'];
+                }
+                
                 // Create the topic (status = funded, no approval needed for free topics)
                 $db->query('
                     INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
                     VALUES (:creator_id, :user_id, :title, :description, 0, "funded", 0, NOW())
                 ');
                 $db->bind(':creator_id', $creator_id);
-                $db->bind(':user_id', $_SESSION['user_id']);
+                $db->bind(':user_id', $guest_user_id);
                 $db->bind(':title', $title);
                 $db->bind(':description', $description);
                 $db->execute();
@@ -97,12 +117,42 @@ if ($_POST) {
                 
                 $db->endTransaction();
                 
+                // Store success message in session for display
+                $_SESSION['topic_created'] = [
+                    'title' => $title,
+                    'creator_name' => $creator->display_name,
+                    'is_free' => true
+                ];
+                
                 // Redirect to creator profile to see the waiting upload topic
-                header('Location: ../creators/profile.php?id=' . $creator_id);
+                header('Location: ../creators/profile.php?id=' . $creator_id . '&created=1');
                 exit;
                 
             } else {
                 // Create paid topic with Stripe payment
+                $metadata = [
+                    'type' => 'topic_creation',
+                    'creator_id' => $creator_id,
+                    'title' => $title,
+                    'description' => $description,
+                    'funding_threshold' => $funding_threshold,
+                    'initial_contribution' => $initial_contribution,
+                    'is_guest' => $is_logged_in ? 'false' : 'true'
+                ];
+                
+                // Add user ID if logged in
+                if ($is_logged_in) {
+                    $metadata['user_id'] = $_SESSION['user_id'];
+                }
+                
+                // Create different success URLs for guests vs logged-in users
+                if ($is_logged_in) {
+                    $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation';
+                } else {
+                    // For guests, redirect to signup after payment with topic creation data
+                    $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_created=1&session_id={CHECKOUT_SESSION_ID}&creator_id=' . $creator_id;
+                }
+                
                 $session = \Stripe\Checkout\Session::create([
                     'payment_method_types' => ['card'],
                     'line_items' => [[
@@ -117,18 +167,10 @@ if ($_POST) {
                         'quantity' => 1,
                     ]],
                     'mode' => 'payment',
-                    'success_url' => 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
+                    'success_url' => $success_url,
                     'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
-                    'metadata' => [
-                        'type' => 'topic_creation',
-                        'creator_id' => $creator_id,
-                        'user_id' => $_SESSION['user_id'],
-                        'title' => $title,
-                        'description' => $description,
-                        'funding_threshold' => $funding_threshold,
-                        'initial_contribution' => $initial_contribution
-                    ],
-                    'customer_email' => $_SESSION['email'] ?? null,
+                    'metadata' => $metadata,
+                    'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
                 ]);
                 
                 header('Location: ' . $session->url);
@@ -148,15 +190,41 @@ if ($_POST) {
     <title>Create New Topic for <?php echo htmlspecialchars($creator->display_name); ?> - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 30px; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        
+        /* Guest-friendly navigation */
+        .guest-nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .nav-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+        .nav-logo:hover { color: white; text-decoration: none; }
+        
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
         .header h1 { margin: 0 0 10px 0; color: #333; }
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
         .creator-info { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
         .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
         .creator-details h3 { margin: 0 0 5px 0; color: #1976d2; }
+        
+        .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
@@ -171,19 +239,34 @@ if ($_POST) {
         .stat-number { font-size: 18px; font-weight: bold; color: #28a745; }
         .stat-label { font-size: 12px; color: #666; }
         small { color: #666; font-size: 14px; }
+        .guest-notice { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         
         @media (max-width: 600px) {
-            .container { margin: 10px; padding: 20px; }
+            .container { padding: 15px; }
             .creator-info { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
 <body>
+    <!-- Guest-friendly navigation -->
+    <nav class="guest-nav">
+        <div class="nav-container">
+            <a href="../index.php" class="nav-logo">TopicLaunch</a>
+            
+            <?php if ($is_logged_in): ?>
+                <div style="color: white;">
+                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
+                    <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </nav>
+
     <div class="container">
         <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" class="back-link">← Back to <?php echo htmlspecialchars($creator->display_name); ?></a>
 
         <div class="header">
-            <h1>💡 Create New Topic</h1>
+            <h1>Create New Topic</h1>
         </div>
         
         <!-- Creator Info -->
@@ -197,75 +280,82 @@ if ($_POST) {
                 <?php endif; ?>
             </div>
             <div class="creator-details">
-                <h3>Creating topic for: <?php echo htmlspecialchars($creator->display_name); ?></h3>
+                <h3>Creating topic for: @<?php echo htmlspecialchars($creator->display_name); ?></h3>
+                <p style="margin: 0; color: #666;">YouTube Creator</p>
             </div>
         </div>
 
-        <?php if (!empty($errors)): ?>
-            <?php foreach ($errors as $error): ?>
-                <div class="error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+        <div class="form-container">
+            <form method="POST" id="topicForm">
+                <?php if ($is_logged_in): ?>
+                    <?php echo CSRFProtection::getTokenField(); ?>
+                <?php endif; ?>
+                
+                <!-- Hidden creator ID -->
+                <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
 
-        <form method="POST" id="topicForm">
-            <?php echo CSRFProtection::getTokenField(); ?>
-            
-            <!-- Hidden creator ID -->
-            <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+                <div class="form-group">
+                    <label>Topic Title:</label>
+                    <input type="text" name="title" required minlength="10" maxlength="100" 
+                           placeholder="What should they make a video about?"
+                           value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
+                    <small>Be specific! Example: "How to edit videos for beginners"</small>
+                </div>
 
-            <div class="form-group">
-                <label>Topic Title:</label>
-                <input type="text" name="title" required minlength="10" maxlength="100" 
-                       placeholder="What should they make a video about?"
-                       value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-            </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea name="description" required minlength="30" 
+                              placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
+                    <small>The more details, the better content you'll get!</small>
+                </div>
 
-            <div class="form-group">
-                <label>Description:</label>
-                <textarea name="description" required minlength="30" 
-                          placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-            </div>
+                <div class="form-group">
+                    <label>Funding Goal ($):</label>
+                    <input type="number" name="funding_threshold" id="funding_threshold" 
+                           value="0" min="0" max="1000" step="1" required>
+                    <small>💡 Set to $0 for free topics! Or set a higher amount for premium content requests.</small>
+                </div>
 
-            <div class="form-group">
-                <label>Funding Goal ($):</label>
-                <input type="number" name="funding_threshold" id="funding_threshold" 
-                       value="0" min="0" max="1000" step="1" required>
-                <small>💡 Set to $0 to try the platform free! Creator gets exposure, you get content risk-free.</small>
-            </div>
+                <div class="form-group" id="paymentSection">
+                    <label>Your Payment ($):</label>
+                    <input type="number" name="initial_contribution" id="initial_contribution" 
+                           min="0" step="1" placeholder="0 for free topic">
+                    <small>Minimum $5 for paid topics, or $0 for free</small>
+                </div>
 
-            <div class="form-group" id="paymentSection">
-                <label>Your Payment ($):</label>
-                <input type="number" name="initial_contribution" id="initial_contribution" 
-                       min="0" step="1" placeholder="0 for free topic">
-                <small>Minimum $5 for paid topics, or $0 for free</small>
-            </div>
-
-            <div class="funding-preview" id="fundingPreview" style="display: none;">
-                <h4>💰 Funding Summary</h4>
-                <div class="funding-stats">
-                    <div class="stat">
-                        <div class="stat-number" id="goalAmount">$0</div>
-                        <div class="stat-label">Goal</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number" id="yourPayment">$0</div>
-                        <div class="stat-label">Your Payment</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number" id="remaining">$0</div>
-                        <div class="stat-label">Community Funds</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number" id="percentage">0%</div>
-                        <div class="stat-label">Initially Funded</div>
+                <div class="funding-preview" id="fundingPreview" style="display: none;">
+                    <h4>💰 Funding Summary</h4>
+                    <div class="funding-stats">
+                        <div class="stat">
+                            <div class="stat-number" id="goalAmount">$0</div>
+                            <div class="stat-label">Goal</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="yourPayment">$0</div>
+                            <div class="stat-label">Your Payment</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="remaining">$0</div>
+                            <div class="stat-label">Community Funds</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="percentage">0%</div>
+                            <div class="stat-label">Initially Funded</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <button type="submit" class="btn" id="submitBtn">
-                🆓 Create Free Topic
-            </button>
-        </form>
+                <button type="submit" class="btn" id="submitBtn">
+                    🆓 Create Free Topic
+                </button>
+            </form>
+        </div>
+        
+        <?php if (!empty($errors)): ?>
+            <?php foreach ($errors as $error): ?>
+                <div class="error" style="margin-top: 20px;"><?php echo htmlspecialchars($error); ?></div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 
     <script>
@@ -294,9 +384,9 @@ if ($_POST) {
         const percentage = goal > 0 ? Math.round((payment / goal) * 100) : 0;
 
         // Update display only
-        document.getElementById('goalAmount').textContent = '$' + goal;
-        document.getElementById('yourPayment').textContent = '$' + payment;
-        document.getElementById('remaining').textContent = '$' + remaining;
+        document.getElementById('goalAmount').textContent = ' + goal;
+        document.getElementById('yourPayment').textContent = ' + payment;
+        document.getElementById('remaining').textContent = ' + remaining;
         document.getElementById('percentage').textContent = percentage + '%';
 
         // Show/hide preview
@@ -313,7 +403,12 @@ if ($_POST) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
         } else {
+            <?php if ($is_logged_in): ?>
             submitBtn.textContent = '💳 Create Topic & Pay';
+            <?php else: ?>
+            submitBtn.textContent = '💳 Pay & Create Account';
+            <?php endif; ?>
+            
             const minPayment = Math.max(5, goal * 0.1);
             
             if (payment >= minPayment && payment <= goal) {
@@ -332,13 +427,19 @@ if ($_POST) {
         const payment = parseInt(document.getElementById('initial_contribution').value);
 
         if (goal == 0) {
-            if (!confirm(`Create FREE topic for <?php echo addslashes($creator->display_name); ?>?\n\nNo payment needed - topic will go live immediately!`)) {
+            if (!confirm(`Create FREE topic for @<?php echo addslashes($creator->display_name); ?>?\n\nNo payment needed - topic will go live immediately!`)) {
                 e.preventDefault();
                 return;
             }
             document.getElementById('submitBtn').innerHTML = '⏳ Creating Free Topic...';
         } else {
-            if (!confirm(`Create topic for <?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately!`)) {
+            <?php if ($is_logged_in): ?>
+            const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with ${payment} payment?\n\nTopic will go live immediately!`;
+            <?php else: ?>
+            const confirmText = `Pay ${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
+            <?php endif; ?>
+            
+            if (!confirm(confirmText)) {
                 e.preventDefault();
                 return;
             }
