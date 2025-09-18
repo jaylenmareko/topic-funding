@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - COMPLETE FIXED VERSION
+// config/funding_processor.php - FIXED VERSION for guest payments
 require_once 'database.php';
 require_once 'notification_system.php';
 
@@ -15,6 +15,14 @@ class FundingProcessor {
     public function handlePaymentSuccess($payment_intent_id) {
         try {
             error_log("Processing payment success for: " . $payment_intent_id);
+            
+            // Check if already processed
+            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+            $this->db->bind(':payment_id', $payment_intent_id);
+            if ($this->db->single()) {
+                error_log("Payment already processed: " . $payment_intent_id);
+                return ['success' => true, 'message' => 'Payment already processed'];
+            }
             
             // Get payment intent from Stripe
             $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
@@ -71,14 +79,6 @@ class FundingProcessor {
             }
             
             error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount, Guest: " . ($is_guest ? 'yes' : 'no'));
-            
-            // Check if already processed
-            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
-            $this->db->bind(':payment_id', $payment_intent_id);
-            if ($this->db->single()) {
-                error_log("Payment already processed: " . $payment_intent_id);
-                return ['success' => true, 'message' => 'Payment already processed'];
-            }
             
             $this->db->beginTransaction();
             
@@ -138,29 +138,19 @@ class FundingProcessor {
                 $this->db->execute();
                 
                 $fully_funded = true;
-                
-                // Commit transaction BEFORE sending notifications
-                $this->db->endTransaction();
-                
-                // Send funding notifications AFTER transaction is committed
+            }
+            
+            $this->db->endTransaction();
+            
+            // Send notifications after transaction is committed
+            if ($fully_funded) {
                 try {
                     error_log("Sending funding notifications for topic: " . $topic_id);
                     $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
                     error_log("Notification result: " . json_encode($notification_result));
-                    
-                    if ($notification_result['success']) {
-                        error_log("Funding notifications sent successfully");
-                    } else {
-                        error_log("Notification sending failed: " . $notification_result['error']);
-                    }
                 } catch (Exception $e) {
                     error_log("Notification error: " . $e->getMessage());
-                    // Don't fail the payment for notification errors
                 }
-            } else {
-                // Commit transaction if not fully funded
-                $this->db->endTransaction();
-                error_log("Topic not yet fully funded - need $" . ($topic_after->funding_threshold - $topic_after->current_funding) . " more");
             }
             
             error_log("Topic funding processed successfully");
@@ -177,7 +167,7 @@ class FundingProcessor {
             ];
             
         } catch (Exception $e) {
-            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
+            if ($this->db->inTransaction()) {
                 $this->db->cancelTransaction();
             }
             error_log("Topic funding processing error: " . $e->getMessage());
@@ -194,7 +184,9 @@ class FundingProcessor {
             $initial_contribution = floatval($metadata->initial_contribution);
             $is_guest = ($metadata->is_guest ?? 'false') === 'true';
             
-            // REMOVED: Free topic logic - all topics now require payment
+            error_log("Processing topic creation - Creator: $creator_id, Title: $title, Amount: $initial_contribution, Guest: " . ($is_guest ? 'yes' : 'no'));
+            
+            // Minimum $1 validation
             if ($initial_contribution < 1) {
                 throw new Exception("Minimum payment of $1 required for topic creation");
             }
@@ -202,18 +194,10 @@ class FundingProcessor {
             // Handle guest vs logged-in user
             if ($is_guest) {
                 $user_id = $this->handleGuestUser($payment_intent_id, $initial_contribution);
+                error_log("Created guest user ID: " . $user_id);
             } else {
                 $user_id = $metadata->user_id;
-            }
-            
-            error_log("Processing topic creation - Creator: $creator_id, User: $user_id, Amount: $initial_contribution, Guest: " . ($is_guest ? 'yes' : 'no'));
-            
-            // Check if already processed
-            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
-            $this->db->bind(':payment_id', $payment_intent_id);
-            if ($this->db->single()) {
-                error_log("Payment already processed: " . $payment_intent_id);
-                return ['success' => true, 'message' => 'Payment already processed'];
+                error_log("Using logged-in user ID: " . $user_id);
             }
             
             $this->db->beginTransaction();
@@ -263,41 +247,21 @@ class FundingProcessor {
                 ');
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
-                
-                $fully_funded = true;
-                
-                // Commit transaction BEFORE sending notifications
-                $this->db->endTransaction();
-                
-                // Send funding notifications AFTER transaction is committed
-                try {
-                    error_log("Sending funding notifications for topic: " . $topic_id);
-                    $notification_result = $this->notificationSystem->handleTopicFunded($topic_id);
-                    error_log("Notification result: " . json_encode($notification_result));
-                    
-                    if ($notification_result['success']) {
-                        error_log("Funding notifications sent successfully");
-                    } else {
-                        error_log("Notification sending failed: " . $notification_result['error']);
-                    }
-                } catch (Exception $e) {
-                    error_log("Notification error: " . $e->getMessage());
-                    // Don't fail the payment for notification errors
-                }
-            } else {
-                // Commit transaction if not immediately funded
-                $this->db->endTransaction();
-                error_log("Topic created but not fully funded yet");
             }
             
-            // Send topic live notification AFTER transaction is committed
+            $this->db->endTransaction();
+            
+            // Send notifications after transaction is committed
             try {
                 error_log("Sending topic live notification for: " . $topic_id);
                 $this->notificationSystem->sendTopicLiveNotification($topic_id);
-                error_log("Topic live notifications sent");
+                
+                if ($fully_funded) {
+                    error_log("Sending funding notifications for immediately funded topic");
+                    $this->notificationSystem->handleTopicFunded($topic_id);
+                }
             } catch (Exception $e) {
                 error_log("Notification error: " . $e->getMessage());
-                // Don't fail the payment for notification errors
             }
             
             error_log("Topic creation processed successfully");
@@ -311,7 +275,7 @@ class FundingProcessor {
             ];
             
         } catch (Exception $e) {
-            if (method_exists($this->db, 'inTransaction') && $this->db->inTransaction()) {
+            if ($this->db->inTransaction()) {
                 $this->db->cancelTransaction();
             }
             error_log("Topic creation processing error: " . $e->getMessage());
@@ -320,7 +284,7 @@ class FundingProcessor {
     }
     
     /**
-     * Handle guest user creation for payments - FIXED VERSION
+     * Handle guest user creation for payments - IMPROVED VERSION
      */
     private function handleGuestUser($payment_intent_id, $amount) {
         try {
@@ -328,29 +292,23 @@ class FundingProcessor {
             $guest_email = 'guest_' . time() . '_' . substr($payment_intent_id, -8) . '@temp.topiclaunch.com';
             $guest_username = 'guest_' . time() . '_' . substr($payment_intent_id, -8);
             
-            // Check if is_guest column exists
-            $this->db->query('DESCRIBE users');
-            $columns = $this->db->resultSet();
+            error_log("Creating guest user: " . $guest_username . " with email: " . $guest_email);
             
-            $has_is_guest = false;
-            foreach ($columns as $column) {
-                if ($column->Field === 'is_guest') {
-                    $has_is_guest = true;
-                    break;
-                }
-            }
+            // Check if is_guest column exists
+            $this->db->query('SHOW COLUMNS FROM users LIKE "is_guest"');
+            $has_is_guest = $this->db->single() ? true : false;
             
             if ($has_is_guest) {
                 // New version with is_guest column
                 $this->db->query('
                     INSERT INTO users (username, email, password_hash, full_name, is_active, is_guest) 
-                    VALUES (:username, :email, :password_hash, :full_name, 0, 1)
+                    VALUES (:username, :email, :password_hash, :full_name, 1, 1)
                 ');
             } else {
                 // Fallback for old version without is_guest column
                 $this->db->query('
                     INSERT INTO users (username, email, password_hash, full_name, is_active) 
-                    VALUES (:username, :email, :password_hash, :full_name, 0)
+                    VALUES (:username, :email, :password_hash, :full_name, 1)
                 ');
             }
             
@@ -361,73 +319,9 @@ class FundingProcessor {
             $this->db->execute();
             
             $guest_user_id = $this->db->lastInsertId();
+            error_log("Created guest user with ID: " . $guest_user_id);
             
             // Store guest payment info for later account claiming
-            $this->db->query('
-                INSERT INTO guest_payments (guest_user_id, payment_intent_id, amount, created_at)
-                VALUES (:guest_user_id, :payment_intent_id, :amount, NOW())
-                ON DUPLICATE KEY UPDATE amount = :amount
-            ');
-            $this->db->bind(':guest_user_id', $guest_user_id);
-            $this->db->bind(':payment_intent_id', $payment_intent_id);
-            $this->db->bind(':amount', $amount);
-            $this->db->execute();
-            
-            error_log("Created guest user ID: " . $guest_user_id . " for payment: " . $payment_intent_id);
-            
-            return $guest_user_id;
-            
-        } catch (Exception $e) {
-            error_log("Failed to create guest user: " . $e->getMessage());
-            throw $e;
-        }
-    }
-    
-    public function handlePaymentFailure($payment_intent_id, $error_message) {
-        error_log("Payment failed: $payment_intent_id - $error_message");
-        
-        // Log the failure but don't fail the webhook
-        // The user will see the failure in Stripe checkout
-        
-        return ['success' => true]; // Always return success for webhook
-    }
-    
-    /**
-     * Create required tables for guest payment handling - IMPROVED VERSION
-     */
-    public function createGuestPaymentTables() {
-        try {
-            // Check if is_guest column exists
-            $this->db->query('DESCRIBE users');
-            $columns = $this->db->resultSet();
-            
-            $has_is_guest = false;
-            foreach ($columns as $column) {
-                if ($column->Field === 'is_guest') {
-                    $has_is_guest = true;
-                    break;
-                }
-            }
-            
-            // Add is_guest column if it doesn't exist
-            if (!$has_is_guest) {
-                $this->db->query("
-                    ALTER TABLE users 
-                    ADD COLUMN is_guest TINYINT(1) DEFAULT 0 AFTER is_active
-                ");
-                $this->db->execute();
-                error_log("Added is_guest column to users table");
-                
-                // Update existing temp guest users
-                $this->db->query("
-                    UPDATE users 
-                    SET is_guest = 1 
-                    WHERE email LIKE '%@temp.topiclaunch.com'
-                ");
-                $this->db->execute();
-            }
-            
-            // Create guest_payments table
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS guest_payments (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -444,13 +338,29 @@ class FundingProcessor {
             ");
             $this->db->execute();
             
+            $this->db->query('
+                INSERT INTO guest_payments (guest_user_id, payment_intent_id, amount, created_at)
+                VALUES (:guest_user_id, :payment_intent_id, :amount, NOW())
+                ON DUPLICATE KEY UPDATE amount = :amount
+            ');
+            $this->db->bind(':guest_user_id', $guest_user_id);
+            $this->db->bind(':payment_intent_id', $payment_intent_id);
+            $this->db->bind(':amount', $amount);
+            $this->db->execute();
+            
+            error_log("Stored guest payment info for payment: " . $payment_intent_id);
+            
+            return $guest_user_id;
+            
         } catch (Exception $e) {
-            error_log("Failed to create guest payment tables: " . $e->getMessage());
+            error_log("Failed to create guest user: " . $e->getMessage());
+            throw $e;
         }
     }
+    
+    public function handlePaymentFailure($payment_intent_id, $error_message) {
+        error_log("Payment failed: $payment_intent_id - $error_message");
+        return ['success' => true]; // Always return success for webhook
+    }
 }
-
-// Initialize guest payment tables
-$processor = new FundingProcessor();
-$processor->createGuestPaymentTables();
 ?>
