@@ -1,5 +1,5 @@
 <?php
-// topics/create.php - Guest-friendly topic creation - NO FREE TOPICS, $1 MINIMUM
+// topics/create.php - FIXED Guest-friendly topic creation
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -63,21 +63,24 @@ if ($_POST) {
     // Process topic creation if no errors
     if (empty($errors)) {
         try {
-            // All topics now require payment - create Stripe session
+            // Create comprehensive metadata for webhook processing
             $metadata = [
                 'type' => 'topic_creation',
-                'creator_id' => $creator_id,
+                'creator_id' => (string)$creator_id,
                 'title' => $title,
                 'description' => $description,
-                'funding_threshold' => $funding_threshold,
-                'initial_contribution' => $initial_contribution,
-                'is_guest' => $is_logged_in ? 'false' : 'true'
+                'funding_threshold' => (string)$funding_threshold,
+                'initial_contribution' => (string)$initial_contribution,
+                'is_guest' => $is_logged_in ? 'false' : 'true',
+                'timestamp' => (string)time()
             ];
             
             // Add user ID if logged in
             if ($is_logged_in) {
-                $metadata['user_id'] = $_SESSION['user_id'];
+                $metadata['user_id'] = (string)$_SESSION['user_id'];
             }
+            
+            error_log("Creating Stripe session with metadata: " . json_encode($metadata));
             
             // Create different success URLs for guests vs logged-in users
             if ($is_logged_in) {
@@ -106,6 +109,9 @@ if ($_POST) {
                 'metadata' => $metadata,
                 'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
             ]);
+            
+            error_log("Created Stripe session: " . $session->id);
+            error_log("Redirecting to: " . $session->url);
             
             header('Location: ' . $session->url);
             exit;
@@ -213,6 +219,13 @@ if ($_POST) {
             </div>
         </div>
 
+        <?php if (!$is_logged_in): ?>
+        <div class="guest-notice">
+            <strong>💡 Creating as a guest?</strong><br>
+            After your payment, you'll create a free account to track your topic and get notified when it's funded!
+        </div>
+        <?php endif; ?>
+
         <div class="form-container">
             <form method="POST" id="topicForm">
                 <?php if ($is_logged_in): ?>
@@ -227,30 +240,38 @@ if ($_POST) {
                     <input type="text" name="title" required minlength="10" maxlength="100" 
                            placeholder="What should they make a video about?"
                            value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
+                    <small>Minimum 10 characters - be specific about what you want!</small>
                 </div>
 
                 <div class="form-group">
                     <label>Description:</label>
                     <textarea name="description" required minlength="30" 
-                              placeholder="Explain what you want them to cover..."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
+                              placeholder="Explain in detail what you want them to cover, specific points to address, format preferences, etc."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
+                    <small>Minimum 30 characters - the more detail, the better the content!</small>
                 </div>
 
                 <div class="form-group">
                     <label>Funding Goal ($):</label>
                     <input type="number" name="funding_threshold" id="funding_threshold" 
-                           value="10" min="1" max="1000" step="1" required>
+                           value="<?php echo isset($_POST['funding_threshold']) ? $_POST['funding_threshold'] : '10'; ?>" 
+                           min="1" max="1000" step="1" required>
                     <small>Minimum $1 required. Higher amounts for premium content requests.</small>
                 </div>
 
                 <div class="form-group">
-                    <label>Your Payment ($):</label>
+                    <label>Your Initial Payment ($):</label>
                     <input type="number" name="initial_contribution" id="initial_contribution" 
+                           value="<?php echo isset($_POST['initial_contribution']) ? $_POST['initial_contribution'] : '1'; ?>" 
                            min="1" step="1" placeholder="Minimum $1" required>
-                    <small>Minimum $1 required</small>
+                    <small>Minimum $1 required to create the topic</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    Create Topic
+                    <?php if ($is_logged_in): ?>
+                        💳 Pay & Create Topic
+                    <?php else: ?>
+                        💳 Pay & Create Account + Topic
+                    <?php endif; ?>
                 </button>
             </form>
         </div>
@@ -293,8 +314,6 @@ if ($_POST) {
         // Update submit button
         const submitBtn = document.getElementById('submitBtn');
         
-        submitBtn.textContent = 'Create Topic';
-        
         const minPayment = Math.max(1, goal * 0.1);
         
         if (payment >= minPayment && payment <= goal && goal >= 1) {
@@ -310,7 +329,10 @@ if ($_POST) {
     document.getElementById('topicForm').addEventListener('submit', function(e) {
         const goal = parseInt(document.getElementById('funding_threshold').value);
         const payment = parseInt(document.getElementById('initial_contribution').value);
+        const title = document.querySelector('input[name="title"]').value.trim();
+        const description = document.querySelector('textarea[name="description"]').value.trim();
 
+        // Validation
         if (goal < 1) {
             e.preventDefault();
             alert('Minimum funding goal is $1');
@@ -323,22 +345,34 @@ if ($_POST) {
             return;
         }
 
+        if (title.length < 10) {
+            e.preventDefault();
+            alert('Topic title must be at least 10 characters');
+            return;
+        }
+
+        if (description.length < 30) {
+            e.preventDefault();
+            alert('Description must be at least 30 characters');
+            return;
+        }
+
         <?php if ($is_logged_in): ?>
-        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately!`;
+        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with ${payment} payment?\n\nTopic will go live immediately for community funding!`;
         <?php else: ?>
-        const confirmText = `Pay $${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
+        const confirmText = `Pay ${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
         <?php endif; ?>
         
         if (!confirm(confirmText)) {
             e.preventDefault();
             return;
         }
+        
         document.getElementById('submitBtn').innerHTML = '⏳ Processing Payment...';
         document.getElementById('submitBtn').disabled = true;
     });
 
-    // Set initial values and update
-    document.getElementById('initial_contribution').value = '1';
+    // Initial validation
     updateButtons();
     </script>
 </body>
