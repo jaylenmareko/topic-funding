@@ -208,7 +208,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <?php else: ?>
             <div class="creator-grid">
                 <?php foreach ($creators as $creator): ?>
-                    <a href="profile.php?id=<?php echo $creator->id; ?>" class="creator-card">
+                    <!-- UPDATED: Link directly to topic creation instead of profile -->
+                    <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="creator-card">
                         <div class="creator-image">
                             <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                                 <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
