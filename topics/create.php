@@ -48,14 +48,16 @@ if ($_POST) {
         $errors[] = "Description required (30+ characters)";
     }
     
-    // UPDATED: No free topics, minimum $1
-    if ($funding_threshold < 1 || $funding_threshold > 1000) {
-        $errors[] = "Funding goal must be $1-$1000";
+    // UPDATED: No free topics, minimum $1, no maximum limit
+    if ($funding_threshold < 1) {
+        $errors[] = "Funding goal must be at least $1";
     }
     
-    // UPDATED: Minimum $1 payment required
-    if ($initial_contribution < 1 || $initial_contribution > $funding_threshold) {
-        $errors[] = "Initial payment must be $1-" . $funding_threshold;
+    // UPDATED: Minimum $1 payment required, no maximum limit
+    if ($initial_contribution < 1) {
+        $errors[] = "Initial payment must be at least $1";
+    } elseif ($initial_contribution > $funding_threshold) {
+        $errors[] = "Initial payment cannot exceed funding goal";
     } elseif ($initial_contribution < ($funding_threshold * 0.1)) {
         $errors[] = "Initial payment must be at least 10% of goal";
     }
@@ -199,9 +201,7 @@ if ($_POST) {
     <div class="container">
         <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" class="back-link">← Back to <?php echo htmlspecialchars($creator->display_name); ?></a>
 
-        <div class="header">
-            <h1>Create New Topic</h1>
-        </div>
+
         
         <!-- Creator Info -->
         <div class="creator-info">
@@ -240,22 +240,22 @@ if ($_POST) {
                     <input type="text" name="title" required minlength="10" maxlength="100" 
                            placeholder="What should they make a video about?"
                            value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-                    <small>Minimum 10 characters - be specific about what you want!</small>
+                    <small>Minimum 10 characters</small>
                 </div>
 
                 <div class="form-group">
                     <label>Description:</label>
                     <textarea name="description" required minlength="30" 
                               placeholder="Explain in detail what you want them to cover, specific points to address, format preferences, etc."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-                    <small>Minimum 30 characters - the more detail, the better the content!</small>
+                    <small>Minimum 30 characters</small>
                 </div>
 
                 <div class="form-group">
                     <label>Funding Goal ($):</label>
                     <input type="number" name="funding_threshold" id="funding_threshold" 
                            value="<?php echo isset($_POST['funding_threshold']) ? $_POST['funding_threshold'] : '10'; ?>" 
-                           min="1" max="1000" step="1" required>
-                    <small>Minimum $1 required. Higher amounts for premium content requests.</small>
+                           min="1" step="1" required>
+                    <small>Minimum $1</small>
                 </div>
 
                 <div class="form-group">
@@ -263,15 +263,11 @@ if ($_POST) {
                     <input type="number" name="initial_contribution" id="initial_contribution" 
                            value="<?php echo isset($_POST['initial_contribution']) ? $_POST['initial_contribution'] : '1'; ?>" 
                            min="1" step="1" placeholder="Minimum $1" required>
-                    <small>Minimum $1 required to create the topic</small>
+                    <small>Minimum $1</small>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
-                    <?php if ($is_logged_in): ?>
-                        💳 Pay & Create Topic
-                    <?php else: ?>
-                        💳 Pay & Create Account + Topic
-                    <?php endif; ?>
+                    Create Topic
                 </button>
             </form>
         </div>
@@ -358,9 +354,9 @@ if ($_POST) {
         }
 
         <?php if ($is_logged_in): ?>
-        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with ${payment} payment?\n\nTopic will go live immediately for community funding!`;
+        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately for community funding!`;
         <?php else: ?>
-        const confirmText = `Pay ${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
+        const confirmText = `Pay $${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
         <?php endif; ?>
         
         if (!confirm(confirmText)) {
