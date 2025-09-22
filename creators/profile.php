@@ -1,5 +1,5 @@
 <?php
-// creators/profile.php - Updated with guest-friendly navigation
+// creators/profile.php - Updated with guest-friendly navigation and creator redirect
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
