@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Creator dashboard with FIXED empty state and profile link
+// creators/dashboard.php - Creator dashboard with FIXED copy link functionality
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -156,6 +156,37 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
         }
         
+        /* ADDED: Copy link button styling */
+        .copy-link-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .copy-link-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-1px);
+        }
+        
+        .copy-link-btn.copied {
+            background: rgba(40, 167, 69, 0.9);
+            border-color: rgba(40, 167, 69, 1);
+        }
+        
         .status {
             background: rgba(255,255,255,0.2); 
             padding: 8px 16px; 
@@ -164,6 +195,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             font-weight: 500; 
             align-self: flex-start; 
             margin-bottom: 20px;
+            margin-right: 120px; /* Add space for copy button */
         }
         .status.funded { 
             background: rgba(40, 167, 69, 0.3); 
@@ -481,7 +513,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             visibility: visible;
         }
         
-        /* FIXED: Copy Profile Link Button */
+        /* Copy Profile Link Button */
         .copy-profile-btn {
             background: #28a745;
             color: white;
@@ -525,6 +557,10 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             .nav-btn.right { right: 15px; }
             .mobile-menu-btn { display: block; }
             .upload-buttons { flex-direction: column; }
+            .copy-link-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
         }
         
         .topiclaunch-nav .nav-mobile-toggle { display: none !important; }
@@ -543,6 +579,9 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
 
     <div class="header">
         <h1 class="title">Make Videos, Get Paid</h1>
+        <button onclick="copyProfileLink()" class="copy-profile-btn" id="copyProfileBtn" style="margin-top: 20px;">
+            🔗 Copy Profile Link
+        </button>
     </div>
 
     <div class="container">
@@ -556,6 +595,11 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 <?php foreach ($topics as $index => $topic): ?>
                     <div class="card" data-topic="<?php echo $topic->id; ?>" data-index="<?php echo $index; ?>">
                         
+                        <!-- ADDED: Copy link button -->
+                        <button class="copy-link-btn" onclick="copyTopicLink(<?php echo $topic->id; ?>)" id="copyBtn-<?php echo $topic->id; ?>">
+                            🔗 Copy Link
+                        </button>
+                        
                         <?php if ($topic->status === 'funded'): ?>
                             <div class="status funded">
                                 Funded<?php if ($topic->hours_remaining > 0): ?> - <span class="countdown-timer" 
@@ -564,6 +608,8 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                             </div>
                         <?php elseif ($topic->status === 'on_hold'): ?>
                             <div class="status">⏸️ On Hold</div>
+                        <?php else: ?>
+                            <div class="status">Active</div>
                         <?php endif; ?>
                         
                         <div class="card-content">
@@ -640,7 +686,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <!-- FIXED: Empty state with profile link and better styling -->
+                <!-- Empty state with profile link -->
                 <div class="card empty">
                     <div class="card-content">
                         <h3 class="topic-title">No Active Topics</h3>
@@ -675,6 +721,57 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         let currentIndex = 0;
         const totalTopics = <?php echo count($topics); ?>;
         const cards = Array.from(document.querySelectorAll('.card'));
+
+        // ADDED: Copy topic link functionality
+        function copyTopicLink(topicId) {
+            const topicUrl = window.location.origin + '/topics/fund.php?id=' + topicId;
+            
+            const btn = document.getElementById('copyBtn-' + topicId);
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(topicUrl).then(() => {
+                    showCopyFeedback(btn);
+                }).catch(() => {
+                    fallbackCopyText(topicUrl, btn);
+                });
+            } else {
+                fallbackCopyText(topicUrl, btn);
+            }
+        }
+
+        function fallbackCopyText(text, btn) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback(btn);
+            } catch (err) {
+                console.error('Failed to copy');
+                alert('Could not copy link. Please copy manually: ' + text);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopyFeedback(btn) {
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
+        }
 
         function initializeCards() {
             if (totalTopics === 0) {
@@ -802,7 +899,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
                     touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
                     
-                    if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form')) {
+                    if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form, .copy-link-btn')) {
                         return;
                     }
                     
@@ -855,22 +952,22 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             });
         }
 
-        // FIXED: Copy profile link function
+        // Copy profile link function
         function copyProfileLink() {
             const profileUrl = window.location.origin + '/creators/profile.php?id=<?php echo $creator->id; ?>';
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(profileUrl).then(() => {
-                    showCopyFeedback();
+                    showProfileCopyFeedback();
                 }).catch(() => {
-                    fallbackCopyText(profileUrl);
+                    fallbackCopyProfileText(profileUrl);
                 });
             } else {
-                fallbackCopyText(profileUrl);
+                fallbackCopyProfileText(profileUrl);
             }
         }
 
-        function fallbackCopyText(text) {
+        function fallbackCopyProfileText(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
@@ -882,7 +979,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             
             try {
                 document.execCommand('copy');
-                showCopyFeedback();
+                showProfileCopyFeedback();
             } catch (err) {
                 console.error('Failed to copy');
                 alert('Could not copy link. Please copy manually: ' + text);
@@ -891,8 +988,8 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             document.body.removeChild(textArea);
         }
 
-        function showCopyFeedback() {
-            const btn = document.getElementById('copyLinkBtn');
+        function showProfileCopyFeedback() {
+            const btn = document.getElementById('copyProfileBtn');
             if (btn) {
                 const originalText = btn.textContent;
                 btn.textContent = '✅ Copied!';
@@ -1056,7 +1153,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
         }
 
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn, .upload-form, .earning-display.funded')) {
+            if (e.target.closest('.action-btn, .upload-form, .earning-display.funded, .copy-link-btn')) {
                 e.stopPropagation();
             }
         });
