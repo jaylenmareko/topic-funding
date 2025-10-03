@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation with clickable logo for fans
+// config/navigation.php - Updated navigation with edit profile button
 function renderNavigation($current_page = '', $is_profile_page = false) {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -9,12 +9,17 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     // Check user roles
     $is_admin = $is_logged_in && in_array($user_id, [1, 2, 9]);
     $is_creator = false;
+    $creator_id = null;
     
     if ($is_logged_in) {
         $db = new Database();
         $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
         $db->bind(':user_id', $user_id);
-        $is_creator = $db->single() ? true : false;
+        $creator = $db->single();
+        if ($creator) {
+            $is_creator = true;
+            $creator_id = $creator->id;
+        }
     }
     
     // Determine base path based on current location
@@ -192,9 +197,16 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
                         </a>
                     <?php endif; ?>
                     
-                    <!-- User Info & Logout -->
+                    <!-- User Info & Actions -->
                     <div class="nav-user">
                         <span>Hi, <?php echo htmlspecialchars($username); ?>!</span>
+                        
+                        <?php if ($is_creator && $creator_id): ?>
+                            <a href="<?php echo $base_path; ?>creators/edit.php?id=<?php echo $creator_id; ?>" class="nav-link">
+                                Edit Profile
+                            </a>
+                        <?php endif; ?>
+                        
                         <a href="<?php echo $base_path; ?>auth/logout.php" class="nav-link">Logout</a>
                     </div>
                     
