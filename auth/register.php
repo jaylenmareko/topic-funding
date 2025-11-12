@@ -46,19 +46,22 @@ if ($_POST) {
     $return_to = $_POST['return_to'] ?? $return_to;
     
     if ($user_type === 'creator') {
-        // For creators, use YouTube handle instead of username
-        $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+        // Get platform type for creators
+        $platform_type = trim($_POST['platform_type'] ?? 'youtube');
+        
+        // For creators, use platform handle instead of username
+        $platform_handle = trim($_POST['platform_handle'] ?? '');
         
         // Remove @ if user included it
-        if (strpos($youtube_handle, '@') === 0) {
-            $youtube_handle = substr($youtube_handle, 1);
+        if (strpos($platform_handle, '@') === 0) {
+            $platform_handle = substr($platform_handle, 1);
         }
         
         // Additional cleanup - trim again after @ removal
-        $youtube_handle = trim($youtube_handle);
+        $platform_handle = trim($platform_handle);
         
-        // Use YouTube handle as username
-        $username = $youtube_handle;
+        // Use platform handle as username
+        $username = $platform_handle;
         
         // Get PayPal email for creators
         $paypal_email = trim(InputSanitizer::sanitizeEmail($_POST['paypal_email'] ?? ''));
@@ -113,24 +116,27 @@ if ($_POST) {
     
     // Validation
     if ($user_type === 'creator') {
-        // YouTube handle validation
-        if (empty($youtube_handle)) {
-            $errors[] = "YouTube handle is required";
-        } elseif (strlen($youtube_handle) < 3) {
-            $errors[] = "YouTube handle must be at least 3 characters";
-        } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
-            $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
-        } elseif (preg_match('/^[0-9._-]+$/', $youtube_handle)) {
-            $errors[] = "YouTube handle must contain at least one letter";
+        // Platform handle validation
+        if (empty($platform_handle)) {
+            $errors[] = "Platform handle is required";
+        } elseif (strlen($platform_handle) < 3) {
+            $errors[] = "Platform handle must be at least 3 characters";
+        } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $platform_handle)) {
+            $errors[] = "Platform handle can only contain letters, numbers, dots, dashes, and underscores";
+        } elseif (preg_match('/^[0-9._-]+$/', $platform_handle)) {
+            $errors[] = "Platform handle must contain at least one letter";
         } elseif ($helper->usernameExists($username)) {
-            $errors[] = "YouTube handle already exists";
+            $errors[] = "Platform handle already exists";
         } else {
-            // Verify YouTube handle exists
-            $youtube_url = "https://www.youtube.com/@" . $youtube_handle;
-            $headers = @get_headers($youtube_url);
-            if (!$headers || strpos($headers[0], '200') === false) {
-                $errors[] = "YouTube handle '@{$youtube_handle}' does not exist. Please enter a valid YouTube handle.";
+            // Verify platform handle exists
+            if ($platform_type === 'youtube') {
+                $platform_url = "https://www.youtube.com/@" . $platform_handle;
+                $headers = @get_headers($platform_url);
+                if (!$headers || strpos($headers[0], '200') === false) {
+                    $errors[] = "YouTube handle '@{$platform_handle}' does not exist. Please enter a valid YouTube handle.";
+                }
             }
+            // Add validation for other platforms as needed
         }
     } else {
         // Regular username validation for fans
@@ -220,8 +226,16 @@ if ($_POST) {
                 // Generate creator username from user username
                 $creator_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $username)) . '_' . $user_id;
                 
-                // Construct YouTube URL with @username format
-                $platform_url = 'https://youtube.com/@' . $youtube_handle;
+                // Construct platform URL based on platform type
+                $platform_urls = [
+                    'youtube' => 'https://youtube.com/@' . $platform_handle,
+                    'instagram' => 'https://instagram.com/' . $platform_handle,
+                    'tiktok' => 'https://tiktok.com/@' . $platform_handle,
+                    'twitter' => 'https://twitter.com/' . $platform_handle,
+                    'twitch' => 'https://twitch.tv/' . $platform_handle
+                ];
+                
+                $platform_url = $platform_urls[$platform_type] ?? 'https://youtube.com/@' . $platform_handle;
                 
                 // Create creator profile immediately with PayPal email
                 $db->query('
@@ -263,8 +277,8 @@ if ($_POST) {
                 $db->bind(':username', $creator_username);
                 $db->bind(':display_name', $username);
                 $db->bind(':email', $email);
-                $db->bind(':bio', 'YouTube Creator on TopicLaunch');
-                $db->bind(':platform_type', 'youtube');
+                $db->bind(':bio', ucfirst($platform_type) . ' Creator on TopicLaunch');
+                $db->bind(':platform_type', $platform_type);
                 $db->bind(':platform_url', $platform_url);
                 $db->bind(':subscriber_count', 1000);
                 $db->bind(':default_funding_threshold', 50.00);
@@ -412,24 +426,14 @@ if ($topic_created && $creator_id) {
         .topic-summary { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .topic-title { font-weight: bold; color: #1976d2; margin-bottom: 5px; }
         
-        .user-type-indicator { 
-            background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; 
-            color: white; 
-            padding: 10px 20px; 
-            border-radius: 20px;
-            font-size: 14px; 
-            font-weight: 500; 
-            text-align: center; 
-            margin-bottom: 20px; 
-        }
-        
         .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        input[type="text"], input[type="email"], input[type="password"], input[type="file"] { 
+        input[type="text"], input[type="email"], input[type="password"], input[type="file"], select { 
             width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px;
         }
-        .btn { background: <?php echo $user_type === 'creator' ? '#ff0000' : '#28a745'; ?>; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
+        select { cursor: pointer; }
+        .btn { background: <?php echo $user_type === 'creator' ? '#667eea' : '#28a745'; ?>; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         .btn:hover { opacity: 0.9; }
         .btn:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
         .error { color: red; margin-bottom: 15px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
@@ -437,8 +441,8 @@ if ($topic_created && $creator_id) {
         .requirement.valid { color: #28a745; }
         .requirement.invalid { color: #dc3545; }
         
-        .youtube-handle-group { position: relative; }
-        .youtube-at-symbol { 
+        .platform-handle-group { position: relative; }
+        .platform-at-symbol { 
             position: absolute; 
             left: 0px; 
             top: 0px; 
@@ -451,10 +455,47 @@ if ($topic_created && $creator_id) {
             font-weight: bold;
             z-index: 2;
         }
-        .youtube-handle-input { 
+        .platform-handle-input { 
             padding-left: 45px !important; 
             position: relative;
             z-index: 1;
+        }
+        
+        .platform-select-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .platform-option {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .platform-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .platform-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .platform-option input[type="radio"] {
+            display: none;
+        }
+        .platform-logo {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 5px;
+        }
+        .platform-name {
+            font-size: 12px;
+            font-weight: 600;
         }
         
         .login-link { text-align: center; margin-top: 20px; }
@@ -464,6 +505,9 @@ if ($topic_created && $creator_id) {
         @media (max-width: 600px) {
             .container { padding: 15px; }
             .header, .form-container { padding: 20px; }
+            .platform-option {
+                min-width: 70px;
+            }
         }
     </style>
 </head>
@@ -513,14 +557,7 @@ if ($topic_created && $creator_id) {
         <?php else: ?>
         <!-- Normal signup header -->
         <div class="header">
-            <div class="user-type-indicator">
-                <?php if ($user_type === 'creator'): ?>
-                    📺 YouTuber Registration
-                <?php else: ?>
-                    💰 Fan Registration
-                <?php endif; ?>
-            </div>
-            <h1><?php echo $user_type === 'creator' ? 'Join as YouTuber' : 'Join as Fan'; ?></h1>
+            <h1><?php echo $user_type === 'creator' ? 'Join as Creator' : 'Join as Fan'; ?></h1>
             <p><?php echo $user_type === 'creator' ? 'Get paid for creating requested content' : 'Fund topics from your favorite creators'; ?></p>
         </div>
         <?php endif; ?>
@@ -552,6 +589,58 @@ if ($topic_created && $creator_id) {
                 <?php endif; ?>
                 
                 <?php if ($user_type === 'creator'): ?>
+                    <!-- Platform Selection -->
+                    <div class="form-group">
+                        <label>Choose Your Platform:</label>
+                        <div class="platform-select-group">
+                            <label class="platform-option selected" data-platform="youtube">
+                                <input type="radio" name="platform_type" value="youtube" checked>
+                                <div class="platform-logo">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                    </svg>
+                                </div>
+                                <div class="platform-name">YouTube</div>
+                            </label>
+                            
+                            <label class="platform-option" data-platform="instagram">
+                                <input type="radio" name="platform_type" value="instagram">
+                                <div class="platform-logo">
+                                    <img src="../uploads/platform_logos/ig_logo.png" alt="Instagram" style="width: 100%; height: 100%; object-fit: contain;">
+                                </div>
+                                <div class="platform-name">Instagram</div>
+                            </label>
+                            
+                            <label class="platform-option" data-platform="tiktok">
+                                <input type="radio" name="platform_type" value="tiktok">
+                                <div class="platform-logo">
+                                    <img src="../uploads/platform_logos/tiktok_logo.webp" alt="TikTok" style="width: 100%; height: 100%; object-fit: contain;">
+                                </div>
+                                <div class="platform-name">TikTok</div>
+                            </label>
+                            
+                            <label class="platform-option" data-platform="twitter">
+                                <input type="radio" name="platform_type" value="twitter">
+                                <div class="platform-logo">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                    </svg>
+                                </div>
+                                <div class="platform-name">Twitter</div>
+                            </label>
+                            
+                            <label class="platform-option" data-platform="twitch">
+                                <input type="radio" name="platform_type" value="twitch">
+                                <div class="platform-logo">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                                    </svg>
+                                </div>
+                                <div class="platform-name">Twitch</div>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Profile Image for Creators -->
                     <div class="form-group">
                         <label for="profile_image">Profile Image (Optional):</label>
@@ -559,18 +648,18 @@ if ($topic_created && $creator_id) {
                         <div class="requirement">JPG, PNG, or GIF. Max 2MB. Can add later.</div>
                     </div>
 
-                    <!-- YouTube Handle for Creators -->
+                    <!-- Platform Handle for Creators -->
                     <div class="form-group">
-                        <label>YouTube Handle:</label>
-                        <div class="youtube-handle-group">
-                            <span class="youtube-at-symbol">@</span>
-                            <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
-                                   value="<?php echo isset($_POST['youtube_handle']) ? htmlspecialchars($_POST['youtube_handle']) : ''; ?>" 
+                        <label id="platform-handle-label">YouTube Handle:</label>
+                        <div class="platform-handle-group">
+                            <span class="platform-at-symbol">@</span>
+                            <input type="text" name="platform_handle" id="platform_handle" class="platform-handle-input"
+                                   value="<?php echo isset($_POST['platform_handle']) ? htmlspecialchars($_POST['platform_handle']) : ''; ?>" 
                                    required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
                                    title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
                                    placeholder="MrBeast">
                         </div>
-                        <div class="requirement">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+                        <div class="requirement" id="platform-handle-hint">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
                     </div>
 
                     <!-- PayPal Email for Creators -->
@@ -613,9 +702,9 @@ if ($topic_created && $creator_id) {
                     <?php if ($topic_funded || $topic_created): ?>
                         Complete Account
                     <?php elseif ($user_type === 'creator'): ?>
-                        📺 Create YouTuber Account
+                        Create Creator Account
                     <?php else: ?>
-                        💰 Create Account & Browse YouTubers
+                        💰 Create Account & Browse Creators
                     <?php endif; ?>
                 </button>
             </form>
@@ -629,6 +718,59 @@ if ($topic_created && $creator_id) {
     </div>
 
     <script>
+    // Platform selection logic
+    document.querySelectorAll('.platform-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove selected class from all options
+            document.querySelectorAll('.platform-option').forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Check the radio button
+            this.querySelector('input[type="radio"]').checked = true;
+            
+            // Update label and placeholder based on platform
+            const platform = this.dataset.platform;
+            const label = document.getElementById('platform-handle-label');
+            const input = document.getElementById('platform_handle');
+            const hint = document.getElementById('platform-handle-hint');
+            
+            const platformData = {
+                youtube: {
+                    label: 'YouTube Handle:',
+                    placeholder: 'MrBeast',
+                    hint: 'Example: MrBeast, PewDiePie, etc. Must contain at least one letter.'
+                },
+                instagram: {
+                    label: 'Instagram Username:',
+                    placeholder: 'cristiano',
+                    hint: 'Example: cristiano, selenagomez, etc.'
+                },
+                tiktok: {
+                    label: 'TikTok Username:',
+                    placeholder: 'charlidamelio',
+                    hint: 'Example: charlidamelio, khaby.lame, etc.'
+                },
+                twitter: {
+                    label: 'Twitter/X Handle:',
+                    placeholder: 'elonmusk',
+                    hint: 'Example: elonmusk, TheRock, etc.'
+                },
+                twitch: {
+                    label: 'Twitch Username:',
+                    placeholder: 'ninja',
+                    hint: 'Example: ninja, pokimane, etc.'
+                }
+            };
+            
+            const data = platformData[platform];
+            label.textContent = data.label;
+            input.placeholder = data.placeholder;
+            hint.textContent = data.hint;
+        });
+    });
+
     // Real-time password validation
     const password = document.getElementById('password');
     const confirmPassword = document.getElementById('confirm_password');
@@ -678,7 +820,7 @@ if ($topic_created && $creator_id) {
         
         // Enable/disable submit button
         <?php if ($user_type === 'creator'): ?>
-        const handle = document.getElementById('youtube_handle').value.trim();
+        const handle = document.getElementById('platform_handle').value.trim();
         const paypalEmail = document.getElementById('paypal_email').value.trim();
         const paypalValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(paypalEmail);
         const isValid = pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && passwordsMatch && handle.length >= 3 && /[a-zA-Z]/.test(handle) && emailValid && paypalValid;
@@ -733,8 +875,8 @@ if ($topic_created && $creator_id) {
         validatePassword(); // Revalidate form
     });
     
-    // YouTube handle validation and auto-trim
-    document.getElementById('youtube_handle').addEventListener('input', function() {
+    // Platform handle validation and auto-trim
+    document.getElementById('platform_handle').addEventListener('input', function() {
         let value = this.value;
         
         // Automatically trim spaces
@@ -745,11 +887,20 @@ if ($topic_created && $creator_id) {
             value = value.substring(1);
         }
         
-        // Remove youtube.com/ if user pastes full URL
-        if (value.includes('youtube.com/')) {
-            const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
+        // Remove platform URLs if user pastes them
+        const urlPatterns = [
+            /youtube\.com\/@?([a-zA-Z0-9_.-]+)/,
+            /instagram\.com\/([a-zA-Z0-9_.-]+)/,
+            /tiktok\.com\/@?([a-zA-Z0-9_.-]+)/,
+            /twitter\.com\/([a-zA-Z0-9_.-]+)/,
+            /twitch\.tv\/([a-zA-Z0-9_.-]+)/
+        ];
+        
+        for (const pattern of urlPatterns) {
+            const match = value.match(pattern);
             if (match) {
                 value = match[1];
+                break;
             }
         }
         
