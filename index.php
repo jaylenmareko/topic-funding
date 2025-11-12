@@ -63,7 +63,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Fund Topics from Your Favorite YouTuber</title>
+    <title>TopicLaunch - Fund Topics from Your Favorite Creator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
@@ -139,7 +139,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             border-color: rgba(255,255,255,0.4);
             transform: translateY(-5px);
         }
-        .btn-youtuber, .btn-fan {
+        .btn-creator, .btn-fan {
             display: inline-block;
             padding: 15px 30px;
             border-radius: 8px;
@@ -149,11 +149,11 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             transition: all 0.3s;
             border: 2px solid transparent;
         }
-        .btn-youtuber {
+        .btn-creator {
             background: #ff0000;
             color: white;
         }
-        .btn-youtuber:hover {
+        .btn-creator:hover {
             background: #cc0000;
             color: white;
             text-decoration: none;
@@ -173,7 +173,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         .section-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #333; }
         
-        /* 3-Step Process for Fans */
+        /* 2-Step Process for Fans */
         .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 60px 0; }
         .process-step { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         .process-step::before {
@@ -249,14 +249,13 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 
     <!-- Hero Section - Only for Guests -->
     <div class="hero">
-        <h1>Fund Topics for Your Favorite YouTuber</h1>
-        <p>Propose specific topics, fund them with the community, and creators deliver in 48 hours</p>
+        <h1>Fund Topics for Creators</h1>
         
         <!-- User Type Selection -->
         <div class="user-type-selector">
-            <div class="user-type youtuber">
-                <a href="auth/register.php?type=creator" class="btn-youtuber">
-                    Youtuber Signup
+            <div class="user-type creator">
+                <a href="auth/register.php?type=creator" class="btn-creator">
+                    Creator Signup
                 </a>
             </div>
             
@@ -269,22 +268,17 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     </div>
 
     <div class="container">
-        <!-- 3-Step Process for Fans -->
+        <!-- 2-Step Process for Fans -->
         <div class="process-steps">
             <div class="process-step" data-step="1">
                 <div class="process-icon">💡</div>
-                <h3>Create & Fund</h3>
-                <p>Have an idea for your favorite YouTuber? Create the topic and make the first contribution. Your topic goes live immediately!</p>
+                <h3>Fund Topics</h3>
+                <p>Make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
             </div>
             <div class="process-step" data-step="2">
-                <div class="process-icon">🤝</div>
-                <h3>Community Backs It</h3>
-                <p>Other fans join in to fund the topic. Once the goal is reached, the YouTuber gets notified to create the content in 48 hours.</p>
-            </div>
-            <div class="process-step" data-step="3">
                 <div class="process-icon">⚡</div>
                 <h3>48-Hour Delivery</h3>
-                <p>Once delivered, Youtubers receive 90% of funding and Topic Launch receives 10% of funding. If not delivered, fans are refunded.</p>
+                <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
             </div>
         </div>
     </div>
