@@ -1,5 +1,5 @@
 <?php
-// topics/create.php - FIXED Guest-friendly topic creation
+// topics/create.php - FIXED Guest-friendly topic creation for ALL platforms
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -18,9 +18,9 @@ if (!$creator_id) {
     exit;
 }
 
-// Get creator info
+// Get creator info - ALLOW ALL PLATFORMS
 $creator = $helper->getCreatorById($creator_id);
-if (!$creator || $creator->platform_type !== 'youtube') {
+if (!$creator) {
     header('Location: ../creators/index.php');
     exit;
 }
@@ -215,14 +215,13 @@ if ($_POST) {
             </div>
             <div class="creator-details">
                 <h3>Creating topic for: @<?php echo htmlspecialchars($creator->display_name); ?></h3>
-                <p style="margin: 0; color: #666;">YouTube Creator</p>
+                <p style="margin: 0; color: #666;"><?php echo ucfirst($creator->platform_type); ?> Creator</p>
             </div>
         </div>
 
         <?php if (!$is_logged_in): ?>
         <div class="guest-notice">
-            <strong>💡 Creating as a guest?</strong><br>
-            After your payment, you'll create a free account to track your topic and get notified when it's funded!
+            After your payment, you'll create a free account to track your topic!
         </div>
         <?php endif; ?>
 
