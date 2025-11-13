@@ -125,9 +125,30 @@ if ($_POST) {
             $errors[] = "Platform handle can only contain letters, numbers, dots, dashes, and underscores";
         } elseif (preg_match('/^[0-9._-]+$/', $platform_handle)) {
             $errors[] = "Platform handle must contain at least one letter";
-        } elseif ($helper->usernameExists($username)) {
-            $errors[] = "Platform handle already exists";
         } else {
+            // Check if this platform handle + platform type combo already exists
+            $db = new Database();
+            $db->query('SELECT id FROM creators WHERE platform_type = :platform_type AND platform_url LIKE :platform_url');
+            $db->bind(':platform_type', $platform_type);
+            
+            // Build the platform URL to check
+            $platform_urls = [
+                'youtube' => '%youtube.com/@' . $platform_handle . '%',
+                'instagram' => '%instagram.com/' . $platform_handle . '%',
+                'tiktok' => '%tiktok.com/@' . $platform_handle . '%'
+            ];
+            $check_url = $platform_urls[$platform_type] ?? '%' . $platform_handle . '%';
+            
+            $db->bind(':platform_url', $check_url);
+            $existing_creator = $db->single();
+            
+            if ($existing_creator) {
+                $errors[] = "This " . ucfirst($platform_type) . " handle is already registered on TopicLaunch";
+            }
+        }
+        
+        // Only do platform verification if no errors so far
+        if (empty($errors)) {
             // Verify platform handle exists
             if ($platform_type === 'youtube') {
                 $platform_url = "https://www.youtube.com/@" . $platform_handle;
@@ -558,9 +579,8 @@ if ($topic_created && $creator_id) {
         <?php else: ?>
         <!-- Normal signup header -->
         <div class="header">
-            <h1><?php echo $user_type === 'creator' ? 'Creator Registration' : 'Join as Fan'; ?></h1>
+            <h1><?php echo $user_type === 'creator' ? 'Creator Registration' : 'Fan Registration'; ?></h1>
             <?php if ($user_type !== 'creator'): ?>
-            <p>Fund topics from your favorite creators</p>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -701,7 +721,7 @@ if ($topic_created && $creator_id) {
                     <?php elseif ($user_type === 'creator'): ?>
                         Create Account
                     <?php else: ?>
-                        💰 Create Account & Browse Creators
+                         Create Account & Browse Creators
                     <?php endif; ?>
                 </button>
             </form>
