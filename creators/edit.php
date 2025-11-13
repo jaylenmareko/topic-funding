@@ -48,7 +48,7 @@ if ($_POST) {
     try {
         $db->beginTransaction();
         
-        // 1. Handle YouTube handle and image update
+        // 1. Handle platform handle and image update
         $youtube_handle = trim($_POST['youtube_handle']);
         
         // Remove @ if user included it
@@ -61,26 +61,28 @@ if ($_POST) {
         
         // Validation
         if (empty($youtube_handle)) {
-            $errors[] = "YouTube handle is required";
+            $errors[] = "Platform handle is required";
         } elseif (strlen($youtube_handle) < 3) {
-            $errors[] = "YouTube handle must be at least 3 characters";
+            $errors[] = "Platform handle must be at least 3 characters";
         } elseif (!preg_match('/^[a-zA-Z0-9_.-]+$/', $youtube_handle)) {
-            $errors[] = "YouTube handle can only contain letters, numbers, dots, dashes, and underscores";
+            $errors[] = "Platform handle can only contain letters, numbers, dots, dashes, and underscores";
         } elseif (preg_match('/^[0-9._-]+$/', $youtube_handle)) {
-            $errors[] = "YouTube handle must contain at least one letter";
+            $errors[] = "Platform handle must contain at least one letter";
         } else {
             // Check if this handle is already used by another creator
             $db->query('SELECT id FROM creators WHERE display_name = :display_name AND id != :current_id');
             $db->bind(':display_name', $youtube_handle);
             $db->bind(':current_id', $creator_id);
             if ($db->single()) {
-                $errors[] = "YouTube handle already exists";
+                $errors[] = "Platform handle already exists";
             } else {
-                // Verify YouTube handle exists
-                $youtube_url = "https://www.youtube.com/@" . $youtube_handle;
-                $headers = @get_headers($youtube_url);
-                if (!$headers || strpos($headers[0], '200') === false) {
-                    $errors[] = "YouTube handle '@{$youtube_handle}' does not exist. Please enter a valid YouTube handle.";
+                // Verify platform handle exists (only for YouTube)
+                if ($creator->platform_type === 'youtube') {
+                    $youtube_url = "https://www.youtube.com/@" . $youtube_handle;
+                    $headers = @get_headers($youtube_url);
+                    if (!$headers || strpos($headers[0], '200') === false) {
+                        $errors[] = "YouTube handle '@{$youtube_handle}' does not exist. Please enter a valid YouTube handle.";
+                    }
                 }
             }
         }
@@ -177,8 +179,13 @@ if ($_POST) {
         
         // If no errors, update everything
         if (empty($errors)) {
-            // Update creator profile
-            $new_platform_url = 'https://youtube.com/@' . $youtube_handle;
+            // Update creator profile with dynamic platform URL
+            $platform_urls = [
+                'youtube' => 'https://youtube.com/@' . $youtube_handle,
+                'instagram' => 'https://instagram.com/' . $youtube_handle,
+                'tiktok' => 'https://tiktok.com/@' . $youtube_handle
+            ];
+            $new_platform_url = $platform_urls[$creator->platform_type] ?? 'https://youtube.com/@' . $youtube_handle;
             
             $db->query('
                 UPDATE creators 
@@ -276,7 +283,7 @@ if (strpos($current_handle, '@') === 0) {
         .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
         small { color: #666; font-size: 14px; }
         
-        /* YouTube Handle Styling */
+        /* Platform Handle Styling */
         .youtube-handle-group { position: relative; }
         .youtube-at-symbol { 
             position: absolute; 
@@ -334,16 +341,27 @@ if (strpos($current_handle, '@') === 0) {
                 
                 <h3>📺 Profile Information</h3>
                 <div class="form-group">
-                    <label>YouTube Handle:</label>
+                    <label><?php echo ucfirst($creator->platform_type); ?> Handle:</label>
                     <div class="youtube-handle-group">
-                        <span class="youtube-at-symbol">@</span>
-                        <input type="text" name="youtube_handle" id="youtube_handle" class="youtube-handle-input"
+                        <?php if ($creator->platform_type !== 'instagram'): ?>
+                            <span class="youtube-at-symbol">@</span>
+                        <?php endif; ?>
+                        <input type="text" name="youtube_handle" id="youtube_handle" 
+                               class="<?php echo $creator->platform_type === 'instagram' ? '' : 'youtube-handle-input'; ?>"
                                value="<?php echo htmlspecialchars($current_handle); ?>" 
                                required pattern="[a-zA-Z0-9_.-]*[a-zA-Z]+[a-zA-Z0-9_.-]*"
                                title="Must contain at least one letter and only letters, numbers, dots, dashes, underscores"
-                               placeholder="MrBeast">
+                               placeholder="<?php echo $creator->platform_type === 'youtube' ? 'MrBeast' : ($creator->platform_type === 'instagram' ? 'cristiano' : 'charlidamelio'); ?>">
                     </div>
-                    <div class="requirement" id="handle-req">Example: MrBeast, PewDiePie, etc. Must contain at least one letter.</div>
+                    <div class="requirement" id="handle-req">
+                        <?php if ($creator->platform_type === 'youtube'): ?>
+                            Example: MrBeast, PewDiePie, etc.
+                        <?php elseif ($creator->platform_type === 'instagram'): ?>
+                            Example: cristiano, selenagomez, etc.
+                        <?php else: ?>
+                            Example: charlidamelio, khaby.lame, etc.
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -409,23 +427,31 @@ if (strpos($current_handle, '@') === 0) {
     </div>
 
     <script>
-    // YouTube handle validation and auto-trim (same as registration form)
+    // Platform handle validation and auto-trim
     document.getElementById('youtube_handle').addEventListener('input', function() {
         let value = this.value;
         
         // Automatically trim spaces
         value = value.trim();
         
-        // Remove @ if user types it
-        if (value.startsWith('@')) {
+        // Remove @ if user types it (except for Instagram which doesn't use @)
+        const platform = '<?php echo $creator->platform_type; ?>';
+        if (platform !== 'instagram' && value.startsWith('@')) {
             value = value.substring(1);
         }
         
-        // Remove youtube.com/ if user pastes full URL
-        if (value.includes('youtube.com/')) {
-            const match = value.match(/youtube\.com\/@?([a-zA-Z0-9_.-]+)/);
+        // Remove platform URLs if user pastes them
+        const urlPatterns = [
+            /youtube\.com\/@?([a-zA-Z0-9_.-]+)/,
+            /instagram\.com\/([a-zA-Z0-9_.-]+)/,
+            /tiktok\.com\/@?([a-zA-Z0-9_.-]+)/
+        ];
+        
+        for (const pattern of urlPatterns) {
+            const match = value.match(pattern);
             if (match) {
                 value = match[1];
+                break;
             }
         }
         
@@ -436,13 +462,13 @@ if (strpos($current_handle, '@') === 0) {
         
         // Real-time validation feedback
         const handleReq = document.getElementById('handle-req');
-        const submitBtn = document.getElementById('profileSubmitBtn');
+        const submitBtn = document.getElementById('submitBtn');
         
         if (value.length >= 3 && /[a-zA-Z]/.test(value) && /^[a-zA-Z0-9_.-]+$/.test(value)) {
             this.style.borderColor = '#28a745';
             handleReq.classList.add('valid');
             handleReq.classList.remove('invalid');
-            handleReq.textContent = '✓ Valid YouTube handle format';
+            handleReq.textContent = '✓ Valid platform handle format';
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
         } else if (value.length > 0) {
@@ -462,7 +488,14 @@ if (strpos($current_handle, '@') === 0) {
         } else {
             this.style.borderColor = '#ddd';
             handleReq.classList.remove('valid', 'invalid');
-            handleReq.textContent = 'Example: MrBeast, PewDiePie, etc. Must contain at least one letter.';
+            const platform = '<?php echo $creator->platform_type; ?>';
+            if (platform === 'youtube') {
+                handleReq.textContent = 'Example: MrBeast, PewDiePie, etc.';
+            } else if (platform === 'instagram') {
+                handleReq.textContent = 'Example: cristiano, selenagomez, etc.';
+            } else {
+                handleReq.textContent = 'Example: charlidamelio, khaby.lame, etc.';
+            }
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.6';
         }
@@ -474,9 +507,18 @@ if (strpos($current_handle, '@') === 0) {
         const confirmPassword = document.getElementById('confirm_password').value;
         const passwordReq = document.getElementById('password-req');
         const matchReq = document.getElementById('match-req');
-        const submitBtn = document.getElementById('passwordSubmitBtn');
+        const submitBtn = document.getElementById('submitBtn');
         
         let isValid = true;
+        
+        // If no password entered, skip validation
+        if (!newPassword && !confirmPassword) {
+            passwordReq.classList.remove('valid', 'invalid');
+            matchReq.classList.remove('valid', 'invalid');
+            passwordReq.textContent = 'At least 8 characters with one letter and one number';
+            matchReq.textContent = 'Passwords must match';
+            return;
+        }
         
         // Password strength check
         if (newPassword.length >= 8 && /[A-Za-z]/.test(newPassword) && /[0-9]/.test(newPassword)) {
@@ -510,8 +552,14 @@ if (strpos($current_handle, '@') === 0) {
             isValid = false;
         }
         
-        submitBtn.disabled = !isValid;
-        submitBtn.style.opacity = isValid ? '1' : '0.6';
+        // Don't disable submit button if passwords are just empty
+        if (!newPassword && !confirmPassword) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        } else {
+            submitBtn.disabled = !isValid;
+            submitBtn.style.opacity = isValid ? '1' : '0.6';
+        }
     }
 
     document.getElementById('new_password').addEventListener('input', validatePassword);
