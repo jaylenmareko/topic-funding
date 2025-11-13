@@ -73,7 +73,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Browse YouTubers - TopicLaunch</title>
+    <title>Browse Creators - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
@@ -203,13 +203,13 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
 
         <?php if (empty($creators)): ?>
             <div class="empty-state">
-                <h3>No YouTubers yet</h3>
+                <h3>No Creators yet</h3>
             </div>
         <?php else: ?>
             <div class="creator-grid">
                 <?php foreach ($creators as $creator): ?>
-                    <!-- UPDATED: Link directly to topic creation instead of profile -->
-                    <a href="../topics/create.php?creator_id=<?php echo $creator->id; ?>" class="creator-card">
+                    <!-- Link to creator profile page -->
+                    <a href="profile.php?id=<?php echo $creator->id; ?>" class="creator-card">
                         <div class="creator-image">
                             <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                                 <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
