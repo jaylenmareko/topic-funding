@@ -767,7 +767,6 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 btn.classList.add('copied');
                 
                 setTimeout(() => {
-                    btn.innerHTML
                     btn.innerHTML = originalText;
                     btn.classList.remove('copied');
                 }, 2000);
@@ -953,7 +952,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
             });
         }
 
-        // Copy profile link function - FIXED TO POINT TO TOPIC CREATION
+        // Copy profile link function - points to topic creation page
         function copyProfileLink() {
             const profileUrl = window.location.origin + '/topics/create.php?creator_id=<?php echo $creator->id; ?>';
             
