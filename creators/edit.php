@@ -213,6 +213,9 @@ if ($_POST) {
             // Update session email
             $_SESSION['email'] = $new_email;
             
+            // Update session username with new display_name
+            $_SESSION['username'] = $youtube_handle;
+            
             // Update password if requested
             if ($update_password) {
                 $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
@@ -224,14 +227,11 @@ if ($_POST) {
             }
             
             $db->endTransaction();
-            $success = "All information updated successfully!";
             
-            // Refresh data
-            $creator = $helper->getCreatorById($creator_id);
-            $db->query('SELECT email FROM users WHERE id = :user_id');
-            $db->bind(':user_id', $_SESSION['user_id']);
-            $user = $db->single();
-            $current_email = $user->email;
+            // Redirect to dashboard with success message
+            $_SESSION['profile_updated'] = "Profile updated successfully!";
+            header('Location: dashboard.php?t=' . time());
+            exit;
         } else {
             $db->cancelTransaction();
         }
