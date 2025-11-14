@@ -12,6 +12,44 @@ if (!isset($_SESSION['user_id'])) {
 
 $db = new Database();
 
+// URL Validation Function
+function validateContentUrl($url, $creator) {
+    $errors = [];
+    $creator_handle = $creator->display_name;
+    
+    switch ($creator->platform_type) {
+        case 'youtube':
+            if (!preg_match('/youtube\.com\/(watch\?v=|shorts\/)/i', $url)) {
+                $errors[] = "Must be a valid YouTube video or Shorts URL";
+            }
+            break;
+            
+        case 'instagram':
+            // Must be Instagram Reel (not regular post)
+            if (!preg_match('/instagram\.com\/(reel|reels)\/[A-Za-z0-9_-]+/i', $url)) {
+                $errors[] = "Must be an Instagram Reel URL (not a regular post). Format: instagram.com/reel/...";
+            }
+            // Check if URL is from creator's account
+            if (stripos($url, $creator_handle) === false) {
+                $errors[] = "Content must be from your Instagram account (@{$creator_handle})";
+            }
+            break;
+            
+        case 'tiktok':
+            // Must be TikTok video
+            if (!preg_match('/tiktok\.com\/@[A-Za-z0-9._-]+\/video\/\d+/i', $url)) {
+                $errors[] = "Must be a TikTok video URL. Format: tiktok.com/@username/video/...";
+            }
+            // Check if URL is from creator's account
+            if (!preg_match('/tiktok\.com\/@' . preg_quote($creator_handle, '/') . '\/video\//i', $url)) {
+                $errors[] = "Content must be from your TikTok account (@{$creator_handle})";
+            }
+            break;
+    }
+    
+    return $errors;
+}
+
 // Get creator info
 $db->query('SELECT c.*, u.email FROM creators c LEFT JOIN users u ON c.applicant_user_id = u.id WHERE c.applicant_user_id = :user_id AND c.is_active = 1');
 $db->bind(':user_id', $_SESSION['user_id']);
@@ -36,6 +74,11 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     } elseif (!filter_var($content_url, FILTER_VALIDATE_URL)) {
         $upload_error = "Please enter a valid URL";
     } else {
+        // Validate URL matches platform and account
+        $validation_errors = validateContentUrl($content_url, $creator);
+        if (!empty($validation_errors)) {
+            $upload_error = implode(". ", $validation_errors);
+        } else {
         // Verify topic belongs to this creator and is funded
         $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
         $db->bind(':topic_id', $topic_id);
@@ -81,6 +124,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                 }
             }
         }
+        }
     }
 }
 
@@ -111,6 +155,12 @@ $topics = $db->resultSet();
 
 $message = isset($_GET['success']) ? $_GET['success'] : '';
 $error = isset($_GET['error']) ? $_GET['error'] : '';
+
+// Check for profile update message
+if (isset($_SESSION['profile_updated'])) {
+    $message = $_SESSION['profile_updated'];
+    unset($_SESSION['profile_updated']);
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -630,9 +680,17 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                                 
                                 <form class="upload-form" id="upload-form-<?php echo $topic->id; ?>" method="POST">
                                     <input type="hidden" name="topic_id" value="<?php echo $topic->id; ?>">
+                                    <?php
+                                    $placeholder_urls = [
+                                        'youtube' => 'https://youtube.com/watch?v=...',
+                                        'instagram' => 'https://instagram.com/p/...',
+                                        'tiktok' => 'https://tiktok.com/@username/video/...'
+                                    ];
+                                    $placeholder = $placeholder_urls[$creator->platform_type] ?? 'https://youtube.com/watch?v=...';
+                                    ?>
                                     <input type="url" 
                                            name="content_url" 
-                                           placeholder="https://youtube.com/watch?v=..." 
+                                           placeholder="<?php echo $placeholder; ?>" 
                                            required>
                                     <div class="upload-buttons">
                                         <button type="submit" name="upload_content" class="upload-btn submit">
