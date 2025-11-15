@@ -1,62 +1,82 @@
 <?php
-// index.php - Updated to redirect fans to browse creators (no dashboard)
+// index.php - FIXED VERSION with better error handling
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
-require_once 'config/database.php';
 
-// REDIRECT LOGGED IN USERS BASED ON ROLE - NO FAN DASHBOARD
+// Only require database if we need to check user status
 if (isset($_SESSION['user_id'])) {
-    $db = new Database();
-    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
-    $db->bind(':user_id', $_SESSION['user_id']);
-    $is_creator = $db->single();
-    
-    if ($is_creator) {
-        // Creators go to their creator dashboard
-        header('Location: creators/dashboard.php');
-    } else {
-        // Fans go to browse creators (NO DASHBOARD)
-        header('Location: creators/index.php');
+    try {
+        require_once 'config/database.php';
+        $db = new Database();
+        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $is_creator = $db->single();
+        
+        if ($is_creator) {
+            header('Location: creators/dashboard.php');
+        } else {
+            header('Location: creators/index.php');
+        }
+        exit;
+    } catch (Exception $e) {
+        error_log("Index redirect error: " . $e->getMessage());
+        // Clear broken session and show landing page
+        session_destroy();
+        session_start();
     }
-    exit;
 }
-
-// Only show landing page content to non-logged in users
-$helper = new DatabaseHelper();
-$creators = $helper->getAllCreators();
 
 // Handle login form
 $login_error = '';
 if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
+    require_once 'config/database.php';
+    
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     
     if (!empty($email) && !empty($password)) {
-        $db = new Database();
-        $db->query('SELECT * FROM users WHERE email = :email AND is_active = 1');
-        $db->bind(':email', $email);
-        $user = $db->single();
-        
-        if ($user && password_verify($password, $user->password_hash)) {
-            $_SESSION['user_id'] = $user->id;
-            $_SESSION['username'] = $user->username;
-            $_SESSION['full_name'] = $user->full_name;
-            $_SESSION['email'] = $user->email;
-            session_regenerate_id(true);
+        try {
+            $db = new Database();
+            $db->query('SELECT * FROM users WHERE email = :email');
+            $db->bind(':email', $email);
+            $user = $db->single();
             
-            // Check if user is creator or fan and redirect accordingly
-            $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
-            $db->bind(':user_id', $user->id);
-            $is_creator = $db->single();
-            
-            if ($is_creator) {
-                header('Location: creators/dashboard.php'); // Creators go to creator dashboard
+            if ($user) {
+                // Support both old and new password column names
+                $password_hash = isset($user->password_hash) ? $user->password_hash : $user->password;
+                
+                if (password_verify($password, $password_hash)) {
+                    $_SESSION['user_id'] = $user->id;
+                    $_SESSION['username'] = $user->username;
+                    $_SESSION['full_name'] = isset($user->full_name) ? $user->full_name : $user->username;
+                    $_SESSION['email'] = $user->email;
+                    session_regenerate_id(true);
+                    
+                    // Check if user is creator or fan and redirect accordingly
+                    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+                    $db->bind(':user_id', $user->id);
+                    $is_creator = $db->single();
+                    
+                    if ($is_creator) {
+                        header('Location: creators/dashboard.php');
+                    } else {
+                        header('Location: creators/index.php');
+                    }
+                    exit;
+                } else {
+                    $login_error = 'Invalid email or password';
+                }
             } else {
-                header('Location: creators/index.php'); // Fans go to browse creators (NO DASHBOARD)
+                $login_error = 'Invalid email or password';
             }
-            exit;
-        } else {
-            $login_error = 'Invalid email or password';
+        } catch (Exception $e) {
+            error_log("Login error: " . $e->getMessage());
+            $login_error = 'Login failed. Please try again.';
         }
+    } else {
+        $login_error = 'Please enter both email and password';
     }
 }
 ?>
@@ -66,7 +86,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     <title>TopicLaunch - Fund Topics from Your Favorite Creator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
         
         /* Navigation */
         .topiclaunch-nav {
@@ -109,7 +130,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             font-weight: bold;
         }
         .login-btn:hover { background: #f0f0f0; }
-        .login-error { color: #ff6b6b; font-size: 12px; margin-left: 10px; }
+        .login-error { color: #ffcccc; font-size: 12px; margin-left: 10px; background: rgba(255,0,0,0.2); padding: 5px 10px; border-radius: 4px; }
         
         /* Hero Section */
         .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 20px; text-align: center; }
@@ -138,6 +159,15 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             background: rgba(255,255,255,0.15);
             border-color: rgba(255,255,255,0.4);
             transform: translateY(-5px);
+        }
+        .user-type h3 {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .user-type p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            opacity: 0.9;
         }
         .btn-creator, .btn-fan {
             display: inline-block;
@@ -194,7 +224,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             font-size: 14px;
         }
         .process-icon { font-size: 48px; margin-bottom: 20px; }
-        .process-step h3 { color: #333; margin-bottom: 15px; }
+        .process-step h3 { color: #333; margin-bottom: 15px; font-size: 22px; }
+        .process-step p { color: #666; line-height: 1.6; }
         
         /* Footer */
         .footer {
@@ -224,8 +255,25 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 padding: 30px 20px;
             }
             .process-steps { grid-template-columns: 1fr; }
-            .login-form { flex-direction: column; gap: 5px; }
-            .nav-container { flex-direction: column; gap: 15px; }
+            .login-form { 
+                flex-direction: column; 
+                gap: 8px;
+                width: 100%;
+            }
+            .login-input {
+                width: 100%;
+            }
+            .login-btn {
+                width: 100%;
+            }
+            .nav-container { 
+                flex-direction: column; 
+                gap: 15px;
+            }
+            .login-error {
+                margin-left: 0;
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
@@ -235,9 +283,8 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <div class="nav-container">
             <span class="nav-logo">TopicLaunch</span>
             
-            <!-- Only show login form since logged in users are redirected -->
             <form method="POST" class="login-form">
-                <input type="email" name="email" placeholder="Email" class="login-input" required>
+                <input type="email" name="email" placeholder="Email" class="login-input" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                 <input type="password" name="password" placeholder="Password" class="login-input" required>
                 <button type="submit" class="login-btn">Login</button>
                 <?php if ($login_error): ?>
@@ -247,7 +294,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         </div>
     </nav>
 
-    <!-- Hero Section - Only for Guests -->
+    <!-- Hero Section -->
     <div class="hero">
         <h1>Fund Topics for Creators</h1>
         
@@ -287,6 +334,11 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     <footer class="footer">
         <div>
             <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                <a href="auth/login.php">Login</a> | 
+                <a href="auth/register.php?type=creator">Creator Signup</a> | 
+                <a href="auth/register.php?type=fan">Fan Signup</a>
+            </p>
         </div>
     </footer>
 </body>
