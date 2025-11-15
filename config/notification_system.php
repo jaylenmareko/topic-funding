@@ -1,5 +1,5 @@
 <?php
-// config/notification_system.php - FIXED VERSION - Complete file to copy & paste
+// config/notification_system.php - COMPLETE FIXED VERSION
 require_once 'database.php';
 
 class NotificationSystem {
@@ -167,15 +167,17 @@ Support: support@topiclaunch.com";
     }
     
     /**
-     * FIXED: Send notification when topic reaches funding goal
+     * FIXED: Send notification when topic reaches funding goal - WITH GUARANTEED DEADLINE SETTING
      */
     public function handleTopicFunded($topic_id) {
         try {
-            error_log("Handling topic funded notifications for topic: " . $topic_id);
+            error_log("========================================");
+            error_log("HANDLING TOPIC FUNDED: Topic ID = " . $topic_id);
+            error_log("========================================");
             
             $this->db->beginTransaction();
             
-            // Get topic and creator info
+            // Get topic and creator info BEFORE any updates
             $this->db->query('
                 SELECT t.*, c.display_name as creator_name, c.email as creator_email, u.email as creator_user_email
                 FROM topics t 
@@ -190,18 +192,47 @@ Support: support@topiclaunch.com";
                 throw new Exception("Topic not found");
             }
             
-            error_log("Processing funded notifications for: " . $topic->title);
+            error_log("Topic found: " . $topic->title);
+            error_log("Current status: " . $topic->status);
+            error_log("Current funding: $" . $topic->current_funding);
             
-            // Set content deadline (48 hours from now)
+            // CRITICAL: Set content deadline (48 hours from now)
             $deadline = date('Y-m-d H:i:s', strtotime('+48 hours'));
+            $funded_at = date('Y-m-d H:i:s');
+            
+            error_log("Setting deadline to: " . $deadline);
+            error_log("Setting funded_at to: " . $funded_at);
+            
+            // FIXED: Use explicit column names and ensure values are set
             $this->db->query('
                 UPDATE topics 
-                SET content_deadline = :deadline, funded_at = NOW() 
+                SET 
+                    content_deadline = :deadline, 
+                    funded_at = :funded_at,
+                    status = "funded"
                 WHERE id = :topic_id
             ');
             $this->db->bind(':deadline', $deadline);
+            $this->db->bind(':funded_at', $funded_at);
             $this->db->bind(':topic_id', $topic_id);
-            $this->db->execute();
+            $result = $this->db->execute();
+            
+            error_log("UPDATE query executed. Rows affected: " . ($result ? "SUCCESS" : "FAILED"));
+            
+            // VERIFICATION: Check if deadline was actually set
+            $this->db->query('SELECT content_deadline, funded_at, status FROM topics WHERE id = :topic_id');
+            $this->db->bind(':topic_id', $topic_id);
+            $verify = $this->db->single();
+            
+            if (!$verify || !$verify->content_deadline) {
+                error_log("❌ CRITICAL ERROR: Deadline was NOT set in database!");
+                error_log("Verification result: " . json_encode($verify));
+                throw new Exception("Failed to set content_deadline in database");
+            }
+            
+            error_log("✅ VERIFIED: Deadline successfully set to: " . $verify->content_deadline);
+            error_log("✅ VERIFIED: funded_at set to: " . $verify->funded_at);
+            error_log("✅ VERIFIED: status set to: " . $verify->status);
             
             // Process platform fees with error handling
             $fee_result = null;
@@ -239,6 +270,8 @@ Support: support@topiclaunch.com";
             
             $this->db->endTransaction();
             
+            error_log("Transaction committed successfully");
+            
             // Send notifications AFTER committing transaction
             error_log("Sending funded notifications...");
             
@@ -253,9 +286,14 @@ Support: support@topiclaunch.com";
             // 3. Schedule auto-refund check
             $this->scheduleAutoRefundCheck($topic_id, $deadline);
             
+            error_log("========================================");
+            error_log("TOPIC FUNDED HANDLING COMPLETE");
+            error_log("========================================");
+            
             return [
                 'success' => true, 
                 'deadline' => $deadline,
+                'funded_at' => $funded_at,
                 'fee_info' => $fee_result,
                 'creator_notified' => $creator_result,
                 'contributors_notified' => $contributor_result
@@ -265,13 +303,14 @@ Support: support@topiclaunch.com";
             if ($this->db->inTransaction()) {
                 $this->db->cancelTransaction();
             }
-            error_log("Funded notification error: " . $e->getMessage());
+            error_log("❌ FUNDED NOTIFICATION ERROR: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
     
     /**
-     * Send notification to creator when topic is funded - IMPROVED VERSION
+     * Send notification to creator when topic is funded
      */
     private function sendCreatorFundedNotification($topic, $deadline, $fee_info) {
         $creator_email = $topic->creator_user_email ?: $topic->creator_email;
@@ -283,10 +322,8 @@ Support: support@topiclaunch.com";
         
         error_log("Sending funded notification to creator: " . $creator_email);
         
-        // IMPROVED: Less spammy subject line
         $subject = "Content Request Funded - " . $topic->title;
         
-        // IMPROVED: Professional, less promotional email content
         $message = "Hello " . $topic->creator_name . ",
 
 Your content request has been fully funded and is ready for creation.
@@ -304,7 +341,7 @@ NEXT STEPS:
 2. Upload the content URL to mark as completed
 3. Upload before the deadline to receive payment
 
-Upload here: https://topiclaunch.com/creators/upload_content.php?topic=" . $topic->id . "
+Upload here: https://topiclaunch.com/creators/dashboard.php
 
 IMPORTANT NOTES:
 - Content must be uploaded within 48 hours of this notification
@@ -318,8 +355,7 @@ TopicLaunch Team
 
 ---
 TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com
-Unsubscribe: mailto:unsubscribe@topiclaunch.com";
+Support: support@topiclaunch.com";
         
         $result = $this->sendEmail($creator_email, $subject, $message);
         error_log("Creator funded notification sent: " . ($result ? 'SUCCESS' : 'FAILED'));
@@ -378,8 +414,7 @@ TopicLaunch Team
 
 ---
 TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com
-Unsubscribe: mailto:unsubscribe@topiclaunch.com";
+Support: support@topiclaunch.com";
             
             $result = $this->sendEmail($contributor->email, $subject, $message);
             if ($result) {
@@ -483,7 +518,7 @@ Support: support@topiclaunch.com";
     }
     
     /**
-     * Process auto-refunds for overdue topics (run via cron job) - 90% PARTIAL REFUND
+     * FIXED: Process auto-refunds for overdue topics - IMPROVED SAFETY CHECKS
      */
     public function processAutoRefunds() {
         if (!$this->refundManager) {
@@ -491,21 +526,32 @@ Support: support@topiclaunch.com";
             return [];
         }
         
-        // Get topics past deadline without content
+        // IMPROVED: Only get topics that are truly overdue AND haven't been completed
         $this->db->query('
             SELECT t.*, c.display_name as creator_name
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
             WHERE t.status = "funded" 
+            AND t.content_deadline IS NOT NULL
             AND t.content_deadline < NOW()
             AND (t.content_url IS NULL OR t.content_url = "")
+            AND (t.completed_at IS NULL)
         ');
         $overdue_topics = $this->db->resultSet();
+        
+        error_log("========================================");
+        error_log("AUTO-REFUND PROCESSING");
+        error_log("Found " . count($overdue_topics) . " overdue topics");
+        error_log("========================================");
         
         $results = [];
         
         foreach ($overdue_topics as $topic) {
             try {
+                error_log("Processing auto-refund for topic {$topic->id}: {$topic->title}");
+                error_log("Deadline was: " . $topic->content_deadline);
+                error_log("Current time: " . date('Y-m-d H:i:s'));
+                
                 $this->db->beginTransaction();
                 
                 // Process 90% refunds for all contributions
@@ -515,7 +561,7 @@ Support: support@topiclaunch.com";
                 );
                 
                 // Update topic status
-                $this->db->query('UPDATE topics SET status = "failed" WHERE id = :id');
+                $this->db->query('UPDATE topics SET status = "failed", failed_at = NOW() WHERE id = :id');
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
                 
@@ -547,6 +593,8 @@ Support: support@topiclaunch.com";
                 
                 $this->db->endTransaction();
                 
+                error_log("✅ Auto-refund completed for topic {$topic->id}");
+                
                 $results[] = [
                     'topic_id' => $topic->id,
                     'topic_title' => $topic->title,
@@ -557,9 +605,14 @@ Support: support@topiclaunch.com";
                 
             } catch (Exception $e) {
                 $this->db->cancelTransaction();
-                error_log("Auto-refund failed for topic " . $topic->id . ": " . $e->getMessage());
+                error_log("❌ Auto-refund failed for topic " . $topic->id . ": " . $e->getMessage());
             }
         }
+        
+        error_log("========================================");
+        error_log("AUTO-REFUND PROCESSING COMPLETE");
+        error_log("Processed " . count($results) . " refunds");
+        error_log("========================================");
         
         return $results;
     }
@@ -661,7 +714,7 @@ Support: support@topiclaunch.com";
     }
     
     /**
-     * FIXED: Send email notification with improved error handling
+     * Send email notification with improved error handling
      */
     private function sendEmail($to, $subject, $message) {
         // For localhost testing - log emails and return true
@@ -687,7 +740,7 @@ Support: support@topiclaunch.com";
             return false;
         }
         
-        // IMPROVED: Enhanced email headers for better deliverability
+        // Enhanced email headers for better deliverability
         $headers = array();
         $headers[] = 'From: TopicLaunch Notifications <noreply@topiclaunch.com>';
         $headers[] = 'Reply-To: TopicLaunch Support <support@topiclaunch.com>';
@@ -695,30 +748,23 @@ Support: support@topiclaunch.com";
         $headers[] = 'Content-Type: text/plain; charset=UTF-8';
         $headers[] = 'Content-Transfer-Encoding: 8bit';
         $headers[] = 'X-Mailer: TopicLaunch Platform v1.0';
-        $headers[] = 'X-Priority: 3'; // Normal priority
+        $headers[] = 'X-Priority: 3';
         $headers[] = 'X-MSMail-Priority: Normal';
         $headers[] = 'Importance: Normal';
-        
-        // Anti-spam headers
         $headers[] = 'X-Auto-Response-Suppress: All';
         $headers[] = 'Auto-Submitted: auto-generated';
         $headers[] = 'Precedence: bulk';
         
-        // Message ID for threading
         $message_id = '<' . time() . '.' . uniqid() . '@topiclaunch.com>';
         $headers[] = 'Message-ID: ' . $message_id;
-        
-        // List headers (helps with spam filtering)
         $headers[] = 'List-Unsubscribe: <mailto:unsubscribe@topiclaunch.com>';
         $headers[] = 'List-Id: TopicLaunch Notifications <notifications.topiclaunch.com>';
         
         $formatted_headers = implode("\r\n", $headers);
         
         try {
-            // Log email attempt
             error_log("📤 Attempting to send email to: " . $to . " with subject: " . $subject);
             
-            // Use PHP's mail function with improved headers
             $result = mail($to, $subject, $message, $formatted_headers);
             
             if ($result) {
@@ -727,7 +773,6 @@ Support: support@topiclaunch.com";
                 error_log("❌ Failed to send email to: " . $to);
                 error_log("Last PHP error: " . (error_get_last()['message'] ?? 'No PHP error'));
                 
-                // Check if mail function is available
                 if (!function_exists('mail')) {
                     error_log("PHP mail() function is not available");
                 }
@@ -742,11 +787,10 @@ Support: support@topiclaunch.com";
     }
     
     /**
-     * FIXED: Log notification for audit trail
+     * Log notification for audit trail
      */
     private function logNotification($user_id, $type, $category, $message, $topic_id = null) {
         try {
-            // Check if notifications table exists and has required columns
             $this->db->query('DESCRIBE notifications');
             $columns = $this->db->resultSet();
             
@@ -759,14 +803,12 @@ Support: support@topiclaunch.com";
             }
             
             if ($has_category) {
-                // New table structure with category column
                 $this->db->query('
                     INSERT INTO notifications (user_id, type, category, message, topic_id, created_at)
                     VALUES (:user_id, :type, :category, :message, :topic_id, NOW())
                 ');
                 $this->db->bind(':category', $category);
             } else {
-                // Fallback for older table structure without category column
                 $this->db->query('
                     INSERT INTO notifications (user_id, type, message, topic_id, created_at)
                     VALUES (:user_id, :type, :message, :topic_id, NOW())
@@ -781,15 +823,13 @@ Support: support@topiclaunch.com";
             
         } catch (Exception $e) {
             error_log("Failed to log notification: " . $e->getMessage());
-            // Non-critical error - don't fail the notification sending
         }
     }
     
     /**
-     * FIXED: Create required database tables
+     * Create required database tables
      */
     private function createNotificationTables() {
-        // Notifications table - UPDATED VERSION
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS notifications (
@@ -809,7 +849,6 @@ Support: support@topiclaunch.com";
             ");
             $this->db->execute();
             
-            // If table exists but missing category column, add it
             $this->db->query("
                 ALTER TABLE notifications 
                 ADD COLUMN IF NOT EXISTS category VARCHAR(50) NOT NULL DEFAULT 'general' AFTER type
@@ -820,7 +859,6 @@ Support: support@topiclaunch.com";
             error_log("Failed to create/update notifications table: " . $e->getMessage());
         }
         
-        // Auto-refund schedule table
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS auto_refund_schedule (
