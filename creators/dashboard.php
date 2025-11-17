@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - Creator dashboard with FIXED copy link functionality
+// creators/dashboard.php - Creator dashboard with FIXED content upload functionality
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -12,36 +12,55 @@ if (!isset($_SESSION['user_id'])) {
 
 $db = new Database();
 
-// URL Validation Function
+// URL Validation Function - FIXED for all platforms
 function validateContentUrl($url, $creator) {
     $errors = [];
     $creator_handle = $creator->display_name;
     
     switch ($creator->platform_type) {
         case 'youtube':
-            if (!preg_match('/youtube\.com\/(watch\?v=|shorts\/)/i', $url)) {
-                $errors[] = "Must be a valid YouTube video or Shorts URL";
+            // Accept ALL common YouTube URL formats
+            $is_valid_youtube = (
+                stripos($url, 'youtube.com/watch') !== false ||
+                stripos($url, 'youtube.com/shorts') !== false ||
+                stripos($url, 'youtu.be/') !== false
+            );
+            
+            if (!$is_valid_youtube) {
+                $errors[] = "Must be a valid YouTube video or Shorts URL (youtube.com or youtu.be)";
             }
             break;
             
         case 'instagram':
-            // Must be Instagram Reel (not regular post)
-            if (!preg_match('/instagram\.com\/(reel|reels)\/[A-Za-z0-9_-]+/i', $url)) {
-                $errors[] = "Must be an Instagram Reel URL (not a regular post). Format: instagram.com/reel/...";
+            // Accept all Instagram Reel URL formats
+            $is_valid_instagram = (
+                stripos($url, 'instagram.com/reel') !== false ||
+                stripos($url, 'instagram.com/reels') !== false
+            );
+            
+            if (!$is_valid_instagram) {
+                $errors[] = "Must be an Instagram Reel URL. Format: instagram.com/reel/...";
             }
-            // Check if URL is from creator's account
-            if (stripos($url, $creator_handle) === false) {
+            
+            // Check if URL is from creator's account (case-insensitive)
+            if ($is_valid_instagram && stripos($url, $creator_handle) === false) {
                 $errors[] = "Content must be from your Instagram account (@{$creator_handle})";
             }
             break;
             
         case 'tiktok':
-            // Must be TikTok video
-            if (!preg_match('/tiktok\.com\/@[A-Za-z0-9._-]+\/video\/\d+/i', $url)) {
+            // Accept all TikTok video URL formats
+            $is_valid_tiktok = (
+                stripos($url, 'tiktok.com/@') !== false && 
+                stripos($url, '/video/') !== false
+            );
+            
+            if (!$is_valid_tiktok) {
                 $errors[] = "Must be a TikTok video URL. Format: tiktok.com/@username/video/...";
             }
-            // Check if URL is from creator's account
-            if (!preg_match('/tiktok\.com\/@' . preg_quote($creator_handle, '/') . '\/video\//i', $url)) {
+            
+            // Check if URL is from creator's account (case-insensitive)
+            if ($is_valid_tiktok && stripos($url, '@' . $creator_handle) === false) {
                 $errors[] = "Content must be from your TikTok account (@{$creator_handle})";
             }
             break;
@@ -63,6 +82,13 @@ if (!$creator) {
 // Handle content upload
 $upload_message = '';
 $upload_error = '';
+$uploaded_topic_id = 0;
+
+// Check for upload success from redirect
+if (isset($_GET['upload_success']) && isset($_GET['topic_id'])) {
+    $uploaded_topic_id = (int)$_GET['topic_id'];
+    $upload_message = "✅ Content uploaded successfully! Contributors have been notified.";
+}
 
 if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && isset($_POST['content_url'])) {
     $topic_id = (int)$_POST['topic_id'];
@@ -71,59 +97,67 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     // Validation
     if (empty($content_url)) {
         $upload_error = "Content URL is required";
+        $uploaded_topic_id = $topic_id;
     } elseif (!filter_var($content_url, FILTER_VALIDATE_URL)) {
         $upload_error = "Please enter a valid URL";
+        $uploaded_topic_id = $topic_id;
     } else {
         // Validate URL matches platform and account
         $validation_errors = validateContentUrl($content_url, $creator);
         if (!empty($validation_errors)) {
             $upload_error = implode(". ", $validation_errors);
+            $uploaded_topic_id = $topic_id;
         } else {
-        // Verify topic belongs to this creator and is funded
-        $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
-        $db->bind(':topic_id', $topic_id);
-        $db->bind(':creator_id', $creator->id);
-        $topic_check = $db->single();
-        
-        if (!$topic_check) {
-            $upload_error = "Topic not found or not eligible for upload";
-        } else {
-            // Check if deadline has passed
-            $deadline_passed = strtotime($topic_check->content_deadline) < time();
+            // Verify topic belongs to this creator and is funded
+            $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
+            $db->bind(':topic_id', $topic_id);
+            $db->bind(':creator_id', $creator->id);
+            $topic_check = $db->single();
             
-            if ($deadline_passed) {
-                $upload_error = "Sorry, the 48-hour deadline has passed";
+            if (!$topic_check) {
+                $upload_error = "Topic not found or not eligible for upload";
+                $uploaded_topic_id = $topic_id;
             } else {
-                try {
-                    $db->beginTransaction();
-                    
-                    // Update topic with content
-                    $db->query('
-                        UPDATE topics 
-                        SET content_url = :content_url, 
-                            status = "completed", 
-                            completed_at = NOW()
-                        WHERE id = :topic_id
-                    ');
-                    $db->bind(':content_url', $content_url);
-                    $db->bind(':topic_id', $topic_id);
-                    $db->execute();
-                    
-                    // Notify all contributors
-                    $notificationSystem = new NotificationSystem();
-                    $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
-                    
-                    $db->endTransaction();
-                    
-                    $upload_message = "✅ Content uploaded successfully! Contributors have been notified.";
-                    
-                } catch (Exception $e) {
-                    $db->cancelTransaction();
-                    $upload_error = "Failed to upload content. Please try again.";
-                    error_log("Content upload error: " . $e->getMessage());
+                // Check if deadline has passed
+                $deadline_passed = strtotime($topic_check->content_deadline) < time();
+                
+                if ($deadline_passed) {
+                    $upload_error = "Sorry, the 48-hour deadline has passed";
+                    $uploaded_topic_id = $topic_id;
+                } else {
+                    try {
+                        $db->beginTransaction();
+                        
+                        // Update topic with content
+                        $db->query('
+                            UPDATE topics 
+                            SET content_url = :content_url, 
+                                status = "completed", 
+                                completed_at = NOW()
+                            WHERE id = :topic_id
+                        ');
+                        $db->bind(':content_url', $content_url);
+                        $db->bind(':topic_id', $topic_id);
+                        $db->execute();
+                        
+                        // Notify all contributors
+                        $notificationSystem = new NotificationSystem();
+                        $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
+                        
+                        $db->endTransaction();
+                        
+                        // Redirect to prevent form resubmission
+                        header('Location: dashboard.php?upload_success=1&topic_id=' . $topic_id);
+                        exit;
+                        
+                    } catch (Exception $e) {
+                        $db->cancelTransaction();
+                        $upload_error = "Failed to upload content. Please try again.";
+                        $uploaded_topic_id = $topic_id;
+                        error_log("Content upload error: " . $e->getMessage());
+                    }
                 }
             }
-        }
         }
     }
 }
@@ -668,7 +702,17 @@ if (isset($_SESSION['profile_updated'])) {
                                 <?php echo htmlspecialchars($topic->title); ?>
                             </h3>
                             
-                            <div id="upload-messages-<?php echo $topic->id; ?>"></div>
+                            <!-- IMPROVED: Show upload messages inline in the card -->
+                            <div id="upload-messages-<?php echo $topic->id; ?>">
+                                <?php if ($uploaded_topic_id == $topic->id): ?>
+                                    <?php if ($upload_message): ?>
+                                        <div class="upload-message"><?php echo htmlspecialchars($upload_message); ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($upload_error): ?>
+                                        <div class="upload-error"><?php echo htmlspecialchars($upload_error); ?></div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
                             
                             <?php if ($topic->status === 'funded'): ?>
                                 <div class="earning-display funded" 
@@ -678,12 +722,13 @@ if (isset($_SESSION['profile_updated'])) {
                                     <div class="earning-text">Upload & Get Paid</div>
                                 </div>
                                 
-                                <form class="upload-form" id="upload-form-<?php echo $topic->id; ?>" method="POST">
+                                <form class="upload-form <?php echo ($uploaded_topic_id == $topic->id && $upload_error) ? 'active' : ''; ?>" 
+                                      id="upload-form-<?php echo $topic->id; ?>" method="POST">
                                     <input type="hidden" name="topic_id" value="<?php echo $topic->id; ?>">
                                     <?php
                                     $placeholder_urls = [
                                         'youtube' => 'https://youtube.com/watch?v=...',
-                                        'instagram' => 'https://instagram.com/p/...',
+                                        'instagram' => 'https://instagram.com/reel/...',
                                         'tiktok' => 'https://tiktok.com/@username/video/...'
                                     ];
                                     $placeholder = $placeholder_urls[$creator->platform_type] ?? 'https://youtube.com/watch?v=...';
@@ -1060,24 +1105,6 @@ if (isset($_SESSION['profile_updated'])) {
             }
         }
 
-        <?php if ($upload_message): ?>
-        showUploadMessage(<?php echo $_POST['topic_id'] ?? 0; ?>, '<?php echo addslashes($upload_message); ?>', 'success');
-        <?php endif; ?>
-        
-        <?php if ($upload_error): ?>
-        showUploadMessage(<?php echo $_POST['topic_id'] ?? 0; ?>, '<?php echo addslashes($upload_error); ?>', 'error');
-        <?php endif; ?>
-
-        function showUploadMessage(topicId, message, type) {
-            const messageContainer = document.getElementById(`upload-messages-${topicId}`);
-            if (messageContainer) {
-                messageContainer.innerHTML = `<div class="upload-${type}">${message}</div>`;
-                setTimeout(() => {
-                    messageContainer.innerHTML = '';
-                }, 5000);
-            }
-        }
-
         function updateCountdowns() {
             const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
             
@@ -1242,6 +1269,16 @@ if (isset($_SESSION['profile_updated'])) {
             updateNavButtons();
             updateCountdowns();
             setInterval(updateCountdowns, 1000);
+            
+            // Auto-hide success messages after 5 seconds
+            setTimeout(() => {
+                const successMsg = document.querySelector('.upload-message');
+                if (successMsg) {
+                    successMsg.style.transition = 'opacity 0.5s ease';
+                    successMsg.style.opacity = '0';
+                    setTimeout(() => successMsg.remove(), 500);
+                }
+            }, 5000);
         });
     </script>
 </body>
