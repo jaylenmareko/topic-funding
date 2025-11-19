@@ -243,13 +243,22 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .process-step h3 { color: #333; margin-bottom: 15px; font-size: 22px; }
         .process-step p { color: #666; line-height: 1.6; }
         
+        /* Testimonial Label */
+        .testimonial-label {
+            text-align: center;
+            font-size: 28px;
+            color: #333;
+            margin: 40px 0 20px 0;
+            font-weight: 600;
+        }
+        
         /* Footer */
         .footer {
             background: #333;
             color: #999;
             text-align: center;
             padding: 20px;
-            margin-top: 60px;
+            margin-top: 0;
             font-size: 14px;
         }
         .footer a {
@@ -274,6 +283,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 height: 250px;
             }
             .process-steps { grid-template-columns: 1fr; }
+            .testimonial-label { font-size: 24px; }
             .login-form { 
                 flex-direction: column; 
                 gap: 8px;
@@ -403,6 +413,24 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 <h3>48-Hour Delivery</h3>
                 <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
             </div>
+        </div>
+
+        <!-- Testimonial Label -->
+        <div class="testimonial-label">
+            Testimonial ⬇️
+        </div>
+    </div>
+
+    <!-- Testimonial Section -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 60px 20px;">
+        <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+            <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 30px;">
+                From <a href="https://www.youtube.com/@abouxtoure" target="_blank" style="color: #FFD700; text-decoration: none; font-weight: bold; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">@abouxtoure</a>
+            </p>
+            <video controls style="width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                <source src="uploads/testimonial.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
     </div>
 
