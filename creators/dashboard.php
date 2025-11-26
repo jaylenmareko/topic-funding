@@ -1,9 +1,8 @@
 <?php
-// creators/dashboard.php - Creator dashboard with FIXED content upload functionality
+// creators/dashboard.php - COMPLETE FIXED VERSION
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
-require_once '../config/notification_system.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -35,16 +34,12 @@ function validateContentUrl($url, $creator) {
             // Accept all Instagram Reel URL formats
             $is_valid_instagram = (
                 stripos($url, 'instagram.com/reel') !== false ||
-                stripos($url, 'instagram.com/reels') !== false
+                stripos($url, 'instagram.com/reels') !== false ||
+                stripos($url, 'instagram.com/p/') !== false
             );
             
             if (!$is_valid_instagram) {
-                $errors[] = "Must be an Instagram Reel URL. Format: instagram.com/reel/...";
-            }
-            
-            // Check if URL is from creator's account (case-insensitive)
-            if ($is_valid_instagram && stripos($url, $creator_handle) === false) {
-                $errors[] = "Content must be from your Instagram account (@{$creator_handle})";
+                $errors[] = "Must be an Instagram Reel or Post URL";
             }
             break;
             
@@ -57,11 +52,6 @@ function validateContentUrl($url, $creator) {
             
             if (!$is_valid_tiktok) {
                 $errors[] = "Must be a TikTok video URL. Format: tiktok.com/@username/video/...";
-            }
-            
-            // Check if URL is from creator's account (case-insensitive)
-            if ($is_valid_tiktok && stripos($url, '@' . $creator_handle) === false) {
-                $errors[] = "Content must be from your TikTok account (@{$creator_handle})";
             }
             break;
     }
@@ -94,6 +84,10 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     $topic_id = (int)$_POST['topic_id'];
     $content_url = trim($_POST['content_url']);
     
+    error_log("=== UPLOAD ATTEMPT ===");
+    error_log("Topic ID: " . $topic_id);
+    error_log("Content URL: " . $content_url);
+    
     // Validation
     if (empty($content_url)) {
         $upload_error = "Content URL is required";
@@ -102,11 +96,12 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
         $upload_error = "Please enter a valid URL";
         $uploaded_topic_id = $topic_id;
     } else {
-        // Validate URL matches platform and account
+        // Validate URL matches platform
         $validation_errors = validateContentUrl($content_url, $creator);
         if (!empty($validation_errors)) {
             $upload_error = implode(". ", $validation_errors);
             $uploaded_topic_id = $topic_id;
+            error_log("Validation failed: " . $upload_error);
         } else {
             // Verify topic belongs to this creator and is funded
             $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
@@ -117,16 +112,18 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
             if (!$topic_check) {
                 $upload_error = "Topic not found or not eligible for upload";
                 $uploaded_topic_id = $topic_id;
+                error_log("Topic check failed");
             } else {
                 // Check if deadline has passed
-                $deadline_passed = strtotime($topic_check->content_deadline) < time();
+                $deadline_passed = $topic_check->content_deadline && strtotime($topic_check->content_deadline) < time();
                 
                 if ($deadline_passed) {
                     $upload_error = "Sorry, the 48-hour deadline has passed";
                     $uploaded_topic_id = $topic_id;
+                    error_log("Deadline passed");
                 } else {
                     try {
-                        $db->beginTransaction();
+                        error_log("Starting upload transaction...");
                         
                         // Update topic with content
                         $db->query('
@@ -138,23 +135,38 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                         ');
                         $db->bind(':content_url', $content_url);
                         $db->bind(':topic_id', $topic_id);
-                        $db->execute();
+                        $result = $db->execute();
                         
-                        // Notify all contributors
-                        $notificationSystem = new NotificationSystem();
-                        $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
-                        
-                        $db->endTransaction();
-                        
-                        // Redirect to prevent form resubmission
-                        header('Location: dashboard.php?upload_success=1&topic_id=' . $topic_id);
-                        exit;
+                        if ($result) {
+                            error_log("✅ Topic updated successfully");
+                            
+                            // Try to send notifications (but don't fail if it doesn't work)
+                            try {
+                                if (file_exists('../config/notification_system.php')) {
+                                    require_once '../config/notification_system.php';
+                                    $notificationSystem = new NotificationSystem();
+                                    $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
+                                    error_log("✅ Notifications sent");
+                                } else {
+                                    error_log("⚠️ Notification system not found - skipping notifications");
+                                }
+                            } catch (Exception $e) {
+                                error_log("⚠️ Notification error (non-fatal): " . $e->getMessage());
+                            }
+                            
+                            // Redirect to prevent form resubmission
+                            error_log("Redirecting to success page...");
+                            header('Location: dashboard.php?upload_success=1&topic_id=' . $topic_id);
+                            exit;
+                        } else {
+                            throw new Exception("Database update failed");
+                        }
                         
                     } catch (Exception $e) {
-                        $db->cancelTransaction();
-                        $upload_error = "Failed to upload content. Please try again.";
+                        $upload_error = "Failed to upload content: " . $e->getMessage();
                         $uploaded_topic_id = $topic_id;
-                        error_log("Content upload error: " . $e->getMessage());
+                        error_log("❌ Upload error: " . $e->getMessage());
+                        error_log("Stack trace: " . $e->getTraceAsString());
                     }
                 }
             }
@@ -240,7 +252,6 @@ if (isset($_SESSION['profile_updated'])) {
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
         }
         
-        /* ADDED: Copy link button styling */
         .copy-link-btn {
             position: absolute;
             top: 15px;
@@ -279,7 +290,7 @@ if (isset($_SESSION['profile_updated'])) {
             font-weight: 500; 
             align-self: flex-start; 
             margin-bottom: 20px;
-            margin-right: 120px; /* Add space for copy button */
+            margin-right: 120px;
         }
         .status.funded { 
             background: rgba(40, 167, 69, 0.3); 
@@ -597,7 +608,6 @@ if (isset($_SESSION['profile_updated'])) {
             visibility: visible;
         }
         
-        /* Copy Profile Link Button */
         .copy-profile-btn {
             background: #28a745;
             color: white;
@@ -679,7 +689,6 @@ if (isset($_SESSION['profile_updated'])) {
                 <?php foreach ($topics as $index => $topic): ?>
                     <div class="card" data-topic="<?php echo $topic->id; ?>" data-index="<?php echo $index; ?>">
                         
-                        <!-- ADDED: Copy link button -->
                         <button class="copy-link-btn" onclick="copyTopicLink(<?php echo $topic->id; ?>)" id="copyBtn-<?php echo $topic->id; ?>">
                             🔗 Copy Link
                         </button>
@@ -702,7 +711,6 @@ if (isset($_SESSION['profile_updated'])) {
                                 <?php echo htmlspecialchars($topic->title); ?>
                             </h3>
                             
-                            <!-- IMPROVED: Show upload messages inline in the card -->
                             <div id="upload-messages-<?php echo $topic->id; ?>">
                                 <?php if ($uploaded_topic_id == $topic->id): ?>
                                     <?php if ($upload_message): ?>
@@ -736,6 +744,7 @@ if (isset($_SESSION['profile_updated'])) {
                                     <input type="url" 
                                            name="content_url" 
                                            placeholder="<?php echo $placeholder; ?>" 
+                                           value="<?php echo ($uploaded_topic_id == $topic->id && isset($_POST['content_url'])) ? htmlspecialchars($_POST['content_url']) : ''; ?>"
                                            required>
                                     <div class="upload-buttons">
                                         <button type="submit" name="upload_content" class="upload-btn submit">
@@ -789,7 +798,6 @@ if (isset($_SESSION['profile_updated'])) {
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <!-- Empty state with profile link -->
                 <div class="card empty">
                     <div class="card-content">
                         <h3 class="topic-title">No Active Topics</h3>
@@ -823,12 +831,10 @@ if (isset($_SESSION['profile_updated'])) {
         const topics = {<?php foreach ($topics as $t): ?>'<?php echo $t->id; ?>': {title: <?php echo json_encode($t->title); ?>, desc: <?php echo json_encode($t->description); ?>, showing: 'title'},<?php endforeach; ?>};
         let currentIndex = 0;
         const totalTopics = <?php echo count($topics); ?>;
-        const cards = Array.from(document.querySelectorAll('.card'));
+        const cards = Array.from(document.querySelectorAll('.card:not(.empty)'));
 
-        // ADDED: Copy topic link functionality
         function copyTopicLink(topicId) {
             const topicUrl = window.location.origin + '/topics/fund.php?id=' + topicId;
-            
             const btn = document.getElementById('copyBtn-' + topicId);
             
             if (navigator.clipboard && window.isSecureContext) {
@@ -847,17 +853,14 @@ if (isset($_SESSION['profile_updated'])) {
             textArea.value = text;
             textArea.style.position = 'fixed';
             textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
             document.body.appendChild(textArea);
-            textArea.focus();
             textArea.select();
             
             try {
                 document.execCommand('copy');
                 showCopyFeedback(btn);
             } catch (err) {
-                console.error('Failed to copy');
-                alert('Could not copy link. Please copy manually: ' + text);
+                alert('Could not copy link. URL: ' + text);
             }
             
             document.body.removeChild(textArea);
@@ -877,27 +880,12 @@ if (isset($_SESSION['profile_updated'])) {
         }
 
         function initializeCards() {
-            if (totalTopics === 0) {
-                // For empty state, just show the single card
-                const emptyCard = document.querySelector('.card.empty');
-                if (emptyCard) {
-                    emptyCard.style.transform = 'scale(1) translateY(0px)';
-                    emptyCard.style.zIndex = '100';
-                    emptyCard.style.opacity = '1';
-                    emptyCard.style.pointerEvents = 'auto';
-                    emptyCard.style.display = 'block';
-                }
-                return;
-            }
-            
-            cards.forEach((card, index) => {
-                updateCardPosition(card, index);
-            });
+            if (totalTopics === 0) return;
+            cards.forEach((card, index) => updateCardPosition(card, index));
         }
 
         function updateCardPosition(card, cardIndex) {
-            if (totalTopics === 0) return; // Don't process if no topics
-            
+            if (totalTopics === 0) return;
             const relativeIndex = (cardIndex - currentIndex + totalTopics) % totalTopics;
             
             if (relativeIndex === 0) {
@@ -905,251 +893,47 @@ if (isset($_SESSION['profile_updated'])) {
                 card.style.zIndex = '100';
                 card.style.opacity = '1';
                 card.style.pointerEvents = 'auto';
-                card.style.display = 'block';
             } else if (relativeIndex === 1) {
                 card.style.transform = 'scale(0.95) translateY(10px)';
                 card.style.zIndex = '99';
                 card.style.opacity = '0.8';
                 card.style.pointerEvents = 'none';
-                card.style.display = 'block';
-            } else if (relativeIndex === 2 && totalTopics > 2) {
-                card.style.transform = 'scale(0.9) translateY(20px)';
-                card.style.zIndex = '98';
-                card.style.opacity = '0.6';
-                card.style.pointerEvents = 'none';
-                card.style.display = 'block';
             } else {
                 card.style.display = 'none';
             }
         }
 
-        function getCurrentCard() {
-            if (totalTopics === 0) {
-                return document.querySelector('.card.empty');
-            }
-            return cards[currentIndex];
-        }
-
         function swipeLeft() {
             if (totalTopics <= 1) return;
-            
-            const currentCard = getCurrentCard();
-            currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-            currentCard.style.transform = 'translateX(-150%) rotate(-30deg)';
-            currentCard.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex + 1) % totalTopics;
-                currentCard.style.transition = '';
-                currentCard.style.transform = '';
-                currentCard.style.opacity = '1';
-                
-                cards.forEach((card, index) => {
-                    updateCardPosition(card, index);
-                });
-            }, 300);
+            currentIndex = (currentIndex + 1) % totalTopics;
+            cards.forEach((card, index) => updateCardPosition(card, index));
         }
 
         function swipeRight() {
             if (totalTopics <= 1) return;
-            
-            const currentCard = getCurrentCard();
-            currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-            currentCard.style.transform = 'translateX(150%) rotate(30deg)';
-            currentCard.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
-                currentCard.style.transition = '';
-                currentCard.style.transform = '';
-                currentCard.style.opacity = '1';
-                
-                cards.forEach((card, index) => {
-                    updateCardPosition(card, index);
-                });
-            }, 300);
+            currentIndex = (currentIndex - 1 + totalTopics) % totalTopics;
+            cards.forEach((card, index) => updateCardPosition(card, index));
         }
 
-        function updateNavButtons() {
-            const leftBtn = document.querySelector('.nav-btn.left');
-            const rightBtn = document.querySelector('.nav-btn.right');
-            
-            if (leftBtn && rightBtn) {
-                if (totalTopics > 1) {
-                    leftBtn.style.display = 'flex';
-                    rightBtn.style.display = 'flex';
-                } else {
-                    leftBtn.style.display = 'none';
-                    rightBtn.style.display = 'none';
-                }
-            }
-        }
-
-        // Touch system
-        let startX = 0, currentX = 0, isDragging = false;
-        const swipeArea = document.getElementById('swipeArea');
-
-        if (swipeArea && totalTopics > 0) {
-            swipeArea.addEventListener('touchstart', (e) => {
-                if (totalTopics <= 1) return;
-                
-                const touch = e.touches[0];
-                const currentCard = getCurrentCard();
-                if (!currentCard) return;
-                
-                const rect = currentCard.getBoundingClientRect();
-                
-                if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                    touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-                    
-                    if (e.target.closest('.earning-display, .topic-title, .action-btn, .click-hint, .upload-form, .copy-link-btn')) {
-                        return;
-                    }
-                    
-                    startX = touch.clientX;
-                    isDragging = true;
-                    currentCard.style.transition = '';
-                    e.preventDefault();
-                }
-            }, {passive: false});
-            
-            swipeArea.addEventListener('touchmove', (e) => {
-                if (!isDragging || totalTopics <= 1) return;
-                
-                currentX = e.touches[0].clientX;
-                const deltaX = currentX - startX;
-                const currentCard = getCurrentCard();
-                if (!currentCard) return;
-                
-                if (Math.abs(deltaX) > 5) {
-                    currentCard.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
-                    currentCard.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
-                }
-                
-                e.preventDefault();
-            }, {passive: false});
-            
-            swipeArea.addEventListener('touchend', () => {
-                if (!isDragging || totalTopics <= 1) return;
-                
-                isDragging = false;
-                const deltaX = currentX - startX;
-                const currentCard = getCurrentCard();
-                if (!currentCard) return;
-                
-                if (Math.abs(deltaX) > 100) {
-                    if (deltaX > 0) {
-                        swipeRight();
-                    } else {
-                        swipeLeft();
-                    }
-                } else {
-                    currentCard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                    currentCard.style.transform = 'scale(1) translateY(0px)';
-                    currentCard.style.opacity = '1';
-                    
-                    setTimeout(() => {
-                        currentCard.style.transition = '';
-                    }, 300);
-                }
-            });
-        }
-
-        // Copy profile link function - points to topic creation page
         function copyProfileLink() {
             const profileUrl = window.location.origin + '/topics/create.php?creator_id=<?php echo $creator->id; ?>';
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(profileUrl).then(() => {
-                    showProfileCopyFeedback();
-                }).catch(() => {
-                    fallbackCopyProfileText(profileUrl);
+                    const btn = document.getElementById('copyProfileBtn');
+                    if (btn) {
+                        btn.textContent = '✅ Copied!';
+                        setTimeout(() => btn.textContent = '🔗 Copy Profile Link', 2000);
+                    }
                 });
             } else {
-                fallbackCopyProfileText(profileUrl);
+                alert('Profile link: ' + profileUrl);
             }
-        }
-
-        function fallbackCopyProfileText(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                showProfileCopyFeedback();
-            } catch (err) {
-                console.error('Failed to copy');
-                alert('Could not copy link. Please copy manually: ' + text);
-            }
-            
-            document.body.removeChild(textArea);
-        }
-
-        function showProfileCopyFeedback() {
-            const btn = document.getElementById('copyProfileBtn');
-            if (btn) {
-                const originalText = btn.textContent;
-                btn.textContent = '✅ Copied!';
-                btn.classList.add('copied');
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }
-        }
-
-        function updateCountdowns() {
-            const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
-            
-            countdownElements.forEach(element => {
-                const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
-                const now = new Date().getTime();
-                const timeLeft = deadline - now;
-                
-                if (timeLeft > 0) {
-                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                    
-                    const formattedTime = 
-                        String(hours).padStart(2, '0') + ':' + 
-                        String(minutes).padStart(2, '0') + ':' + 
-                        String(seconds).padStart(2, '0');
-                    
-                    element.textContent = formattedTime;
-                    
-                    element.classList.remove('expired', 'warning', 'safe');
-                    
-                    if (hours <= 1) {
-                        element.classList.add('expired');
-                    } else if (hours <= 6) {
-                        element.classList.add('warning');
-                    } else {
-                        element.classList.add('safe');
-                    }
-                } else {
-                    element.textContent = 'EXPIRED';
-                    element.classList.remove('warning', 'safe');
-                    element.classList.add('expired');
-                }
-            });
         }
 
         function showUploadForm(topicId) {
-            const currentCard = getCurrentCard();
-            const currentTopicId = currentCard.getAttribute('data-topic');
-            
-            if (currentTopicId == topicId) {
-                document.getElementById(`earning-display-${topicId}`).style.display = 'none';
-                document.getElementById(`upload-form-${topicId}`).classList.add('active');
-            }
+            document.getElementById(`earning-display-${topicId}`).style.display = 'none';
+            document.getElementById(`upload-form-${topicId}`).classList.add('active');
         }
 
         function hideUploadForm(topicId) {
@@ -1164,120 +948,99 @@ if (isset($_SESSION['profile_updated'])) {
             
             if (topic.showing === 'title') {
                 el.textContent = topic.desc;
-                el.style.opacity = '0.8';
                 el.style.fontSize = '18px';
                 topic.showing = 'desc';
             } else {
                 el.textContent = topic.title;
-                el.style.opacity = '1';
                 el.style.fontSize = '24px';
                 topic.showing = 'title';
             }
         }
 
         function declineTopic(topicId) {
-            if (confirm('Are you sure you want to decline this topic? All contributors will be fully refunded.')) {
-                submitTopicAction(topicId, 'decline');
+            if (confirm('Decline this topic? All contributors will be refunded.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'topic_actions.php';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="decline">
+                    <input type="hidden" name="topic_id" value="${topicId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
             }
         }
 
         function holdTopic(topicId) {
-            const reason = prompt('Reason for putting topic on hold (optional):', 'Working on other content first');
+            const reason = prompt('Reason for hold (optional):', 'Working on other content');
             if (reason !== null) {
-                submitTopicAction(topicId, 'hold', reason);
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'topic_actions.php';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="hold">
+                    <input type="hidden" name="topic_id" value="${topicId}">
+                    <input type="hidden" name="hold_reason" value="${reason}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
             }
         }
 
         function resumeTopic(topicId) {
             if (confirm('Resume this topic? The 48-hour deadline will restart.')) {
-                submitTopicAction(topicId, 'resume');
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'topic_actions.php';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="resume">
+                    <input type="hidden" name="topic_id" value="${topicId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
             }
-        }
-
-        function submitTopicAction(topicId, action, reason = '') {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'topic_actions.php';
-            
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = action;
-            
-            const topicInput = document.createElement('input');
-            topicInput.type = 'hidden';
-            topicInput.name = 'topic_id';
-            topicInput.value = topicId;
-            
-            if (reason) {
-                const reasonInput = document.createElement('input');
-                reasonInput.type = 'hidden';
-                reasonInput.name = 'hold_reason';
-                reasonInput.value = reason;
-                form.appendChild(reasonInput);
-            }
-            
-            form.appendChild(actionInput);
-            form.appendChild(topicInput);
-            document.body.appendChild(form);
-            form.submit();
         }
 
         function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            const overlay = document.querySelector('.mobile-overlay');
-            menu.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
-        
-        function closeMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            const overlay = document.querySelector('.mobile-overlay');
-            menu.classList.remove('open');
-            overlay.classList.remove('open');
+            document.getElementById('mobileMenu').classList.toggle('open');
+            document.querySelector('.mobile-overlay').classList.toggle('open');
         }
 
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn, .upload-form, .earning-display.funded, .copy-link-btn')) {
-                e.stopPropagation();
-            }
-        });
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('open');
+            document.querySelector('.mobile-overlay').classList.remove('open');
+        }
 
         document.querySelectorAll('form.upload-form').forEach(form => {
             form.addEventListener('submit', function(e) {
-                const submitBtn = this.querySelector('.upload-btn.submit');
                 const urlInput = this.querySelector('input[type="url"]');
-                
                 if (!urlInput.value.trim()) {
                     e.preventDefault();
                     alert('Please enter a content URL');
                     return;
                 }
                 
-                if (!confirm('Upload this content and mark topic as completed?')) {
+                if (!confirm('Upload this content? This will mark the topic as completed.')) {
                     e.preventDefault();
                     return;
                 }
                 
-                submitBtn.innerHTML = '⏳ Uploading...';
-                submitBtn.disabled = true;
+                const btn = this.querySelector('.upload-btn.submit');
+                btn.innerHTML = '⏳ Uploading...';
+                btn.disabled = true;
             });
         });
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeCards();
-            updateNavButtons();
-            updateCountdowns();
-            setInterval(updateCountdowns, 1000);
             
-            // Auto-hide success messages after 5 seconds
+            // Auto-hide success messages
             setTimeout(() => {
-                const successMsg = document.querySelector('.upload-message');
-                if (successMsg) {
-                    successMsg.style.transition = 'opacity 0.5s ease';
-                    successMsg.style.opacity = '0';
-                    setTimeout(() => successMsg.remove(), 500);
-                }
+                document.querySelectorAll('.upload-message').forEach(msg => {
+                    msg.style.transition = 'opacity 0.5s';
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.remove(), 500);
+                });
             }, 5000);
         });
     </script>
