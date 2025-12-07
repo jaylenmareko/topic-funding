@@ -1,5 +1,5 @@
 <?php
-// index.php - COMPLETE VERSION WITH CLAIM PROFILE
+// index.php - SIMPLIFIED - JUST EMAIL
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -10,110 +10,37 @@ $claim_success = false;
 $claim_error = '';
 
 if ($_POST && isset($_POST['claim_platform']) && isset($_POST['claim_username'])) {
-    require_once 'config/database.php';
-    
     $platform = trim($_POST['claim_platform']);
     $username = trim($_POST['claim_username']);
     
     if (!empty($platform) && !empty($username)) {
-        try {
-            $db = new Database();
-            
-            // 1. Check if creator already exists in system
-            $db->query('SELECT id, display_name FROM creators WHERE LOWER(username) = LOWER(:username) AND platform = :platform');
-            $db->bind(':username', $username);
-            $db->bind(':platform', $platform);
-            $existing_creator = $db->single();
-            
-            if ($existing_creator) {
-                $claim_error = "This {$platform} account (@{$username}) is already registered on TopicLaunch.";
-            } else {
-                // 2. Check if already submitted claim request recently
-                $db->query('
-                    SELECT id FROM creator_claim_requests 
-                    WHERE LOWER(username) = LOWER(:username) 
-                    AND platform = :platform 
-                    AND status = "pending"
-                    AND requested_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
-                ');
-                $db->bind(':username', $username);
-                $db->bind(':platform', $platform);
-                $existing_claim = $db->single();
-                
-                if ($existing_claim) {
-                    $claim_error = "You already submitted a claim for this account. We'll contact you soon!";
-                } else {
-                    // 3. Build profile URL
-                    $profile_url = '';
-                    if ($platform === 'YouTube') {
-                        $profile_url = "https://www.youtube.com/@{$username}";
-                    } elseif ($platform === 'Instagram') {
-                        $profile_url = "https://www.instagram.com/{$username}/";
-                    } elseif ($platform === 'TikTok') {
-                        $profile_url = "https://www.tiktok.com/@{$username}";
-                    }
-                    
-                    // 4. Store the claim request
-                    $db->query('
-                        INSERT INTO creator_claim_requests 
-                        (platform, username, profile_url, requested_at, status)
-                        VALUES (:platform, :username, :profile_url, NOW(), "pending")
-                    ');
-                    $db->bind(':platform', $platform);
-                    $db->bind(':username', $username);
-                    $db->bind(':profile_url', $profile_url);
-                    $db->execute();
-                    
-                    $claim_id = $db->lastInsertId();
-                    
-                    // 5. Send email notification to admin
-                    $admin_email = 'me@topiclaunch.com';
-                    $subject = 'New Creator Profile Claim Request - TopicLaunch';
-                    $message = "New creator profile claim request received:
+        // Build profile URL
+        $profile_url = '';
+        if ($platform === 'YouTube') {
+            $profile_url = "https://www.youtube.com/@{$username}";
+        } elseif ($platform === 'Instagram') {
+            $profile_url = "https://www.instagram.com/{$username}/";
+        } elseif ($platform === 'TikTok') {
+            $profile_url = "https://www.tiktok.com/@{$username}";
+        }
+        
+        // Send email notification to admin
+        $admin_email = 'me@topiclaunch.com';
+        $subject = 'New Creator Profile Claim - TopicLaunch';
+        $message = "New creator profile claim:
 
 Platform: {$platform}
 Username: @{$username}
 Profile URL: {$profile_url}
-Request ID: {$claim_id}
-Timestamp: " . date('F j, Y g:i A') . "
+Time: " . date('F j, Y g:i A') . "
 
-Action Required:
-1. Visit the profile URL to verify it's a real account
-2. Create creator account in TopicLaunch system
-3. Contact the creator to provide login credentials
-4. Update claim status in database
-
----
-TopicLaunch Admin Notification System";
-                    
-                    $headers = array();
-                    $headers[] = 'From: TopicLaunch System <noreply@topiclaunch.com>';
-                    $headers[] = 'Reply-To: me@topiclaunch.com';
-                    $headers[] = 'Content-Type: text/plain; charset=UTF-8';
-                    
-                    mail($admin_email, $subject, $message, implode("\r\n", $headers));
-                    
-                    // 6. Also create admin notification in system if notifications table exists
-                    try {
-                        $db->query('
-                            INSERT INTO notifications (user_id, type, category, message, created_at)
-                            VALUES (1, "admin", "claim_request", :message, NOW())
-                        ');
-                        $db->bind(':message', "New creator claim: {$platform} - @{$username} (ID: {$claim_id})");
-                        $db->execute();
-                    } catch (Exception $e) {
-                        error_log("Could not create notification: " . $e->getMessage());
-                    }
-                    
-                    $claim_success = true;
-                }
-            }
-            
-        } catch (Exception $e) {
-            error_log("Profile claim error: " . $e->getMessage());
-            error_log("Error details: " . $e->getTraceAsString());
-            $claim_error = "An error occurred. Please try again later.";
-        }
+Please verify this account and set them up.";
+        
+        $headers = "From: TopicLaunch <noreply@topiclaunch.com>\r\n";
+        
+        mail($admin_email, $subject, $message, $headers);
+        
+        $claim_success = true;
     } else {
         $claim_error = "Please fill in all fields.";
     }
@@ -615,12 +542,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             
             <?php if ($claim_success): ?>
                 <div class="success-message">
-                    ✅ <strong>Request Submitted Successfully!</strong><br><br>
-                    We've received your profile claim request. Our team will verify your account and contact you ASAP to provide your TopicLaunch login credentials.<br><br>
-                    <strong>What's Next?</strong><br>
-                    • We'll verify you own this account<br>
-                    • You'll receive an email with your login details<br>
-                    • Expected response time: 24-48 hours
+                    ✅ <strong>Request Submitted!</strong><br><br>
+                    We'll contact you ASAP to provide your TopicLaunch login credentials.<br><br>
+                    Expected response: 24-48 hours
                 </div>
             <?php elseif ($claim_error): ?>
                 <div class="error-message">
@@ -634,15 +558,15 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                     <label for="claim_platform">Platform</label>
                     <select name="claim_platform" id="claim_platform" required>
                         <option value="">Select Platform</option>
-                        <option value="YouTube" <?php echo (isset($_POST['claim_platform']) && $_POST['claim_platform'] === 'YouTube') ? 'selected' : ''; ?>>YouTube</option>
-                        <option value="Instagram" <?php echo (isset($_POST['claim_platform']) && $_POST['claim_platform'] === 'Instagram') ? 'selected' : ''; ?>>Instagram</option>
-                        <option value="TikTok" <?php echo (isset($_POST['claim_platform']) && $_POST['claim_platform'] === 'TikTok') ? 'selected' : ''; ?>>TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="TikTok">TikTok</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="claim_username">Username (without @)</label>
-                    <input type="text" name="claim_username" id="claim_username" placeholder="Enter your username" required value="<?php echo isset($_POST['claim_username']) ? htmlspecialchars($_POST['claim_username']) : ''; ?>">
+                    <input type="text" name="claim_username" id="claim_username" placeholder="Enter your username" required>
                 </div>
                 
                 <button type="submit" class="submit-claim-btn">Submit Claim</button>
@@ -748,7 +672,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             document.getElementById('claimModal').classList.remove('active');
         }
 
-        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('claimModal');
             if (event.target == modal) {
@@ -757,7 +680,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         }
 
         <?php if ($claim_success || $claim_error || $auto_open_claim): ?>
-        // Auto-open modal
         openClaimModal();
         <?php endif; ?>
     </script>
