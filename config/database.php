@@ -8,6 +8,7 @@ ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 if (!is_dir(__DIR__ . '/../logs')) {
     mkdir(__DIR__ . '/../logs', 0755, true);
 }
+
 // config/database.php
 // Database configuration and connection with enhanced funding logic
 
@@ -512,13 +513,13 @@ function renderFundingWidget($topic, $contributions = [], $analytics = null) {
 
     // Main Progress Bar
     echo '<div style="position: relative; background: #e9ecef; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden;">';
-    echo '<div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: ' . $progress_percent . '%;"></div>';
+    echo '<div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: ' . $progress_percent . '%%;"></div>';
     
     // Milestone markers
     foreach ($milestones as $milestone) {
-        echo '<div style="position: absolute; top: 0; left: ' . $milestone . '%; width: 2px; height: 100%; background: #fff; opacity: 0.7;"></div>';
-        echo '<div style="position: absolute; top: -25px; left: ' . $milestone . '%; transform: translateX(-50%); font-size: 10px; color: #666;">';
-        echo $milestone . '%';
+        echo '<div style="position: absolute; top: 0; left: ' . $milestone . '%%; width: 2px; height: 100%%; background: #fff; opacity: 0.7;"></div>';
+        echo '<div style="position: absolute; top: -25px; left: ' . $milestone . '%%; transform: translateX(-50%%); font-size: 10px; color: #666;">';
+        echo $milestone . '%%';
         echo '</div>';
     }
     
@@ -573,11 +574,11 @@ function renderFundingWidget($topic, $contributions = [], $analytics = null) {
     foreach ($milestones as $milestone) {
         if ($progress_percent >= $milestone) {
             echo '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">';
-            echo $milestone . '% ✓';
+            echo $milestone . '%% ✓';
             echo '</span>';
         } else {
             echo '<span style="background: #e9ecef; color: #666; padding: 4px 8px; border-radius: 12px; font-size: 11px;">';
-            echo $milestone . '%';
+            echo $milestone . '%%';
             echo '</span>';
         }
     }
