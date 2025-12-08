@@ -174,7 +174,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     }
 }
 
-// Get topics with enhanced deadline calculation and proper ordering
+// Get topics with enhanced deadline calculation and proper ordering - FIXED to exclude expired topics
 $db->query('
     SELECT t.*, 
            UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
@@ -186,6 +186,11 @@ $db->query('
     WHERE t.creator_id = :creator_id 
     AND t.status IN ("active", "funded", "on_hold") 
     AND (t.content_url IS NULL OR t.content_url = "") 
+    AND (
+        t.status != "funded" 
+        OR t.content_deadline IS NULL 
+        OR t.content_deadline >= NOW()
+    )
     ORDER BY 
         CASE 
             WHEN t.status = "funded" THEN 1 
@@ -893,13 +898,19 @@ if (isset($_SESSION['profile_updated'])) {
                 card.style.zIndex = '100';
                 card.style.opacity = '1';
                 card.style.pointerEvents = 'auto';
+                card.style.display = 'block';
             } else if (relativeIndex === 1) {
                 card.style.transform = 'scale(0.95) translateY(10px)';
                 card.style.zIndex = '99';
                 card.style.opacity = '0.8';
                 card.style.pointerEvents = 'none';
+                card.style.display = 'block';
             } else {
-                card.style.display = 'none';
+                card.style.transform = 'scale(0.9) translateY(20px)';
+                card.style.zIndex = '98';
+                card.style.opacity = '0';
+                card.style.pointerEvents = 'none';
+                card.style.display = 'block';
             }
         }
 
