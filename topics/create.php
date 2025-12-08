@@ -35,7 +35,7 @@ if ($_POST) {
     }
     
     $title = InputSanitizer::sanitizeString($_POST['title']);
-    $description = InputSanitizer::sanitizeString($_POST['description']);
+    $description = html_entity_decode(InputSanitizer::sanitizeString($_POST['description']), ENT_QUOTES, 'UTF-8');
     $funding_threshold = (float)$_POST['funding_threshold'];
     $initial_contribution = (float)$_POST['initial_contribution'];
     
