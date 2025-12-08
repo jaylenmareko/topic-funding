@@ -127,14 +127,6 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
 
 // Get recent contributions
 $contributions = $helper->getTopicContributions($topic_id);
-
-// UPDATED: Suggested contribution amounts (minimum $1)
-$suggested_amounts = [1, 5, 10, 25];
-if ($remaining > 0 && $remaining <= 500 && $remaining >= 1) {
-    $suggested_amounts[] = ceil($remaining); // Add "fund the rest" option
-}
-$suggested_amounts = array_unique($suggested_amounts);
-sort($suggested_amounts);
 ?>
 <!DOCTYPE html>
 <html>
@@ -175,6 +167,7 @@ sort($suggested_amounts);
         .topic-title { font-size: 24px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
         .creator-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
         .creator-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; font-weight: bold; }
+        .topic-description { color: #555; line-height: 1.6; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
         .funding-progress { background: #e9ecef; height: 10px; border-radius: 5px; margin: 20px 0; }
         .funding-bar { background: #28a745; height: 100%; border-radius: 5px; transition: width 0.3s; }
         .funding-stats { display: flex; justify-content: space-between; margin: 15px 0; }
@@ -182,9 +175,6 @@ sort($suggested_amounts);
         .funding-form { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-section { margin-bottom: 25px; }
         .form-section h3 { margin-top: 0; color: #333; }
-        .amount-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .amount-btn { padding: 12px; border: 2px solid #007bff; background: white; color: #007bff; border-radius: 6px; cursor: pointer; text-align: center; font-weight: bold; transition: all 0.3s; }
-        .amount-btn:hover, .amount-btn.active { background: #007bff; color: white; }
         .custom-amount { margin-bottom: 20px; }
         .custom-amount input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
         .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 18px; width: 100%; font-weight: bold; transition: background 0.3s; }
@@ -198,7 +188,6 @@ sort($suggested_amounts);
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .topic-summary, .funding-form { padding: 20px; }
-            .amount-buttons { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -239,6 +228,10 @@ sort($suggested_amounts);
                 </div>
             </div>
 
+            <div class="topic-description">
+                <?php echo nl2br(htmlspecialchars($topic->description)); ?>
+            </div>
+
             <div class="funding-progress">
                 <div class="funding-bar" style="width: <?php echo $progress_percent; ?>%"></div>
             </div>
@@ -276,17 +269,6 @@ sort($suggested_amounts);
                     <span>Secure payment by Stripe</span>
                 </div>
 
-                <div class="form-section">
-                    <h3>Choose Your Contribution (Minimum $1)</h3>
-                    <div class="amount-buttons">
-                        <?php foreach ($suggested_amounts as $amount): ?>
-                            <button type="button" class="amount-btn" onclick="selectAmount(<?php echo $amount; ?>)">
-                                $<?php echo $amount; ?>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
                 <form method="POST" id="fundingForm">
                     <?php if ($is_logged_in): ?>
                         <?php echo CSRFProtection::getTokenField(); ?>
@@ -316,22 +298,6 @@ sort($suggested_amounts);
     </div>
 
     <script>
-    function selectAmount(amount) {
-        // Clear active states
-        document.querySelectorAll('.amount-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        // Set active state for clicked button
-        event.target.classList.add('active');
-        
-        // Set the custom amount input
-        document.getElementById('customAmount').value = amount;
-        
-        // Validate form
-        validateForm();
-    }
-
     function validateForm() {
         const amount = parseFloat(document.getElementById('customAmount').value);
         const submitBtn = document.getElementById('submitBtn');
@@ -346,13 +312,8 @@ sort($suggested_amounts);
         }
     }
 
-    // Clear button selection when typing custom amount
+    // Validate on input
     document.getElementById('customAmount').addEventListener('input', function() {
-        // Clear active states when typing
-        document.querySelectorAll('.amount-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
         validateForm();
     });
 
