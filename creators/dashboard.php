@@ -174,14 +174,14 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     }
 }
 
-// Get topics with enhanced deadline calculation and proper ordering - FIXED to exclude expired topics
+// Get topics with enhanced deadline calculation and proper ordering - FIXED to exclude expired topics AND show correct potential earnings
 $db->query('
     SELECT t.*, 
            UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
            TIMESTAMPDIFF(SECOND, NOW(), t.content_deadline) as seconds_remaining,
            TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
            (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
-           (t.current_funding * 0.9) as potential_earnings
+           (t.funding_threshold * 0.9) as potential_earnings
     FROM topics t 
     WHERE t.creator_id = :creator_id 
     AND t.status IN ("active", "funded", "on_hold") 
@@ -731,7 +731,7 @@ if (isset($_SESSION['profile_updated'])) {
                                 <div class="earning-display funded" 
                                      onclick="showUploadForm(<?php echo $topic->id; ?>)"
                                      id="earning-display-<?php echo $topic->id; ?>">
-                                    <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
+                                    <div class="earning-amount">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?></div>
                                     <div class="earning-text">Upload & Get Paid</div>
                                 </div>
                                 
@@ -762,7 +762,7 @@ if (isset($_SESSION['profile_updated'])) {
                                 </form>
                             <?php else: ?>
                                 <div class="earning-display">
-                                    <div class="earning-amount">$<?php echo number_format($topic->current_funding * 0.9, 0); ?></div>
+                                    <div class="earning-amount">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?></div>
                                     <div class="earning-text">Potential Earnings</div>
                                 </div>
                             <?php endif; ?>
