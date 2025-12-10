@@ -11,13 +11,13 @@ $helper = new DatabaseHelper();
 $creator_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (!$creator_id) {
-    header('Location: ../index.php');
+    header('Location: index.php');
     exit;
 }
 
 $creator = $helper->getCreatorById($creator_id);
 if (!$creator) {
-    header('Location: ../index.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -32,7 +32,7 @@ if ($is_logged_in) {
 
     // Redirect creators to their own dashboard
     if ($is_this_creator) {
-        header('Location: ../creators/dashboard.php');
+        header('Location: dashboard.php');
         exit;
     }
 } else {
@@ -98,8 +98,14 @@ $completed_topics = $db->resultSet();
             font-weight: bold;
             color: white;
             text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.3s;
         }
-        .nav-logo:hover { color: white; text-decoration: none; }
+        .nav-logo:hover { 
+            color: white; 
+            text-decoration: none;
+            opacity: 0.9;
+        }
         
         /* Clean profile styling */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -179,19 +185,21 @@ $completed_topics = $db->resultSet();
     </style>
 </head>
 <body>
-    <!-- Guest-friendly navigation (no signup buttons on profile pages) -->
-    <nav class="guest-nav">
-        <div class="nav-container">
-            <a href="../index.php" class="nav-logo">TopicLaunch</a>
-            
-            <?php if ($is_logged_in): ?>
-                <div style="color: white;">
-                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                    <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
-                </div>
-            <?php endif; ?>
-        </div>
-    </nav>
+    <?php 
+    // Use shared navigation - guests logo goes to creators/index.php
+    if ($is_logged_in) {
+        renderNavigation('creator_profile', true);
+    } else {
+        // Guest navigation with logo going to browse creators
+        ?>
+        <nav class="guest-nav">
+            <div class="nav-container">
+                <a href="index.php" class="nav-logo">TopicLaunch</a>
+            </div>
+        </nav>
+        <?php
+    }
+    ?>
 
     <div class="container">
         <!-- Create a Topic Button with Profile Picture aligned -->
