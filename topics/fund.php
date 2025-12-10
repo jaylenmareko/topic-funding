@@ -1,5 +1,5 @@
 <?php
-// topics/fund.php - Updated to enforce $1 minimum (no free contributions)
+// topics/fund.php - Simplified payment page
 session_start();
 require_once '../config/database.php';
 require_once '../config/stripe.php';
@@ -125,124 +125,158 @@ $progress_percent = ($topic->current_funding / $topic->funding_threshold) * 100;
 $progress_percent = min($progress_percent, 100);
 $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
 
-// Get recent contributions
+// Get recent contributions count
 $contributions = $helper->getTopicContributions($topic_id);
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fund Topic: <?php echo htmlspecialchars($topic->title); ?></title>
+    <title>Fund Topic - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-        
-        /* Guest-friendly navigation */
-        .guest-nav {
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
+        
+        .container { 
+            max-width: 500px; 
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .back-link { 
+            color: white; 
+            text-decoration: none; 
+            margin-bottom: 20px; 
+            display: inline-block;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        .back-link:hover { 
+            opacity: 1;
+            text-decoration: underline; 
+        }
+        
+        .funding-form { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .funding-progress-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .progress-bar-container {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #28a745, #20c997);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .funding-stats {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
+            font-size: 14px;
+            color: #666;
         }
-        .nav-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            text-decoration: none;
+        
+        .funding-stat strong {
+            color: #333;
+            font-weight: 600;
         }
-        .nav-logo:hover { color: white; text-decoration: none; }
         
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        .back-link:hover { text-decoration: underline; }
+        .form-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
         
-        .topic-summary { background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .topic-title { font-size: 24px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
-        .creator-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .creator-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; font-weight: bold; }
-        .topic-description { color: #555; line-height: 1.6; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
-        .funding-progress { background: #e9ecef; height: 10px; border-radius: 5px; margin: 20px 0; }
-        .funding-bar { background: #28a745; height: 100%; border-radius: 5px; transition: width 0.3s; }
-        .funding-stats { display: flex; justify-content: space-between; margin: 15px 0; }
+        .custom-amount input { 
+            width: 100%; 
+            padding: 15px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
         
-        .funding-form { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .form-section { margin-bottom: 25px; }
-        .form-section h3 { margin-top: 0; color: #333; }
-        .custom-amount { margin-bottom: 20px; }
-        .custom-amount input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-        .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 18px; width: 100%; font-weight: bold; transition: background 0.3s; }
+        .custom-amount input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 18px; 
+            width: 100%; 
+            font-weight: bold; 
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
         .btn:hover { background: #218838; }
-        .btn:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
-        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
-        .success { color: green; margin-bottom: 20px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; }
-        .guest-notice { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
-        .secure-badge { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 15px; color: #28a745; font-weight: bold; }
+        .btn:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed; 
+            opacity: 0.6; 
+        }
+        
+        .error { 
+            color: #721c24;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .secure-badge { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            margin-top: 20px;
+            color: #28a745; 
+            font-weight: 600;
+            font-size: 14px;
+        }
         
         @media (max-width: 768px) {
-            .container { padding: 15px; }
-            .topic-summary, .funding-form { padding: 20px; }
+            .funding-form { padding: 30px 25px; }
+            .funding-stats { font-size: 13px; }
         }
     </style>
 </head>
 <body>
-    <!-- Guest-friendly navigation -->
-    <nav class="guest-nav">
-        <div class="nav-container">
-            <a href="../index.php" class="nav-logo">TopicLaunch</a>
-            
-            <?php if ($is_logged_in): ?>
-                <div style="color: white;">
-                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                    <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
-                </div>
-            <?php endif; ?>
-        </div>
-    </nav>
-
     <div class="container">
         <a href="view.php?id=<?php echo $topic->id; ?>" class="back-link">← Back to Topic</a>
-
-        <!-- Topic Summary -->
-        <div class="topic-summary">
-            <h1 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h1>
-            
-            <div class="creator-info">
-                <div class="creator-avatar">
-                    <?php if ($topic->creator_image && file_exists('../uploads/creators/' . $topic->creator_image)): ?>
-                        <img src="../uploads/creators/<?php echo htmlspecialchars($topic->creator_image); ?>" 
-                             alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                    <?php else: ?>
-                        <?php echo strtoupper(substr($topic->creator_name, 0, 1)); ?>
-                    <?php endif; ?>
-                </div>
-                <div>
-                    <div style="font-weight: bold;">@<?php echo htmlspecialchars($topic->creator_name); ?></div>
-                    <div style="color: #666; font-size: 14px;">YouTube Creator</div>
-                </div>
-            </div>
-
-            <div class="topic-description">
-                <?php echo nl2br(htmlspecialchars($topic->description)); ?>
-            </div>
-
-            <div class="funding-progress">
-                <div class="funding-bar" style="width: <?php echo $progress_percent; ?>%"></div>
-            </div>
-
-            <div class="funding-stats">
-                <div><strong>$<?php echo number_format($topic->current_funding, 0); ?></strong> raised</div>
-                <div><strong>$<?php echo number_format($remaining, 0); ?></strong> remaining</div>
-                <div><strong><?php echo count($contributions); ?></strong> backers</div>
-                <div><strong><?php echo round($progress_percent); ?>%</strong> funded</div>
-            </div>
-        </div>
 
         <div class="funding-form">
             <?php if (!empty($errors)): ?>
@@ -251,49 +285,47 @@ $contributions = $helper->getTopicContributions($topic_id);
                 <?php endforeach; ?>
             <?php endif; ?>
 
-            <?php if ($success): ?>
-                <div class="success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
-
-            <?php if (!$is_logged_in): ?>
-                <div class="guest-notice">
-                    <strong>💡 Funding as a guest?</strong><br>
-                    After your payment, you'll create a free account to track your contribution and get notified when the content is ready!
+            <!-- Funding Progress -->
+            <div class="funding-progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: <?php echo $progress_percent; ?>%"></div>
                 </div>
-            <?php endif; ?>
+                <div class="funding-stats">
+                    <span><strong>$<?php echo number_format($topic->current_funding, 0); ?></strong> raised</span>
+                    <span><strong>$<?php echo number_format($remaining, 0); ?></strong> to go</span>
+                    <span><strong><?php echo round($progress_percent); ?>%</strong> funded</span>
+                </div>
+            </div>
 
-            <?php if ($topic->status === 'active'): ?>
+            <p class="form-subtitle">Enter your contribution amount</p>
 
+            <form method="POST" id="fundingForm">
+                <?php if ($is_logged_in): ?>
+                    <?php echo CSRFProtection::getTokenField(); ?>
+                <?php endif; ?>
+                
+                <div class="custom-amount">
+                    <input 
+                        type="number" 
+                        name="amount" 
+                        id="customAmount" 
+                        placeholder="$1 - $1000" 
+                        min="1" 
+                        max="1000" 
+                        step="1" 
+                        required
+                        autofocus>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn" disabled>
+                    Fund
+                </button>
+                
                 <div class="secure-badge">
                     <span>🔒</span>
                     <span>Secure payment by Stripe</span>
                 </div>
-
-                <form method="POST" id="fundingForm">
-                    <?php if ($is_logged_in): ?>
-                        <?php echo CSRFProtection::getTokenField(); ?>
-                    <?php endif; ?>
-                    
-                    <div class="form-section">
-                        <div class="custom-amount">
-                            <input type="number" name="amount" id="customAmount" placeholder="Enter amount ($1-$1000)" min="1" max="1000" step="1" required>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn" id="submitBtn" disabled>
-                        <?php if ($is_logged_in): ?>
-                            Continue to Secure Payment
-                        <?php else: ?>
-                            Pay & Create Account
-                        <?php endif; ?>
-                    </button>
-                </form>
-            <?php else: ?>
-                <div class="success">
-                    This topic has been fully funded! The creator is now working on the content.
-                </div>
-                <a href="view.php?id=<?php echo $topic->id; ?>" class="btn">View Topic Details</a>
-            <?php endif; ?>
+            </form>
         </div>
     </div>
 
@@ -302,7 +334,6 @@ $contributions = $helper->getTopicContributions($topic_id);
         const amount = parseFloat(document.getElementById('customAmount').value);
         const submitBtn = document.getElementById('submitBtn');
         
-        // UPDATED: Minimum $1 required
         if (amount >= 1 && amount <= 1000) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
@@ -321,7 +352,6 @@ $contributions = $helper->getTopicContributions($topic_id);
     document.getElementById('fundingForm').addEventListener('submit', function(e) {
         const amount = parseFloat(document.getElementById('customAmount').value);
         
-        // UPDATED: $1 minimum validation
         if (!amount || amount < 1) {
             e.preventDefault();
             alert('Please enter a valid amount ($1 minimum)');
