@@ -127,14 +127,10 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     <?php endif; ?>
 
     <div class="container">
-        <?php if ($is_logged_in): ?>
-            <?php if ($is_creator): ?>
-                <!-- No back link for creators - they can use navigation -->
-            <?php else: ?>
-                <!-- Back link only for logged-in fans -->
-                <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Topics</a>
-            <?php endif; ?>
-        <?php else: ?>
+        <!-- Back link for everyone (logged in or not) -->
+        <a href="../creators/profile.php?id=<?php echo $topic->creator_id; ?>" class="back-link">← Back to Creator Profile</a>
+
+        <?php if (!$is_logged_in): ?>
             <!-- Show topic header with creator info for non-logged-in users -->
             <div class="topic-header">
                 <div class="topic-title"><?php echo htmlspecialchars($topic->title); ?></div>
