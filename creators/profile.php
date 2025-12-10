@@ -2,7 +2,6 @@
 // creators/profile.php - Updated with guest-friendly navigation and creator redirect
 session_start();
 require_once '../config/database.php';
-require_once '../config/navigation.php';
 
 // Check if user is logged in - allow guests to view profiles
 $is_logged_in = isset($_SESSION['user_id']);
@@ -78,8 +77,8 @@ $completed_topics = $db->resultSet();
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
         
-        /* Guest-friendly navigation */
-        .guest-nav {
+        /* Navigation */
+        .nav {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -105,6 +104,22 @@ $completed_topics = $db->resultSet();
             color: white; 
             text-decoration: none;
             opacity: 0.9;
+        }
+        .nav-user {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .nav-user a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .nav-user a:hover {
+            background: rgba(255,255,255,0.2);
         }
         
         /* Clean profile styling */
@@ -185,21 +200,19 @@ $completed_topics = $db->resultSet();
     </style>
 </head>
 <body>
-    <?php 
-    // Use shared navigation - guests logo goes to creators/index.php
-    if ($is_logged_in) {
-        renderNavigation('creator_profile', true);
-    } else {
-        // Guest navigation with logo going to browse creators
-        ?>
-        <nav class="guest-nav">
-            <div class="nav-container">
-                <a href="index.php" class="nav-logo">TopicLaunch</a>
-            </div>
-        </nav>
-        <?php
-    }
-    ?>
+    <!-- Simple navigation without YouTubers button -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.php" class="nav-logo">TopicLaunch</a>
+            
+            <?php if ($is_logged_in): ?>
+                <div class="nav-user">
+                    <span>Hi, <?php echo htmlspecialchars($_SESSION['username']); ?>!</span>
+                    <a href="../auth/logout.php">Logout</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </nav>
 
     <div class="container">
         <!-- Create a Topic Button with Profile Picture aligned -->
