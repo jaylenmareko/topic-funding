@@ -31,6 +31,7 @@ $success = '';
 if ($_POST) {
     // CSRF Protection - only for logged-in users
     if ($is_logged_in) {
+        require_once '../config/csrf.php';
         CSRFProtection::requireValidToken();
     }
     
@@ -133,8 +134,8 @@ if ($_POST) {
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
         
-        /* Guest-friendly navigation */
-        .guest-nav {
+        /* Navigation */
+        .nav {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -152,9 +153,24 @@ if ($_POST) {
             font-size: 24px;
             font-weight: bold;
             color: white;
-            text-decoration: none;
+            cursor: default;
         }
-        .nav-logo:hover { color: white; text-decoration: none; }
+        .nav-user {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .nav-user a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .nav-user a:hover {
+            background: rgba(255,255,255,0.2);
+        }
         
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
@@ -175,7 +191,6 @@ if ($_POST) {
         .btn:disabled { background: #6c757d; cursor: not-allowed; }
         .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
         small { color: #666; font-size: 14px; }
-        .guest-notice { background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
         
         @media (max-width: 600px) {
             .container { padding: 15px; }
@@ -184,15 +199,15 @@ if ($_POST) {
     </style>
 </head>
 <body>
-    <!-- Guest-friendly navigation -->
-    <nav class="guest-nav">
+    <!-- Simple navigation without YouTubers button -->
+    <nav class="nav">
         <div class="nav-container">
-            <a href="../index.php" class="nav-logo">TopicLaunch</a>
+            <span class="nav-logo">TopicLaunch</span>
             
             <?php if ($is_logged_in): ?>
-                <div style="color: white;">
-                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                    <a href="../auth/logout.php" style="color: white; margin-left: 15px;">Logout</a>
+                <div class="nav-user">
+                    <span>Hi, <?php echo htmlspecialchars($_SESSION['username']); ?>!</span>
+                    <a href="../auth/logout.php">Logout</a>
                 </div>
             <?php endif; ?>
         </div>
@@ -201,8 +216,6 @@ if ($_POST) {
     <div class="container">
         <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" class="back-link">← Back to <?php echo htmlspecialchars($creator->display_name); ?></a>
 
-
-        
         <!-- Creator Info -->
         <div class="creator-info">
             <div class="creator-avatar">
@@ -219,16 +232,13 @@ if ($_POST) {
             </div>
         </div>
 
-        <?php if (!$is_logged_in): ?>
-        <div class="guest-notice">
-            After your payment, you'll create a free account to track your topic!
-        </div>
-        <?php endif; ?>
-
         <div class="form-container">
             <form method="POST" id="topicForm">
                 <?php if ($is_logged_in): ?>
-                    <?php echo CSRFProtection::getTokenField(); ?>
+                    <?php 
+                    require_once '../config/csrf.php';
+                    echo CSRFProtection::getTokenField(); 
+                    ?>
                 <?php endif; ?>
                 
                 <!-- Hidden creator ID -->
