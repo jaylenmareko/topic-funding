@@ -325,15 +325,9 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                         </div>
 
                         <?php if ($topic->status === 'active'): ?>
-                            <?php if ($is_logged_in): ?>
-                                <a href="fund.php?id=<?php echo $topic->id; ?>" class="action-button">
-                                    💰 Fund This Topic
-                                </a>
-                            <?php else: ?>
-                                <a href="../auth/register.php?type=fan&return_to=<?php echo urlencode('/topics/view.php?id=' . $topic->id); ?>" class="action-button login">
-                                    🔑 Login/Signup to Fund
-                                </a>
-                            <?php endif; ?>
+                            <a href="fund.php?id=<?php echo $topic->id; ?>" class="action-button">
+                                💰 Fund This Topic
+                            </a>
                         <?php elseif ($topic->status === 'funded'): ?>
                             <div class="action-button completed">
                                 ✅ Fully Funded! Content coming soon...
