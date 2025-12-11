@@ -927,7 +927,7 @@ if (isset($_SESSION['profile_updated'])) {
         }
 
         function copyProfileLink() {
-            const profileUrl = window.location.origin + '/topics/create.php?creator_id=<?php echo $creator->id; ?>';
+            const profileUrl = window.location.origin + '/<?php echo $creator->display_name; ?>';
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(profileUrl).then(() => {
