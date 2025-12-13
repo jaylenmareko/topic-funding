@@ -97,13 +97,20 @@ $completed_topics = $db->resultSet();
             font-weight: bold;
             color: white;
             text-decoration: none;
-            cursor: pointer;
             transition: opacity 0.3s;
+        }
+        .nav-logo.clickable {
+            cursor: pointer;
+        }
+        .nav-logo.clickable:hover { 
+            opacity: 0.9;
+        }
+        .nav-logo.non-clickable {
+            cursor: default;
         }
         .nav-logo:hover { 
             color: white; 
             text-decoration: none;
-            opacity: 0.9;
         }
         .nav-user {
             color: white;
@@ -200,10 +207,14 @@ $completed_topics = $db->resultSet();
     </style>
 </head>
 <body>
-    <!-- Simple navigation without YouTubers button -->
+    <!-- Simple navigation -->
     <nav class="nav">
         <div class="nav-container">
-            <a href="index.php" class="nav-logo">TopicLaunch</a>
+            <?php if ($is_logged_in): ?>
+                <a href="index.php" class="nav-logo clickable">TopicLaunch</a>
+            <?php else: ?>
+                <span class="nav-logo non-clickable">TopicLaunch</span>
+            <?php endif; ?>
             
             <?php if ($is_logged_in): ?>
                 <div class="nav-user">
