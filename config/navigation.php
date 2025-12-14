@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation with edit profile button
+// config/navigation.php - Updated navigation with conditional logo behavior
 function renderNavigation($current_page = '', $is_profile_page = false) {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -30,15 +30,27 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     if (strpos($_SERVER['REQUEST_URI'], '/topics/') !== false) $base_path = '../';
     if (strpos($_SERVER['REQUEST_URI'], '/dashboard/') !== false) $base_path = '../';
     
-    // Determine logo link based on user type
-    $logo_link = $base_path . 'index.php'; // Default to home page
+    // Determine if logo should be clickable
+    $logo_clickable = true;
+    $logo_link = $base_path . 'creators/index.php'; // Default to browse creators
     
-    if ($is_logged_in) {
-        if ($is_creator) {
-            // Creators: logo goes to their dashboard
-            $logo_link = $base_path . 'creators/dashboard.php';
+    // Disable logo click on specific pages
+    if ($current_page === 'topic_create' || $current_page === 'topic_view') {
+        $logo_clickable = false;
+    }
+    
+    // Set logo link based on user type (only if clickable)
+    if ($logo_clickable) {
+        if ($is_logged_in) {
+            if ($is_creator) {
+                // Creators: logo goes to their dashboard
+                $logo_link = $base_path . 'creators/dashboard.php';
+            } else {
+                // Fans: logo goes to browse creators
+                $logo_link = $base_path . 'creators/index.php';
+            }
         } else {
-            // Fans: logo goes to browse creators
+            // Guests: logo goes to browse creators (NOT landing page)
             $logo_link = $base_path . 'creators/index.php';
         }
     }
@@ -64,13 +76,20 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
         font-weight: bold;
         color: white;
         text-decoration: none;
-        cursor: pointer;
         transition: opacity 0.3s;
+    }
+    .nav-logo.clickable {
+        cursor: pointer;
+    }
+    .nav-logo.clickable:hover { 
+        opacity: 0.9;
+    }
+    .nav-logo.non-clickable {
+        cursor: default;
     }
     .nav-logo:hover { 
         color: white; 
         text-decoration: none;
-        opacity: 0.9;
     }
     .nav-links {
         display: flex;
@@ -169,8 +188,12 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <!-- Clickable Logo -->
-            <a href="<?php echo $logo_link; ?>" class="nav-logo">TopicLaunch</a>
+            <!-- Conditionally Clickable Logo -->
+            <?php if ($logo_clickable): ?>
+                <a href="<?php echo $logo_link; ?>" class="nav-logo clickable">TopicLaunch</a>
+            <?php else: ?>
+                <span class="nav-logo non-clickable">TopicLaunch</span>
+            <?php endif; ?>
             
             <div class="nav-links" id="navLinks">
                 <?php if ($is_logged_in): ?>
