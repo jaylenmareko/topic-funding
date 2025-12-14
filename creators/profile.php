@@ -297,7 +297,7 @@ $completed_topics = $db->resultSet();
             <h2>⏰ Waiting Upload (<?php echo count($waiting_upload_topics); ?>)</h2>
             <div class="topic-grid">
                 <?php foreach ($waiting_upload_topics as $topic): ?>
-                    <div class="topic-card">
+                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="topic-card" style="text-decoration: none; color: inherit; display: block;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                             <div class="countdown-timer safe" 
                                  data-deadline="<?php echo $topic->deadline_timestamp; ?>"
@@ -315,7 +315,7 @@ $completed_topics = $db->resultSet();
                         
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </div>
