@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - COMPLETE FIXED VERSION
+// creators/dashboard.php - COMPLETE FIXED VERSION WITH CORRECTED COUNTDOWN
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
@@ -174,18 +174,16 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     }
 }
 
-// Get topics with enhanced deadline calculation and proper ordering - FIXED to exclude expired topics AND show correct potential earnings
+// Get topics with FIXED deadline calculation using content_deadline field
 $db->query('
     SELECT t.*, 
            UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
            TIMESTAMPDIFF(SECOND, NOW(), t.content_deadline) as seconds_remaining,
-           TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
-           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
            (t.funding_threshold * 0.9) as potential_earnings
     FROM topics t 
     WHERE t.creator_id = :creator_id 
     AND t.status IN ("active", "funded", "on_hold") 
-    AND (t.content_url IS NULL OR t.content_url = "") 
+    AND (t.content_url IS NULL OR t.content_url = "")
     AND (
         t.status != "funded" 
         OR t.content_deadline IS NULL 
@@ -700,9 +698,22 @@ if (isset($_SESSION['profile_updated'])) {
                         
                         <?php if ($topic->status === 'funded'): ?>
                             <div class="status funded">
-                                Funded<?php if ($topic->hours_remaining > 0): ?> - <span class="countdown-timer" 
-                                 data-deadline="<?php echo $topic->deadline_timestamp; ?>"
-                                 id="countdown-<?php echo $topic->id; ?>">00:00:00</span> left<?php endif; ?>
+                                Funded - <span class="countdown-timer" 
+                                     data-deadline="<?php echo $topic->deadline_timestamp; ?>"
+                                     id="countdown-<?php echo $topic->id; ?>">
+                                    <?php
+                                    // Calculate initial display
+                                    $seconds_left = max(0, $topic->seconds_remaining);
+                                    if ($seconds_left > 0) {
+                                        $hours = floor($seconds_left / 3600);
+                                        $minutes = floor(($seconds_left % 3600) / 60);
+                                        $seconds = $seconds_left % 60;
+                                        echo sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                                    } else {
+                                        echo '00:00:00';
+                                    }
+                                    ?>
+                                </span> left
                             </div>
                         <?php elseif ($topic->status === 'on_hold'): ?>
                             <div class="status">⏸️ On Hold</div>
@@ -838,6 +849,32 @@ if (isset($_SESSION['profile_updated'])) {
         const totalTopics = <?php echo count($topics); ?>;
         const cards = Array.from(document.querySelectorAll('.card:not(.empty)'));
 
+        // Update countdown timers
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
+                const deadline = parseInt(element.getAttribute('data-deadline')) * 1000; // Convert to milliseconds
+                const now = new Date().getTime();
+                const timeLeft = deadline - now;
+                
+                if (timeLeft > 0) {
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    element.textContent = 
+                        String(hours).padStart(2, '0') + ':' + 
+                        String(minutes).padStart(2, '0') + ':' + 
+                        String(seconds).padStart(2, '0');
+                } else {
+                    element.textContent = '00:00:00';
+                }
+            });
+        }
+
+        // Run countdown update every second
+        setInterval(updateCountdowns, 1000);
+        updateCountdowns(); // Initial call
+
         function copyTopicLink(topicId) {
             const topicUrl = window.location.origin + '/topics/fund.php?id=' + topicId;
             const btn = document.getElementById('copyBtn-' + topicId);
@@ -934,7 +971,11 @@ if (isset($_SESSION['profile_updated'])) {
                     const btn = document.getElementById('copyProfileBtn');
                     if (btn) {
                         btn.textContent = '✅ Copied!';
-                        setTimeout(() => btn.textContent = '🔗 Copy Profile Link', 2000);
+                        btn.classList.add('copied');
+                        setTimeout(() => {
+                            btn.textContent = '🔗 Copy Profile Link';
+                            btn.classList.remove('copied');
+                        }, 2000);
                     }
                 });
             } else {
