@@ -2,7 +2,6 @@
 // topics/view.php - Individual topic detail page with simplified view for creators and guest-friendly for non-logged-in users
 session_start();
 require_once '../config/database.php';
-require_once '../config/navigation.php';
 
 $helper = new DatabaseHelper();
 $topic_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -49,6 +48,45 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        
+        /* Navigation */
+        .nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .nav-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            cursor: default;
+        }
+        .nav-user {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .nav-user a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .nav-user a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
@@ -122,9 +160,19 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
     </style>
 </head>
 <body <?php echo $is_creator ? 'class="creator-simple-view"' : ''; ?>>
-    <?php if ($is_logged_in): ?>
-        <?php renderNavigation('browse_creators'); ?>
-    <?php endif; ?>
+    <!-- Simple navigation without YouTubers button -->
+    <nav class="nav">
+        <div class="nav-container">
+            <span class="nav-logo">TopicLaunch</span>
+            
+            <?php if ($is_logged_in): ?>
+                <div class="nav-user">
+                    <span>Hi, <?php echo htmlspecialchars($_SESSION['username']); ?>!</span>
+                    <a href="../auth/logout.php">Logout</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </nav>
 
     <div class="container">
         <!-- Back link for everyone (logged in or not) -->
