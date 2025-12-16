@@ -1,55 +1,11 @@
 <?php
-// index.php - SIMPLIFIED - JUST EMAIL
+// index.php - UPDATED - Creator signup only, no claim profile
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 session_start();
 
-// Handle profile claim submission
-$claim_success = false;
-$claim_error = '';
-
-if ($_POST && isset($_POST['claim_platform']) && isset($_POST['claim_username'])) {
-    $platform = trim($_POST['claim_platform']);
-    $username = trim($_POST['claim_username']);
-    
-    if (!empty($platform) && !empty($username)) {
-        // Build profile URL
-        $profile_url = '';
-        if ($platform === 'YouTube') {
-            $profile_url = "https://www.youtube.com/@{$username}";
-        } elseif ($platform === 'Instagram') {
-            $profile_url = "https://www.instagram.com/{$username}/";
-        } elseif ($platform === 'TikTok') {
-            $profile_url = "https://www.tiktok.com/@{$username}";
-        }
-        
-        // Send email notification to admin
-        $admin_email = 'me@topiclaunch.com';
-        $subject = 'New Creator Profile Claim - TopicLaunch';
-        $message = "New creator profile claim:
-
-Platform: {$platform}
-Username: @{$username}
-Profile URL: {$profile_url}
-Time: " . date('F j, Y g:i A') . "
-
-Please verify this account and set them up.";
-        
-        $headers = "From: TopicLaunch <noreply@topiclaunch.com>\r\n";
-        
-        mail($admin_email, $subject, $message, $headers);
-        
-        $claim_success = true;
-    } else {
-        $claim_error = "Please fill in all fields.";
-    }
-}
-
-// Check if should auto-open claim modal
-$auto_open_claim = isset($_GET['claim']) && $_GET['claim'] === 'profile';
-
-// Only require database if we need to check user status
+// Only require database if we need to check user status (creators only)
 if (isset($_SESSION['user_id'])) {
     try {
         require_once 'config/database.php';
@@ -60,18 +16,14 @@ if (isset($_SESSION['user_id'])) {
         
         if ($is_creator) {
             header('Location: creators/dashboard.php');
-        } else {
-            header('Location: creators/index.php');
+            exit;
         }
-        exit;
     } catch (Exception $e) {
         error_log("Index redirect error: " . $e->getMessage());
-        session_destroy();
-        session_start();
     }
 }
 
-// Handle login form
+// Creator login only
 $login_error = '';
 if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     require_once 'config/database.php';
@@ -96,16 +48,17 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                     $_SESSION['email'] = $user->email;
                     session_regenerate_id(true);
                     
+                    // Check if creator
                     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
                     $db->bind(':user_id', $user->id);
                     $is_creator = $db->single();
                     
                     if ($is_creator) {
                         header('Location: creators/dashboard.php');
+                        exit;
                     } else {
-                        header('Location: creators/index.php');
+                        $login_error = 'Creator login only';
                     }
-                    exit;
                 } else {
                     $login_error = 'Invalid email or password';
                 }
@@ -178,15 +131,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         .hero h1 { font-size: 48px; margin: 0 0 20px 0; font-weight: bold; }
         .hero p { font-size: 20px; margin: 0 0 30px 0; opacity: 0.9; }
         
-        /* User Type Selector */
-        .user-type-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+        /* Creator Signup Box */
         .user-type {
             background: rgba(255,255,255,0.1);
             padding: 40px 30px;
@@ -210,7 +155,7 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             font-size: 16px;
             opacity: 0.9;
         }
-        .btn-creator, .btn-fan {
+        .btn-creator {
             display: inline-block;
             padding: 15px 30px;
             border-radius: 8px;
@@ -218,24 +163,11 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             font-weight: bold;
             font-size: 16px;
             transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-        .btn-creator {
             background: #ff0000;
             color: white;
         }
         .btn-creator:hover {
             background: #cc0000;
-            color: white;
-            text-decoration: none;
-            transform: translateY(-2px);
-        }
-        .btn-fan {
-            background: #28a745;
-            color: white;
-        }
-        .btn-fan:hover {
-            background: #218838;
             color: white;
             text-decoration: none;
             transform: translateY(-2px);
@@ -247,148 +179,16 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             margin: 40px auto;
             padding: 0 20px;
         }
-        .demo-video-section video,
         .demo-video-section iframe {
             width: 100%;
+            height: 450px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        .demo-video-section iframe {
-            height: 450px;
-        }
-        
-        /* Claim Profile Section */
-        .claim-profile-section {
-            text-align: center;
-            margin: 40px auto;
-            max-width: 600px;
-            padding: 0 20px;
-        }
-        .claim-profile-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s;
-        }
-        .claim-profile-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
-        }
-        
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 28px;
-            font-weight: bold;
-            color: #999;
-            cursor: pointer;
-            border: none;
-            background: none;
-        }
-        .modal-close:hover {
-            color: #333;
-        }
-        .modal h3 {
-            margin: 0 0 25px 0;
-            color: #333;
-            font-size: 24px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
-        }
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        .form-group select:focus,
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .submit-claim-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s;
-        }
-        .submit-claim-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #c3e6cb;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #f5c6cb;
-        }
         
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-        .section-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #333; }
         
-        /* 2-Step Process for Fans */
+        /* 2-Step Process */
         .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 60px 0; }
         .process-step { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         .process-step::before {
@@ -441,10 +241,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         @media (max-width: 768px) {
             .hero h1 { font-size: 36px; }
             .hero p { font-size: 18px; }
-            .user-type-selector { 
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
             .user-type {
                 padding: 30px 20px;
             }
@@ -472,22 +268,19 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
                 margin-left: 0;
                 margin-top: 5px;
             }
-            .modal-content {
-                padding: 30px 20px;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+    <!-- Navigation - Creator Login Only -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <span class="nav-logo">TopicLaunch</span>
             
             <form method="POST" class="login-form">
-                <input type="email" name="email" placeholder="Email" class="login-input" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                <input type="email" name="email" placeholder="Creator Email" class="login-input" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                 <input type="password" name="password" placeholder="Password" class="login-input" required>
-                <button type="submit" class="login-btn">Login</button>
+                <button type="submit" class="login-btn">Creator Login</button>
                 <?php if ($login_error): ?>
                     <span class="login-error"><?php echo htmlspecialchars($login_error); ?></span>
                 <?php endif; ?>
@@ -500,19 +293,12 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <h1>Fund Topics for Creators</h1>
         <p>Support your favorite creators by funding video topics</p>
         
-        <!-- User Type Selection -->
-        <div class="user-type-selector">
+        <!-- Creator Signup Only -->
+        <div style="max-width: 400px; margin: 0 auto;">
             <div class="user-type creator">
                 <p>Get paid to make videos your fans want</p>
                 <a href="auth/register.php?type=creator" class="btn-creator">
                     Creator Signup
-                </a>
-            </div>
-            
-            <div class="user-type fan">
-                <p>Fund topics and get guaranteed content</p>
-                <a href="auth/register.php?type=fan" class="btn-fan">
-                    Fan Signup
                 </a>
             </div>
         </div>
@@ -526,52 +312,6 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen>
         </iframe>
-    </div>
-
-    <!-- Claim Profile Section -->
-    <div class="claim-profile-section">
-        <button class="claim-profile-btn" onclick="openClaimModal()">
-            🎯 Claim Your Profile Here
-        </button>
-    </div>
-
-    <!-- Claim Profile Modal -->
-    <div id="claimModal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeClaimModal()">&times;</button>
-            
-            <?php if ($claim_success): ?>
-                <div class="success-message">
-                    ✅ <strong>Request Submitted!</strong><br><br>
-                    We'll contact you ASAP to provide your TopicLaunch login credentials.<br><br>
-                    Expected response: 24-48 hours
-                </div>
-            <?php elseif ($claim_error): ?>
-                <div class="error-message">
-                    ❌ <?php echo htmlspecialchars($claim_error); ?>
-                </div>
-            <?php endif; ?>
-            
-            <h3>Claim Your Creator Profile</h3>
-            <form method="POST" id="claimForm">
-                <div class="form-group">
-                    <label for="claim_platform">Platform</label>
-                    <select name="claim_platform" id="claim_platform" required>
-                        <option value="">Select Platform</option>
-                        <option value="YouTube">YouTube</option>
-                        <option value="Instagram">Instagram</option>
-                        <option value="TikTok">TikTok</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="claim_username">Username (without @)</label>
-                    <input type="text" name="claim_username" id="claim_username" placeholder="Enter your username" required>
-                </div>
-                
-                <button type="submit" class="submit-claim-btn">Submit Claim</button>
-            </form>
-        </div>
     </div>
 
     <!-- Platform Compatibility Section -->
@@ -619,12 +359,12 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
     </div>
 
     <div class="container">
-        <!-- 2-Step Process for Fans -->
+        <!-- 2-Step Process -->
         <div class="process-steps">
             <div class="process-step" data-step="1">
                 <div class="process-icon">💡</div>
-                <h3>Fund Topics</h3>
-                <p>Make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
+                <h3>Fans Fund Topics</h3>
+                <p>Fans make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
             </div>
             <div class="process-step" data-step="2">
                 <div class="process-icon">⚡</div>
@@ -657,31 +397,9 @@ if ($_POST && isset($_POST['email']) && isset($_POST['password'])) {
         <div>
             <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
             <p style="margin-top: 10px;">
-                <a href="auth/register.php?type=creator">Creator Signup</a> | 
-                <a href="auth/register.php?type=fan">Fan Signup</a>
+                <a href="auth/register.php?type=creator">Creator Signup</a>
             </p>
         </div>
     </footer>
-
-    <script>
-        function openClaimModal() {
-            document.getElementById('claimModal').classList.add('active');
-        }
-
-        function closeClaimModal() {
-            document.getElementById('claimModal').classList.remove('active');
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('claimModal');
-            if (event.target == modal) {
-                closeClaimModal();
-            }
-        }
-
-        <?php if ($claim_success || $claim_error || $auto_open_claim): ?>
-        openClaimModal();
-        <?php endif; ?>
-    </script>
 </body>
 </html>
