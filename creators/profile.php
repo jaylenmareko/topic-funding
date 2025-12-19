@@ -1,11 +1,15 @@
 <?php
-// creators/profile.php - Updated with guest-friendly navigation and creator redirect
+// creators/profile.php - Creators can only access dashboard/edit, not other profiles
 session_start();
 require_once '../config/database.php';
 
-// Check if user is logged in - allow guests to view profiles
-$is_logged_in = isset($_SESSION['user_id']);
+// If creator is logged in, redirect to dashboard (they shouldn't view any profiles)
+if (isset($_SESSION['user_id'])) {
+    header('Location: dashboard.php');
+    exit;
+}
 
+// Only guests (fans) can view creator profiles
 $helper = new DatabaseHelper();
 $creator_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -18,25 +22,6 @@ $creator = $helper->getCreatorById($creator_id);
 if (!$creator) {
     header('Location: index.php');
     exit;
-}
-
-// Only check for creator redirect if user is logged in
-if ($is_logged_in) {
-    // Check if current user is this creator - if so, redirect to dashboard
-    $db = new Database();
-    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND id = :creator_id AND is_active = 1');
-    $db->bind(':user_id', $_SESSION['user_id']);
-    $db->bind(':creator_id', $creator_id);
-    $is_this_creator = $db->single() ? true : false;
-
-    // Redirect creators to their own dashboard
-    if ($is_this_creator) {
-        header('Location: dashboard.php');
-        exit;
-    }
-} else {
-    // For non-logged-in users, set is_this_creator to false
-    $is_this_creator = false;
 }
 
 // Get creator's topics by status
@@ -98,17 +83,10 @@ $completed_topics = $db->resultSet();
             color: white;
             text-decoration: none;
             transition: opacity 0.3s;
-        }
-        .nav-logo.clickable {
             cursor: pointer;
         }
-        .nav-logo.clickable:hover { 
-            opacity: 0.9;
-        }
-        .nav-logo.non-clickable {
-            cursor: default;
-        }
         .nav-logo:hover { 
+            opacity: 0.9;
             color: white; 
             text-decoration: none;
         }
@@ -207,21 +185,10 @@ $completed_topics = $db->resultSet();
     </style>
 </head>
 <body>
-    <!-- Simple navigation -->
+    <!-- Navigation - Only guests see this page -->
     <nav class="nav">
         <div class="nav-container">
-            <?php if ($is_logged_in): ?>
-                <a href="index.php" class="nav-logo clickable">TopicLaunch</a>
-            <?php else: ?>
-                <span class="nav-logo non-clickable">TopicLaunch</span>
-            <?php endif; ?>
-            
-            <?php if ($is_logged_in): ?>
-                <div class="nav-user">
-                    <span>Hi, <?php echo htmlspecialchars($_SESSION['username']); ?>!</span>
-                    <a href="../auth/logout.php">Logout</a>
-                </div>
-            <?php endif; ?>
+            <a href="../index.php" class="nav-logo">TopicLaunch</a>
         </div>
     </nav>
 
@@ -353,7 +320,7 @@ $completed_topics = $db->resultSet();
     </div>
 
     <script>
-    // Live countdown timer functionality (same as before)
+    // Live countdown timer functionality
     function updateCountdowns() {
         const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
         
