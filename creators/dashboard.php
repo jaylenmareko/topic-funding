@@ -1,11 +1,11 @@
 <?php
-// creators/dashboard.php - COMPLETE FIXED VERSION WITH CORRECTED COUNTDOWN
+// creators/dashboard.php - COMPLETE FIXED VERSION WITH PAYPAL REMINDER
 session_start();
 require_once '../config/database.php';
 require_once '../config/navigation.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
+    header('Location: ../auth/google-oauth.php');
     exit;
 }
 
@@ -637,6 +637,45 @@ if (isset($_SESSION['profile_updated'])) {
             border-color: #1abc9c;
         }
         
+        .paypal-reminder {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .paypal-reminder-title {
+            margin: 0 0 10px 0;
+            font-weight: bold;
+            color: #856404;
+        }
+        
+        .paypal-reminder-text {
+            margin: 0 0 15px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        
+        .paypal-reminder-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .paypal-reminder-btn:hover {
+            background: #218838;
+            color: white;
+            text-decoration: none;
+        }
+        
         @media (max-width: 768px) {
             .header { padding: 30px 20px; }
             .title { font-size: 28px; }
@@ -679,6 +718,16 @@ if (isset($_SESSION['profile_updated'])) {
         <button onclick="copyProfileLink()" class="copy-profile-btn" id="copyProfileBtn" style="margin-top: 20px;">
             🔗 Copy Profile Link
         </button>
+        
+        <?php if (empty($creator->paypal_email)): ?>
+        <div class="paypal-reminder">
+            <p class="paypal-reminder-title">💰 Action Required: Add PayPal Email</p>
+            <p class="paypal-reminder-text">You need to add your PayPal email to receive payments when topics are funded.</p>
+            <a href="edit.php?id=<?php echo $creator->id; ?>" class="paypal-reminder-btn">
+                ✏️ Add PayPal Email
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="container">
