@@ -30,7 +30,7 @@ if ($search_query) {
     ');
     $db->bind(':search', '%' . $search_query . '%');
 } else {
-    $db->query('SELECT * FROM creators WHERE is_active = 1 ORDER BY display_name ASC LIMIT 12');
+    $db->query('SELECT * FROM creators WHERE is_active = 1 ORDER BY display_name ASC LIMIT 24');
 }
 
 $creators = $db->resultSet();
@@ -537,7 +537,7 @@ $total_creators = count($creators);
     </footer>
 
     <script>
-    let offset = 12; // Start after initial 12 creators
+    let offset = 24; // Start after initial 24 creators
     let loading = false;
 
     function loadMoreCreators() {
