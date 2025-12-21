@@ -5,7 +5,7 @@ require_once '../config/database.php';
 require_once '../config/platform_fee_helper.php';
 
 // Admin access check
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], [1, 2, 9])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], [1, 2, 9, 186])) {
     header('Location: ../index.php');
     exit;
 }
