@@ -41,7 +41,7 @@ echo "<div class='debug'>";
 if (isset($_SESSION['user_id'])) {
     echo "<p>✅ <strong>Session active:</strong> User ID = " . $_SESSION['user_id'] . "</p>";
     
-    $admin_user_ids = [1, 2, 9];
+    $admin_user_ids = [1, 2, 9, 186];
     $is_in_admin_array = in_array($_SESSION['user_id'], $admin_user_ids);
     echo "<p>" . ($is_in_admin_array ? "✅" : "❌") . " <strong>In admin array:</strong> " . ($is_in_admin_array ? "Yes" : "No") . "</p>";
     
