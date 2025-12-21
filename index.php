@@ -425,7 +425,7 @@ $total_creators = count($creators);
         <!-- Google Sign In -->
         <div class="google-signin-container">
             <p class="signup-subtitle" style="margin-top: 0; margin-bottom: 15px; font-size: 16px; font-weight: 600;">
-                I'm a YouTuber
+                YouTuber Sign Up / Login
             </p>
             <a href="auth/google-oauth.php" class="google-signin-btn">
                 <svg class="google-icon" viewBox="0 0 24 24">
@@ -444,7 +444,6 @@ $total_creators = count($creators);
         <!-- Fan Section Header -->
         <div class="fan-section-header">
             <h2 class="fan-heading">Fan Section</h2>
-            <p class="fan-subheading">Fund video topics you want to see</p>
         </div>
         
         <!-- Search Bar -->
@@ -497,47 +496,36 @@ $total_creators = count($creators);
         <?php endif; ?>
     </div>
 
-    <!-- Demo Video Section -->
-    <div class="demo-video-section">
-        <iframe 
-            src="https://www.youtube.com/embed/bAf2R5GWPxI" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen>
-        </iframe>
-    </div>
-
-    <div class="container">
-        <!-- 2-Step Process -->
-        <div class="process-steps">
-            <div class="process-step" data-step="1">
-                <div class="process-icon">💡</div>
-                <h3>Fans Fund Topics</h3>
-                <p>Fans make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
-            </div>
-            <div class="process-step" data-step="2">
-                <div class="process-icon">⚡</div>
-                <h3>48-Hour Delivery</h3>
-                <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
-            </div>
-        </div>
-
-        <!-- Testimonial Label -->
-        <div class="testimonial-label">
-            Testimonial ⬇️
-        </div>
-    </div>
-
-    <!-- Testimonial Section -->
+    <!-- 2-Step Process and Testimonial Section -->
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 60px 20px;">
-        <div style="max-width: 800px; margin: 0 auto; text-align: center;">
-            <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 30px;">
-                From <a href="https://www.youtube.com/@abouxtoure" target="_blank" style="color: #FFD700; text-decoration: none; font-weight: bold; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">@abouxtoure</a>
-            </p>
-            <video controls style="width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-                <source src="uploads/testimonial.mp4" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <!-- 2-Step Process -->
+            <div class="process-steps" style="margin-bottom: 60px;">
+                <div class="process-step" data-step="1" style="background: rgba(255,255,255,0.95);">
+                    <div class="process-icon">💡</div>
+                    <h3>Fans Crowdfund Topics</h3>
+                    <p>Fans make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
+                </div>
+                <div class="process-step" data-step="2" style="background: rgba(255,255,255,0.95);">
+                    <div class="process-icon">⚡</div>
+                    <h3>48-Hour Delivery</h3>
+                    <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
+                </div>
+            </div>
+
+            <!-- Testimonial -->
+            <div style="text-align: center;">
+                <div class="testimonial-label" style="color: white; margin-bottom: 30px;">
+                    Testimonial ⬇️
+                </div>
+                <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 30px;">
+                    From <a href="https://www.youtube.com/@abouxtoure" target="_blank" style="color: #FFD700; text-decoration: none; font-weight: bold; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">@abouxtoure</a>
+                </p>
+                <video controls style="width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                    <source src="uploads/testimonial.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
         </div>
     </div>
 
