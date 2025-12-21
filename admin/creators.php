@@ -11,7 +11,7 @@ function isAdmin($user_id) {
         $db = new Database();
         
         // Method 1: Check if user_id is in hardcoded admin list (most reliable)
-        $admin_user_ids = [1, 2, 9]; // Your admin user IDs
+        $admin_user_ids = [1, 2, 9, 186]; // Your admin user IDs
         if (in_array($user_id, $admin_user_ids)) {
             return true;
         }
