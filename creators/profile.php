@@ -225,14 +225,7 @@ $completed_topics = $db->resultSet();
             <?php else: ?>
                 <div class="topic-grid">
                     <?php foreach ($active_topics as $topic): ?>
-                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="topic-card" style="text-decoration: none; color: inherit; display: block;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <span class="status-badge status-active">Active</span>
-                            <div style="font-size: 12px; color: #666;">
-                                Created <?php echo date('M j, Y', strtotime($topic->created_at)); ?>
-                            </div>
-                        </div>
-                        
+                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)" style="cursor: pointer;">
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
                         
@@ -249,10 +242,9 @@ $completed_topics = $db->resultSet();
                             <div>
                                 <span class="funding-amount">$<?php echo number_format($topic->current_funding, 2); ?></span>
                                 of $<?php echo number_format($topic->funding_threshold, 2); ?>
-                                (<?php echo round($progress_percent, 1); ?>%)
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -264,15 +256,12 @@ $completed_topics = $db->resultSet();
             <h2>⏰ Waiting Upload (<?php echo count($waiting_upload_topics); ?>)</h2>
             <div class="topic-grid">
                 <?php foreach ($waiting_upload_topics as $topic): ?>
-                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="topic-card" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)" style="cursor: pointer;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                             <div class="countdown-timer safe" 
                                  data-deadline="<?php echo $topic->deadline_timestamp; ?>"
                                  id="countdown-<?php echo $topic->id; ?>">
                                 Creator has 00:00:00 to create content
-                            </div>
-                            <div style="font-size: 12px; color: #666;">
-                                Funded <?php echo date('M j, g:i A', strtotime($topic->funded_at)); ?>
                             </div>
                         </div>
                         
@@ -282,7 +271,7 @@ $completed_topics = $db->resultSet();
                         
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                    </a>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -294,10 +283,21 @@ $completed_topics = $db->resultSet();
             <h2>✅ Completed Topics (<?php echo count($completed_topics); ?>)</h2>
             <div class="topic-grid">
                 <?php foreach (array_slice($completed_topics, 0, 6) as $topic): ?>
-                    <a href="../topics/view.php?id=<?php echo $topic->id; ?>" class="topic-card" style="text-decoration: none; color: inherit; display: block;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <span class="status-badge status-completed">Completed</span>
-                            <div style="font-size: 12px; color: #666;">
+                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)" style="cursor: pointer;">
+                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                        
+                        <?php if ($topic->content_url): ?>
+                            <div style="margin-top: 15px;">
+                                <a href="<?php echo htmlspecialchars($topic->content_url); ?>" 
+                                   target="_blank" 
+                                   class="view-content-btn"
+                                   onclick="event.stopPropagation();">
+                                    ▶️ Watch Content
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>>
                                 <?php echo date('M j, Y', strtotime($topic->completed_at)); ?>
                             </div>
                         </div>
@@ -370,6 +370,62 @@ $completed_topics = $db->resultSet();
     
     updateCountdowns();
     setInterval(updateCountdowns, 1000);
+    
+    // Topic Modal Functions
+    function openTopicModal(topicId) {
+        fetch(`../api/get-topic.php?id=${topicId}`)
+            .then(response => response.json())
+            .then(topic => {
+                if (!topic || topic.error) {
+                    alert('Topic not found');
+                    return;
+                }
+                
+                const progress = Math.min(100, (topic.current_funding / topic.funding_threshold) * 100);
+                
+                const modalHTML = `
+                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="closeTopicModal(event)">
+                        <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative;" onclick="event.stopPropagation()">
+                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999;">×</button>
+                            
+                            <h2 style="margin: 0 0 20px 0; font-size: 28px; color: #333;">${topic.title}</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 30px; font-size: 16px;">${topic.description}</p>
+                            
+                            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="font-size: 14px; color: #666;">Funding Progress</span>
+                                    <span style="font-size: 14px; font-weight: bold; color: #667eea;">${Math.round(progress)}%</span>
+                                </div>
+                                <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                                    <div style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: ${progress}%;"></div>
+                                </div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">
+                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #999; font-size: 16px;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
+                                </div>
+                            </div>
+                            
+                            ${topic.status === 'completed' && topic.content_url ? 
+                                `<a href="${topic.content_url}" target="_blank" style="display: block; background: #28a745; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 15px;">▶️ Watch Content</a>` :
+                                `<a href="../topics/fund.php?id=${topic.id}" style="display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold;">💰 Fund This Topic</a>`
+                            }
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            })
+            .catch(error => {
+                console.error('Error loading topic:', error);
+                alert('Failed to load topic details');
+            });
+    }
+    
+    function closeTopicModal(event) {
+        if (event && event.target.id !== 'topicModal') return;
+        const modal = document.getElementById('topicModal');
+        if (modal) modal.remove();
+    }
     </script>
 </body>
 </html>
