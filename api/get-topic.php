@@ -156,9 +156,11 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } catch (\Stripe\Exception\ApiErrorException $e) {
         error_log("Stripe error: " . $e->getMessage());
-        echo json_encode(['error' => 'Payment processing error. Please try again.']);
+        // Temporarily show detailed error for debugging
+        echo json_encode(['error' => 'Stripe error: ' . $e->getMessage()]);
     } catch (Exception $e) {
         error_log("Funding error: " . $e->getMessage());
-        echo json_encode(['error' => 'An error occurred. Please try again.']);
+        // Temporarily show detailed error for debugging
+        echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
     }
 }
