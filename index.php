@@ -533,6 +533,10 @@ $total_creators = count($creators);
     <footer class="footer">
         <div>
             <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                <a href="/terms.php">Terms of Service</a> | 
+                <a href="mailto:report@topiclaunch.com">Report Content</a>
+            </p>
         </div>
     </footer>
 
