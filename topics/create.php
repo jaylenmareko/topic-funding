@@ -136,7 +136,7 @@ if ($_POST) {
         
         /* Navigation */
         .nav {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -178,7 +178,7 @@ if ($_POST) {
         .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
         .back-link:hover { text-decoration: underline; }
         .creator-info { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
-        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
+        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #FF0000, #CC0000); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
         .creator-details h3 { margin: 0 0 5px 0; color: #1976d2; }
         
         .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }

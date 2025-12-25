@@ -64,7 +64,7 @@ $completed_topics = $db->resultSet();
         
         /* Navigation */
         .nav {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -111,7 +111,7 @@ $completed_topics = $db->resultSet();
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .creator-header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .creator-info { display: flex; gap: 25px; align-items: start; flex-wrap: wrap; }
-        .creator-avatar { width: 120px; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; flex-shrink: 0; }
+        .creator-avatar { width: 120px; height: 120px; background: linear-gradient(135deg, #FF0000, #CC0000); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; flex-shrink: 0; }
         .creator-details { flex: 1; min-width: 300px; }
         .creator-details h1 { margin: 0 0 20px 0; color: #333; font-size: 28px; }
         
@@ -199,7 +199,7 @@ $completed_topics = $db->resultSet();
             
             <!-- Creator Profile Picture - Same horizontal level as button, aligned right -->
             <div style="position: absolute; top: 50%; right: 0; transform: translateY(-50%); text-align: center;">
-                <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #FF0000, #CC0000); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                     <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
                         <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
                              alt="<?php echo htmlspecialchars($creator->display_name); ?>" 
@@ -404,7 +404,7 @@ $completed_topics = $db->resultSet();
                                     value="1"
                                     style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 18px; box-sizing: border-box; transition: border-color 0.3s;"
                                     oninput="validateFundingAmount()"
-                                    onfocus="this.style.borderColor='#667eea'"
+                                    onfocus="this.style.borderColor='#FF0000'"
                                     onblur="this.style.borderColor='#e0e0e0'"
                                 >
                             </div>
@@ -412,7 +412,7 @@ $completed_topics = $db->resultSet();
                             <button
                                 id="fundButton"
                                 onclick="submitFunding(${topic.id})"
-                                style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.3s;"
+                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.3s;"
                                 onmouseover="this.style.opacity='0.9'"
                                 onmouseout="this.style.opacity='1'"
                             >
@@ -439,10 +439,10 @@ $completed_topics = $db->resultSet();
                             <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                                     <span style="font-size: 14px; color: #666;">Funding Progress</span>
-                                    <span style="font-size: 14px; font-weight: bold; color: #667eea;">${Math.round(progress)}%</span>
+                                    <span style="font-size: 14px; font-weight: bold; color: #FF0000;">${Math.round(progress)}%</span>
                                 </div>
                                 <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                                    <div style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: ${progress}%;"></div>
+                                    <div style="height: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); width: ${progress}%;"></div>
                                 </div>
                                 <div style="font-size: 20px; font-weight: bold; color: #333;">
                                     $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #999; font-size: 16px;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>

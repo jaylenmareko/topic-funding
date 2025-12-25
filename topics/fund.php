@@ -138,7 +138,7 @@ $contributions = $helper->getTopicContributions($topic_id);
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -224,7 +224,7 @@ $contributions = $helper->getTopicContributions($topic_id);
         
         .custom-amount input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #FF0000;
         }
         
         .btn { 

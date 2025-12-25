@@ -234,7 +234,7 @@ if (isset($_SESSION['profile_updated'])) {
         
         .card {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             border-radius: 20px; padding: 30px; color: white;
             display: flex; flex-direction: column;
             cursor: grab; transition: all 0.3s ease; 
@@ -565,7 +565,7 @@ if (isset($_SESSION['profile_updated'])) {
             right: -300px;
             width: 300px;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             transition: right 0.3s ease;
             z-index: 1000;
             padding: 80px 20px 20px 20px;

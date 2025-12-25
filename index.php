@@ -47,7 +47,7 @@ $total_creators = count($creators);
         
         /* Navigation */
         .topiclaunch-nav {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
@@ -67,7 +67,7 @@ $total_creators = count($creators);
         }
         
         /* Hero Section */
-        .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 20px; text-align: center; }
+        .hero { background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 60px 20px; text-align: center; }
         .hero h1 { font-size: 48px; margin: 0 0 20px 0; font-weight: bold; }
         .hero p { font-size: 20px; margin: 0 0 40px 0; opacity: 0.9; }
         
@@ -140,7 +140,7 @@ $total_creators = count($creators);
             top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            background: #667eea;
+            background: #FF0000;
             color: white;
             width: 30px;
             height: 30px;
@@ -218,7 +218,7 @@ $total_creators = count($creators);
         }
         
         .creator-card-kalshi:hover {
-            border-color: #667eea;
+            border-color: #FF0000;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
             transform: translateY(-2px);
         }
@@ -235,7 +235,7 @@ $total_creators = count($creators);
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -312,12 +312,12 @@ $total_creators = count($creators);
         
         .search-creators-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #FF0000;
         }
         
         .search-creators-btn {
             padding: 12px 24px;
-            background: #667eea;
+            background: #FF0000;
             color: white;
             border: none;
             border-radius: 8px;
@@ -338,7 +338,7 @@ $total_creators = count($creators);
         .load-more-btn {
             display: inline-block;
             padding: 12px 32px;
-            background: #667eea;
+            background: #FF0000;
             color: white;
             border: none;
             border-radius: 8px;
@@ -365,8 +365,8 @@ $total_creators = count($creators);
             display: inline-block;
             padding: 12px 24px;
             background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
+            color: #FF0000;
+            border: 2px solid #FF0000;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
@@ -374,7 +374,7 @@ $total_creators = count($creators);
         }
         
         .view-all-btn:hover {
-            background: #667eea;
+            background: #FF0000;
             color: white;
         }
         
@@ -497,7 +497,7 @@ $total_creators = count($creators);
     </div>
 
     <!-- 2-Step Process and Testimonial Section -->
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 60px 20px;">
+    <div style="background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); padding: 60px 20px;">
         <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
             <!-- 2-Step Process -->
             <div class="process-steps" style="margin-bottom: 60px;">
