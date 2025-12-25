@@ -1,0 +1,32 @@
+name: Deploy to Hostgator
+
+on:
+  push:
+    branches:
+      - main  # Deploy when pushing to main branch
+      - claude/add-funding-to-topic-popup-hLIvw  # Also deploy from this branch
+
+jobs:
+  deploy:
+    name: Deploy to Hostgator via FTP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Hostgator
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.github/**
+            **/DEPLOYMENT_GUIDE.md
+            **/deploy-to-hostgator.sh
+            **/.DS_Store
