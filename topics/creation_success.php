@@ -111,7 +111,7 @@ try {
         .topic-details { color: #666; font-size: 14px; }
         .btn { background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px; font-weight: bold; transition: background 0.3s; }
         .btn:hover { background: #218838; color: white; text-decoration: none; }
-        .btn-primary { background: #667eea; }
+        .btn-primary { background: #FF0000; }
         .btn-primary:hover { background: #5a6fd8; }
         .error { color: red; background: #f8d7da; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
         .next-steps { background: #e3f2fd; padding: 20px; border-radius: 6px; margin: 20px 0; }
@@ -208,7 +208,7 @@ try {
                 </div>
 
                 <div style="margin-top: 25px; color: #666; font-size: 14px;">
-                    <p>Need help? <a href="mailto:support@topiclaunch.com" style="color: #667eea;">Contact our support team</a></p>
+                    <p>Need help? <a href="mailto:support@topiclaunch.com" style="color: #FF0000;">Contact our support team</a></p>
                 </div>
             <?php endif; ?>
         </div>

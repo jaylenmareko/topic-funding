@@ -58,7 +58,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     
     <style>
     .topiclaunch-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
         padding: 15px 0;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 20px;
@@ -146,7 +146,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
         background: #ff3742;
     }
     .nav-btn.dashboard {
-        background: #667eea;
+        background: #FF0000;
     }
     .nav-btn.dashboard:hover {
         background: #5a6fd8;
@@ -167,7 +167,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
             top: 100%;
             left: 0;
             right: 0;
-            background: #667eea;
+            background: #FF0000;
             flex-direction: column;
             padding: 20px;
             gap: 15px;

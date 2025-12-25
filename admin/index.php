@@ -46,7 +46,7 @@ try {
         body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             color: white;
             padding: 40px 20px;
             text-align: center;
@@ -145,7 +145,7 @@ try {
         
         .tool-button {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             color: white;
             padding: 12px 24px;
             border-radius: 8px;

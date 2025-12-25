@@ -101,7 +101,7 @@ $contributions = $helper->getTopicContributions($topic_id);
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
         .error { color: red; background: #f8d7da; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
-        .milestone-celebration { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; }
+        .milestone-celebration { background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; }
         .milestone-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; }
         .countdown-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 6px; margin-top: 15px; }
         .next-steps { background: #e3f2fd; padding: 20px; border-radius: 6px; margin: 20px 0; }

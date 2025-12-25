@@ -51,7 +51,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         
         /* Navigation */
         .nav {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             padding: 15px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -94,7 +94,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         .topic-title { font-size: 28px; font-weight: bold; margin: 0 0 15px 0; color: #333; }
         .topic-meta { color: #666; margin-bottom: 20px; }
         .creator-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
+        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #FF0000, #CC0000); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
         .creator-details h3 { margin: 0; color: #333; }
         .creator-details p { margin: 5px 0; color: #666; }
         .status-badge { padding: 8px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; }
@@ -111,7 +111,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         .contribution-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
         .contribution-item:last-child { border-bottom: none; }
         .contributor-info { display: flex; align-items: center; gap: 10px; }
-        .contributor-avatar { width: 30px; height: 30px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
+        .contributor-avatar { width: 30px; height: 30px; background: #FF0000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
         .contributor-name { font-weight: bold; }
         .contribution-amount { color: #28a745; font-weight: bold; }
         .contribution-date { font-size: 12px; color: #666; }
@@ -128,7 +128,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         .analytics-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; }
         .analytics-stat { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-        .analytics-number { font-size: 16px; font-weight: bold; color: #667eea; }
+        .analytics-number { font-size: 16px; font-weight: bold; color: #FF0000; }
         .analytics-label { font-size: 11px; color: #666; margin-top: 5px; }
         .funding-widget { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .funding-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -140,7 +140,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
         .funding-stat-label { font-size: 12px; color: #666; }
         .action-button { background: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: block; text-align: center; font-weight: bold; margin-top: 20px; transition: background 0.3s; }
         .action-button:hover { background: #218838; color: white; text-decoration: none; }
-        .action-button.login { background: #667eea; }
+        .action-button.login { background: #FF0000; }
         .action-button.login:hover { background: #5a6fd8; }
         .action-button.completed { background: #6c757d; cursor: default; }
         .pending-approval { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
@@ -359,7 +359,7 @@ $remaining = max(0, $topic->funding_threshold - $topic->current_funding);
                                 <div class="funding-stat-label">Remaining</div>
                             </div>
                             <div class="funding-stat">
-                                <div class="funding-stat-number" style="color: #667eea;"><?php echo count($contributions); ?></div>
+                                <div class="funding-stat-number" style="color: #FF0000;"><?php echo count($contributions); ?></div>
                                 <div class="funding-stat-label">Backers</div>
                             </div>
                             <div class="funding-stat">
