@@ -1,0 +1,23 @@
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.production
+
+# Stripe keys (DO NOT COMMIT)
+config/stripe-keys.php
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log
+
+# Temp files
+*.tmp
+*.swp

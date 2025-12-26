@@ -1,0 +1,59 @@
+-- Database migration for Stripe Connect functionality
+-- Run this SQL in your database
+
+-- Add Stripe Connect fields to creators table
+ALTER TABLE creators
+ADD COLUMN stripe_account_id VARCHAR(255) DEFAULT NULL,
+ADD COLUMN stripe_onboarding_complete BOOLEAN DEFAULT FALSE,
+ADD COLUMN stripe_details_submitted BOOLEAN DEFAULT FALSE,
+ADD COLUMN stripe_charges_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN stripe_payouts_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN total_earnings DECIMAL(10,2) DEFAULT 0.00,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+-- Create payouts table to track all creator payouts
+CREATE TABLE IF NOT EXISTS payouts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    creator_id INT NOT NULL,
+    topic_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    platform_fee DECIMAL(10,2) NOT NULL,
+    stripe_fee DECIMAL(10,2) NOT NULL,
+    net_amount DECIMAL(10,2) NOT NULL,
+    stripe_transfer_id VARCHAR(255) DEFAULT NULL,
+    status ENUM('pending', 'processing', 'completed', 'failed', 'cancelled') DEFAULT 'pending',
+    failure_reason TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_at TIMESTAMP NULL,
+    FOREIGN KEY (creator_id) REFERENCES creators(id) ON DELETE CASCADE,
+    FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
+    INDEX idx_creator_id (creator_id),
+    INDEX idx_topic_id (topic_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+);
+
+-- Create refunds table to track all refunds
+CREATE TABLE IF NOT EXISTS refunds (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    contribution_id INT NOT NULL,
+    topic_id INT NOT NULL,
+    user_id INT DEFAULT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    refund_amount DECIMAL(10,2) NOT NULL,
+    platform_fee_kept DECIMAL(10,2) NOT NULL,
+    stripe_refund_id VARCHAR(255) DEFAULT NULL,
+    status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+    reason ENUM('deadline_missed', 'creator_cancelled', 'admin_refund', 'disputed') DEFAULT 'deadline_missed',
+    failure_reason TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP NULL,
+    FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
+    INDEX idx_topic_id (topic_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+);
+
+-- Add index on topics for faster queries
+ALTER TABLE topics ADD INDEX idx_status (status);
+ALTER TABLE topics ADD INDEX idx_creator_id (creator_id);
