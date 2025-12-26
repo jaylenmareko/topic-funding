@@ -636,7 +636,68 @@ if (isset($_SESSION['profile_updated'])) {
             background: #20c997;
             border-color: #1abc9c;
         }
-        
+
+        .stripe-connect-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stripe-connect-section.connected {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .stripe-connect-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .stripe-connect-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .stripe-connect-btn {
+            background: #635bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .stripe-connect-btn:hover {
+            background: #5248e4;
+            transform: translateY(-2px);
+        }
+
+        .stripe-status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .stripe-status-badge.connected {
+            background: #28a745;
+            color: white;
+        }
+
         .paypal-reminder {
             background: #fff3cd;
             border: 2px solid #ffc107;
@@ -718,14 +779,24 @@ if (isset($_SESSION['profile_updated'])) {
         <button onclick="copyProfileLink()" class="copy-profile-btn" id="copyProfileBtn" style="margin-top: 20px;">
             🔗 Copy Profile Link
         </button>
-        
-        <?php if (empty($creator->paypal_email)): ?>
-        <div class="paypal-reminder">
-            <p class="paypal-reminder-title">💰 Action Required: Add PayPal Email</p>
-            <p class="paypal-reminder-text">You need to add your PayPal email to receive payments when topics are funded.</p>
-            <a href="edit.php?id=<?php echo $creator->id; ?>" class="paypal-reminder-btn">
-                ✏️ Add PayPal Email
+
+        <?php if (!$creator->stripe_onboarding_complete): ?>
+        <div class="stripe-connect-section">
+            <p class="stripe-connect-title">💰 Action Required: Connect Stripe to Get Paid</p>
+            <p class="stripe-connect-text">Connect your Stripe account to receive payouts when you complete topics. It only takes 2 minutes!</p>
+            <a href="connect-stripe.php" class="stripe-connect-btn">
+                🔗 Connect Stripe Account
             </a>
+        </div>
+        <?php elseif ($creator->stripe_onboarding_complete): ?>
+        <div class="stripe-connect-section connected">
+            <p class="stripe-connect-title">✅ Stripe Connected</p>
+            <p class="stripe-connect-text">
+                <span class="stripe-status-badge connected">Ready to receive payouts</span>
+            </p>
+            <p class="stripe-connect-text" style="margin-top: 10px;">
+                Total Earnings: <strong>$<?php echo number_format($creator->total_earnings, 2); ?></strong>
+            </p>
         </div>
         <?php endif; ?>
     </div>

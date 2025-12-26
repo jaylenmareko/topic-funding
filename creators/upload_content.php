@@ -3,6 +3,7 @@ session_start();
 // creators/upload_content.php - Allow creators to upload content URLs for funded topics
 require_once '../config/database.php';
 require_once '../config/notification_system.php';
+require_once '../api/process-payout.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -79,9 +80,20 @@ if ($_POST && isset($_POST['content_url'])) {
             // Notify all contributors
             $notificationSystem = new NotificationSystem();
             $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
-            
+
             $db->endTransaction();
-            
+
+            // Process automatic payout to creator
+            $payout_result = processCreatorPayout($topic_id);
+
+            if (!$payout_result['success']) {
+                // Log the error but don't block the upload
+                error_log("Payout failed for topic $topic_id: " . $payout_result['error']);
+                // Admin will need to manually process payout
+            } else {
+                error_log("Payout successful for topic $topic_id: " . $payout_result['message']);
+            }
+
             // Redirect to dashboard after successful upload
             header('Location: ../creators/dashboard.php?uploaded=1');
             exit;
