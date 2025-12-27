@@ -12,7 +12,7 @@ $params = [
     'client_id' => GOOGLE_CLIENT_ID,
     'redirect_uri' => GOOGLE_REDIRECT_URI,
     'response_type' => 'code',
-    'scope' => 'openid email profile https://www.googleapis.com/auth/youtube.readonly',
+    'scope' => 'openid email profile',
     'access_type' => 'offline',
     'prompt' => 'consent'
 ];
