@@ -58,7 +58,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     
     <style>
     .topiclaunch-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
         padding: 15px 0;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 20px;
