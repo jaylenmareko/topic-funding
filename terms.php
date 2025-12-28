@@ -13,7 +13,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             color: white;
             padding: 40px 20px;
             text-align: center;
@@ -39,7 +39,7 @@
         }
         
         h1 { 
-            color: #667eea; 
+            color: #ffffffff; 
             margin-bottom: 20px; 
             font-size: 32px;
         }
@@ -49,7 +49,7 @@
             margin-top: 30px; 
             margin-bottom: 15px; 
             font-size: 24px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #FF0000;
             padding-bottom: 10px;
         }
         
@@ -86,7 +86,7 @@
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
-            color: #667eea;
+            color: #FF0000;
             text-decoration: none;
             font-weight: bold;
         }
