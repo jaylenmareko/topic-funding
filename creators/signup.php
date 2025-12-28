@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once '../config/database.php';
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
@@ -7,14 +8,159 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
-$error = isset($_GET['error']) ? $_GET['error'] : '';
+// Process form submission (POST request)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    // Validation
+    $errors = [];
+
+    // Validate YouTube handle
+    if (empty($youtube_handle)) {
+        $errors[] = 'invalid_handle';
+    } else {
+        // Remove @ if present
+        if (strpos($youtube_handle, '@') === 0) {
+            $youtube_handle = substr($youtube_handle, 1);
+        }
+        // Validate format
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $youtube_handle)) {
+            $errors[] = 'invalid_handle';
+        }
+    }
+
+    // Validate email
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'invalid_email';
+    }
+
+    // Validate password
+    if (strlen($password) < 8) {
+        $errors[] = 'weak_password';
+    }
+
+    // If no validation errors, create account
+    if (empty($errors)) {
+        try {
+            $db = new Database();
+
+            // Check if email already exists
+            $db->query('SELECT id FROM users WHERE email = :email');
+            $db->bind(':email', $email);
+            $existing_user = $db->single();
+
+            if ($existing_user) {
+                $errors[] = 'email_exists';
+            } else {
+                // Check if YouTube handle already exists
+                $db->query('SELECT id FROM creators WHERE display_name = :handle OR username LIKE :handle_pattern');
+                $db->bind(':handle', $youtube_handle);
+                $db->bind(':handle_pattern', '%' . $youtube_handle . '%');
+                $existing_creator = $db->single();
+
+                if ($existing_creator) {
+                    $errors[] = 'handle_exists';
+                } else {
+                    // Hash password
+                    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+                    // Handle profile picture upload
+                    $profile_image = null;
+                    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+                        $upload_dir = '../uploads/creators/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0755, true);
+                        }
+
+                        $file = $_FILES['profile_picture'];
+                        $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                        $allowed_extensions = ['jpg', 'jpeg', 'png'];
+
+                        // Validate file
+                        if (in_array($file_extension, $allowed_extensions) && $file['size'] <= 5 * 1024 * 1024) {
+                            $filename = 'creator_' . uniqid() . '.' . $file_extension;
+                            if (move_uploaded_file($file['tmp_name'], $upload_dir . $filename)) {
+                                $profile_image = $filename;
+                            }
+                        }
+                    }
+
+                    // Start transaction
+                    $db->beginTransaction();
+
+                    // Create user account
+                    $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $youtube_handle));
+                    $full_name = $youtube_handle;
+
+                    $db->query('INSERT INTO users (username, email, password_hash, full_name, is_active) VALUES (:username, :email, :password_hash, :full_name, 1)');
+                    $db->bind(':username', $username);
+                    $db->bind(':email', $email);
+                    $db->bind(':password_hash', $password_hash);
+                    $db->bind(':full_name', $full_name);
+                    $db->execute();
+
+                    $user_id = $db->lastInsertId();
+
+                    // Create creator account
+                    $creator_username = $username . '_' . $user_id;
+                    $platform_url = 'https://youtube.com/@' . $youtube_handle;
+
+                    $db->query('
+                        INSERT INTO creators (
+                            username, display_name, email, bio, platform_url,
+                            subscriber_count, default_funding_threshold, commission_rate,
+                            is_verified, is_active, applicant_user_id, application_status,
+                            profile_image
+                        ) VALUES (
+                            :username, :display_name, :email, :bio, :platform_url,
+                            1000, 50.00, 5.00, 1, 1, :applicant_user_id, "approved", :profile_image
+                        )
+                    ');
+
+                    $db->bind(':username', $creator_username);
+                    $db->bind(':display_name', $youtube_handle);
+                    $db->bind(':email', $email);
+                    $db->bind(':bio', 'YouTube Creator on TopicLaunch');
+                    $db->bind(':platform_url', $platform_url);
+                    $db->bind(':applicant_user_id', $user_id);
+                    $db->bind(':profile_image', $profile_image);
+                    $db->execute();
+
+                    $creator_id = $db->lastInsertId();
+
+                    // Commit transaction
+                    $db->endTransaction();
+
+                    // Set session variables
+                    $_SESSION['user_id'] = $user_id;
+                    $_SESSION['username'] = $youtube_handle;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['creator_id'] = $creator_id;
+
+                    // Redirect to dashboard
+                    header('Location: /creators/dashboard.php?welcome=1');
+                    exit;
+                }
+            }
+        } catch (Exception $e) {
+            if (isset($db)) {
+                $db->cancelTransaction();
+            }
+            error_log("Registration error: " . $e->getMessage());
+            $errors[] = 'registration_failed';
+        }
+    }
+}
+
+// Error messages
 $error_messages = [
     'invalid_handle' => 'Please enter a valid YouTube handle',
     'invalid_email' => 'Please enter a valid email address',
     'weak_password' => 'Password must be at least 8 characters',
     'email_exists' => 'An account with this email already exists',
     'handle_exists' => 'This YouTube handle is already registered',
-    'upload_failed' => 'Failed to upload profile picture',
     'registration_failed' => 'Registration failed. Please try again.'
 ];
 ?>
@@ -185,18 +331,18 @@ $error_messages = [
             <p>Join as a Creator</p>
         </div>
 
-        <?php if ($error && isset($error_messages[$error])): ?>
+        <?php if (!empty($errors)): ?>
             <div class="error-message">
-                <?php echo htmlspecialchars($error_messages[$error]); ?>
+                <?php echo htmlspecialchars($error_messages[$errors[0]] ?? 'An error occurred'); ?>
             </div>
         <?php endif; ?>
 
-        <form action="/auth/register.php" method="POST" enctype="multipart/form-data" id="signupForm">
+        <form method="POST" enctype="multipart/form-data" id="signupForm">
             <div class="form-group">
                 <label for="youtube_handle">YouTube Handle *</label>
                 <input type="text" id="youtube_handle" name="youtube_handle" required
                        placeholder="@yourhandle" pattern="^@?[a-zA-Z0-9_-]+$"
-                       value="<?php echo isset($_GET['handle']) ? htmlspecialchars($_GET['handle']) : ''; ?>">
+                       value="<?php echo isset($youtube_handle) ? htmlspecialchars($youtube_handle) : ''; ?>">
                 <div class="input-hint">Your YouTube channel handle (e.g., @mrbeast)</div>
             </div>
 
@@ -204,7 +350,7 @@ $error_messages = [
                 <label for="email">Email Address *</label>
                 <input type="email" id="email" name="email" required
                        placeholder="your@email.com"
-                       value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>">
+                       value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
                 <div class="input-hint">We'll use this for login and notifications</div>
             </div>
 
