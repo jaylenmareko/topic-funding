@@ -43,8 +43,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
             
             switch ($action) {
                 case 'decline':
-                    if (!in_array($topic->status, ['funded', 'on_hold'])) {
-                        throw new Exception("Can only decline funded or held topics.");
+                    // UPDATED: Allow decline for active, funded, or on_hold topics
+                    if (!in_array($topic->status, ['active', 'funded', 'on_hold'])) {
+                        throw new Exception("Can only decline active, funded, or held topics.");
                     }
                     
                     // Process full refunds for all contributors
@@ -65,8 +66,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     break;
                     
                 case 'hold':
-                    if ($topic->status !== 'funded') {
-                        throw new Exception("Can only put funded topics on hold.");
+                    // UPDATED: Allow hold for active or funded topics
+                    if (!in_array($topic->status, ['active', 'funded'])) {
+                        throw new Exception("Can only put active or funded topics on hold.");
                     }
                     
                     $hold_reason = trim($_POST['hold_reason'] ?? 'Working on other content first');
@@ -83,7 +85,11 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     $db->bind(':hold_reason', $hold_reason);
                     $db->execute();
                     
-                    $message = "Topic put on hold. The 48-hour deadline is paused.";
+                    if ($topic->status === 'funded') {
+                        $message = "Topic put on hold. The 48-hour deadline is paused.";
+                    } else {
+                        $message = "Topic put on hold. Fans can still contribute but you'll review it later.";
+                    }
                     break;
                     
                 case 'resume':
@@ -91,19 +97,34 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         throw new Exception("Can only resume topics that are on hold.");
                     }
                     
-                    // Resume topic - set new 48-hour deadline from now
-                    $db->query('
-                        UPDATE topics 
-                        SET status = "funded",
-                            content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR),
-                            hold_reason = NULL,
-                            held_at = NULL
-                        WHERE id = :topic_id
-                    ');
+                    // Determine what status to resume to based on funding
+                    $new_status = ($topic->current_funding >= $topic->funding_threshold) ? 'funded' : 'active';
+                    
+                    if ($new_status === 'funded') {
+                        // Resume as funded - set new 48-hour deadline from now
+                        $db->query('
+                            UPDATE topics 
+                            SET status = "funded",
+                                content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR),
+                                hold_reason = NULL,
+                                held_at = NULL,
+                                funded_at = NOW()
+                            WHERE id = :topic_id
+                        ');
+                        $message = "Topic resumed! You have 48 hours to create the content.";
+                    } else {
+                        // Resume as active - continue collecting funding
+                        $db->query('
+                            UPDATE topics 
+                            SET status = "active",
+                                hold_reason = NULL,
+                                held_at = NULL
+                            WHERE id = :topic_id
+                        ');
+                        $message = "Topic resumed! Fans can continue contributing to reach the funding goal.";
+                    }
                     $db->bind(':topic_id', $topic_id);
                     $db->execute();
-                    
-                    $message = "Topic resumed! You have 48 hours to create the content.";
                     break;
                     
                 default:
