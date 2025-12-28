@@ -5,7 +5,7 @@ require_once '../config/database.php';
 require_once '../config/navigation.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/google-oauth.php');
+    header('Location: /index.php');
     exit;
 }
 
