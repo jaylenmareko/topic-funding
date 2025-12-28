@@ -5,7 +5,7 @@ require_once '../config/database.php';
 require_once '../config/navigation.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/google-oauth.php');
+header('Location: /index.php');
     exit;
 }
 
@@ -234,7 +234,7 @@ if (isset($_SESSION['profile_updated'])) {
         
         .card {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             border-radius: 20px; padding: 30px; color: white;
             display: flex; flex-direction: column;
             cursor: grab; transition: all 0.3s ease; 
@@ -565,7 +565,7 @@ if (isset($_SESSION['profile_updated'])) {
             right: -300px;
             width: 300px;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             transition: right 0.3s ease;
             z-index: 1000;
             padding: 80px 20px 20px 20px;
@@ -637,44 +637,87 @@ if (isset($_SESSION['profile_updated'])) {
             border-color: #1abc9c;
         }
         
-        .paypal-reminder {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .paypal-reminder-title {
-            margin: 0 0 10px 0;
-            font-weight: bold;
-            color: #856404;
-        }
-        
-        .paypal-reminder-text {
-            margin: 0 0 15px 0;
-            color: #856404;
-            font-size: 14px;
-        }
-        
-        .paypal-reminder-btn {
-            background: #28a745;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            display: inline-block;
-        }
-        
-        .paypal-reminder-btn:hover {
-            background: #218838;
-            color: white;
-            text-decoration: none;
-        }
+        .stripe-connect-section {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stripe-connect-section.connected {
+    background: #d4edda;
+    border-color: #28a745;
+}
+
+.stripe-connect-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.stripe-connect-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.stripe-connect-btn {
+    background: #635bff;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.stripe-connect-btn:hover {
+    background: #5248e4;
+    transform: translateY(-2px);
+}
+
+.stripe-status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.stripe-status-badge.connected {
+    background: #28a745;
+    color: white;
+}
+
+<?php if (!$creator->stripe_onboarding_complete): ?>
+<div class="stripe-connect-section">
+    <p class="stripe-connect-title">💰 Action Required: Connect Stripe to Get Paid</p>
+    <p class="stripe-connect-text">Connect your Stripe account to receive payouts when you complete topics. It only takes 2 minutes!</p>
+    <a href="connect-stripe.php" class="stripe-connect-btn">
+        🔗 Connect Stripe Account
+    </a>
+</div>
+<?php elseif ($creator->stripe_onboarding_complete): ?>
+<div class="stripe-connect-section connected">
+    <p class="stripe-connect-title">✅ Stripe Connected</p>
+    <p class="stripe-connect-text">
+        <span class="stripe-status-badge connected">Ready to receive payouts</span>
+    </p>
+    <p class="stripe-connect-text" style="margin-top: 10px;">
+        Total Earnings: <strong>$<?php echo number_format($creator->total_earnings, 2); ?></strong>
+    </p>
+</div>
+<?php endif; ?>
+
         
         @media (max-width: 768px) {
             .header { padding: 30px 20px; }
