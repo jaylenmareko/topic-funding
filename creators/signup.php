@@ -406,7 +406,7 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
         }
         
-        /* Navigation */
+        /* Navigation - Rizzdem Style */
         .topiclaunch-nav {
             background: white;
             padding: 15px 0;
@@ -429,6 +429,25 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #FF0000;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        /* Nav Center Links */
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #FF0000;
         }
         
         .nav-buttons {
@@ -741,10 +760,6 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 12px rgba(255,0,0,0.3);
         }
         
-        
-        
-        
-        
         .password-requirements {
             background: #f8f9fa;
             padding: 8px 12px;
@@ -810,7 +825,7 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 3px;
         }
         
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .signup-container {
                 padding: 30px 20px;
             }
@@ -832,6 +847,10 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 width: 100px;
                 height: 100px;
             }
+
+            .nav-center {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -840,6 +859,13 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
+            
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a href="/#creators" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+            </div>
+
             <div class="nav-buttons">
                 <a href="/auth/login.php" class="nav-login-btn">Log In</a>
                 <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
