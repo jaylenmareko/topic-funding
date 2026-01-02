@@ -1,59 +1,72 @@
 <?php
-// creators/profile.php - Creators can only access dashboard/edit, not other profiles
+// username.php - Vanity URL handler
 session_start();
-require_once '../config/database.php';
 
-// If creator is logged in, redirect to dashboard (they shouldn't view any profiles)
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+$username = isset($_GET['username']) ? trim($_GET['username']) : '';
+
+if (empty($username)) {
+    header('Location: /');
     exit;
 }
 
-// Only guests (fans) can view creator profiles
-$helper = new DatabaseHelper();
-$creator_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-if (!$creator_id) {
-    header('Location: index.php');
+// Load database
+if (file_exists('config/database.php')) {
+    require_once 'config/database.php';
+} elseif (file_exists(__DIR__ . '/config/database.php')) {
+    require_once __DIR__ . '/config/database.php';
+} else {
+    header('Location: /');
     exit;
 }
 
-$creator = $helper->getCreatorById($creator_id);
-if (!$creator) {
-    header('Location: index.php');
-    exit;
-}
+try {
+    $db = new Database();
+    
+    // Look up creator by display_name
+    $db->query('SELECT * FROM creators WHERE display_name = :username AND is_active = 1');
+    $db->bind(':username', $username);
+    $creator = $db->single();
+    
+    if (!$creator) {
+        header('Location: /');
+        exit;
+    }
+    
+    // Creator found - display profile inline
+    $creator_id = $creator->id;
+    
+    // Get creator's topics by status
+    $db = new Database();
 
-// Get creator's topics by status
-$db = new Database();
+    // Active topics
+    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
+    $db->bind(':creator_id', $creator_id);
+    $active_topics = $db->resultSet();
 
-// Active topics
-$db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
-$db->bind(':creator_id', $creator_id);
-$active_topics = $db->resultSet();
+    // Waiting Upload topics
+    $db->query('
+        SELECT t.*, 
+               UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
+               TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
+               (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
+               TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) as hours_past_deadline
+        FROM topics t 
+        WHERE t.creator_id = :creator_id 
+        AND t.status = "funded" 
+        AND (t.content_url IS NULL OR t.content_url = "")
+        AND TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) <= 2
+        ORDER BY t.funded_at ASC
+    ');
+    $db->bind(':creator_id', $creator_id);
+    $waiting_upload_topics = $db->resultSet();
 
-// Waiting Upload topics (funded but no content uploaded yet) - with deadline timestamp
-$db->query('
-    SELECT t.*, 
-           UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
-           TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
-           (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
-           TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) as hours_past_deadline
-    FROM topics t 
-    WHERE t.creator_id = :creator_id 
-    AND t.status = "funded" 
-    AND (t.content_url IS NULL OR t.content_url = "")
-    AND TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) <= 2
-    ORDER BY t.funded_at ASC
-');
-$db->bind(':creator_id', $creator_id);
-$waiting_upload_topics = $db->resultSet();
-
-// Completed topics
-$db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
-$db->bind(':creator_id', $creator_id);
-$completed_topics = $db->resultSet();
-?>
+    // Completed topics
+    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
+    $db->bind(':creator_id', $creator_id);
+    $completed_topics = $db->resultSet();
+    
+    // Now output the profile page HTML
+    ?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -62,7 +75,7 @@ $completed_topics = $db->resultSet();
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
             margin: 0; 
             padding: 0; 
             background: #fafafa;
@@ -153,7 +166,7 @@ $completed_topics = $db->resultSet();
             padding: 40px 20px; 
         }
         
-        /* Profile Box - Rizzdem Style */
+        /* Profile Box */
         .profile-box {
             background: white;
             border-radius: 16px;
@@ -161,24 +174,27 @@ $completed_topics = $db->resultSet();
             border: 1px solid #e5e7eb;
             padding: 32px;
             margin-bottom: 30px;
-            max-width: 700px;
+            max-width: 500px;
             margin-left: auto;
             margin-right: auto;
         }
         
         .profile-header {
-            display: flex;
+            flex-direction: column;
+            text-align: center;
+            display: inline-flex;
             align-items: flex-start;
-            gap: 24px;
-            margin-bottom: 24px;
+            gap: 0px;
+            margin-bottom: 0px;
         }
         
         .profile-avatar {
+            margin: 0 auto 16px auto;
             width: 100px;
             height: 100px;
             border-radius: 50%;
             background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             color: white;
@@ -200,16 +216,16 @@ $completed_topics = $db->resultSet();
         }
         
         .profile-name {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: #111827;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         
         .profile-handle {
-            font-size: 16px;
+            font-size: 15px;
             color: #6b7280;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .profile-price {
@@ -234,6 +250,7 @@ $completed_topics = $db->resultSet();
         }
         
         .profile-bio {
+            text-align: left;
             font-size: 15px;
             color: #4b5563;
             line-height: 1.6;
@@ -243,6 +260,8 @@ $completed_topics = $db->resultSet();
         }
         
         .create-topic-btn {
+            margin-left: auto;
+            margin-right: auto;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -251,10 +270,10 @@ $completed_topics = $db->resultSet();
             padding: 14px 28px;
             text-decoration: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             transition: all 0.2s;
-            margin-top: 24px;
+            margin-top: 20px;
         }
         
         .create-topic-btn:hover {
@@ -263,7 +282,6 @@ $completed_topics = $db->resultSet();
             box-shadow: 0 4px 12px rgba(16,185,129,0.3);
         }
         
-        /* Topics sections */
         .section { 
             background: white; 
             padding: 25px; 
@@ -332,7 +350,7 @@ $completed_topics = $db->resultSet();
         }
         
         .funding-info { 
-            display: flex;
+            display: inline-flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 15px;
@@ -341,7 +359,7 @@ $completed_topics = $db->resultSet();
         .funding-amount { 
             font-weight: 700;
             color: #10b981;
-            font-size: 16px;
+            font-size: 15px;
         }
         
         .empty-state { 
@@ -361,58 +379,19 @@ $completed_topics = $db->resultSet();
             font-size: 14px;
         }
         
-        /* Countdown timer styles */
-        .countdown-timer { 
-            background: #10b981;
-            color: white; 
-            padding: 8px 16px; 
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 13px;
-            font-family: monospace;
-            display: inline-block;
-        }
-        
-        .countdown-timer.warning { 
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .countdown-timer.expired { 
-            background: #ef4444;
-            color: white;
-        }
-        
-        .refund-message {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-top: 12px;
-            font-size: 13px;
-            border-left: 4px solid #ef4444;
-        }
-        
-        @media (max-width: 768px) {
+            @media (max-width: 768px) {
             .container { padding: 20px 15px; }
-            .profile-box { padding: 24px; }
-            .profile-header { flex-direction: column; text-align: center; }
-            .profile-avatar { margin: 0 auto; }
+            .profile-box { padding: 32px; }
             .topic-grid { grid-template-columns: 1fr; }
-
-            .nav-center {
-                display: none;
-            }
+            .nav-center { display: none; }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
             
-            <!-- Center Navigation Links -->
             <div class="nav-center">
                 <a href="/#creators" class="nav-link">Browse YouTubers</a>
                 <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
@@ -426,12 +405,11 @@ $completed_topics = $db->resultSet();
     </nav>
 
     <div class="container">
-        <!-- Profile Box - Rizzdem Style -->
         <div class="profile-box">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
-                        <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                    <?php if ($creator->profile_image && file_exists('../../uploads/creators/' . $creator->profile_image)): ?>
+                        <img src="../../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
                              alt="<?php echo htmlspecialchars($creator->display_name); ?>">
                     <?php else: ?>
                         <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
@@ -439,8 +417,7 @@ $completed_topics = $db->resultSet();
                 </div>
                 
                 <div class="profile-info">
-                    <div class="profile-name"><?php echo htmlspecialchars($creator->display_name); ?></div>
-                    <div class="profile-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
+                    <div class="profile-name">@<?php echo htmlspecialchars($creator->display_name); ?></div>
                     
                     <div class="profile-price">
                         <span class="profile-price-amount">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
@@ -464,7 +441,6 @@ $completed_topics = $db->resultSet();
             </a>
         </div>
 
-        <!-- Active Topics -->
         <div class="section">
             <h2>Active Topics</h2>
             <?php if (empty($active_topics)): ?>
@@ -499,89 +475,9 @@ $completed_topics = $db->resultSet();
                 </div>
             <?php endif; ?>
         </div>
-
-        <!-- Waiting Upload Topics -->
-        <?php if (!empty($waiting_upload_topics)): ?>
-        <div class="section">
-            <h2>⏰ Waiting Upload (<?php echo count($waiting_upload_topics); ?>)</h2>
-            <div class="topic-grid">
-                <?php foreach ($waiting_upload_topics as $topic): ?>
-                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)">
-                        <div style="margin-bottom: 15px;">
-                            <div class="countdown-timer" 
-                                 data-deadline="<?php echo $topic->deadline_timestamp; ?>"
-                                 id="countdown-<?php echo $topic->id; ?>">
-                                00:00:00
-                            </div>
-                        </div>
-                        
-                        <div class="refund-message" id="refund-message-<?php echo $topic->id; ?>" style="display: none;">
-                            💰 <strong>Deadline expired.</strong> 90% refunds are being processed.
-                        </div>
-                        
-                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Completed Topics -->
-        <?php if (!empty($completed_topics)): ?>
-        <div class="section">
-            <h2>✅ Completed Topics (<?php echo count($completed_topics); ?>)</h2>
-            <div class="topic-grid">
-                <?php foreach (array_slice($completed_topics, 0, 6) as $topic): ?>
-                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)">
-                        <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                        <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
-                        
-                        <?php if ($topic->content_url): ?>
-                            <div style="margin-top: 15px;">
-                                <span style="background: #10b981; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;">
-                                    🎬 Content Available
-                                </span>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
 
     <script>
-    // Live countdown timer functionality
-    function updateCountdowns() {
-        const countdownElements = document.querySelectorAll('.countdown-timer[data-deadline]');
-        countdownElements.forEach(element => {
-            const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
-            const now = new Date().getTime();
-            const timeLeft = deadline - now;
-            const topicId = element.id.replace('countdown-', '');
-            const refundMessage = document.getElementById(`refund-message-${topicId}`);
-
-            if (timeLeft > 0) {
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                const formattedTime = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-                element.textContent = formattedTime;
-                if (refundMessage) refundMessage.style.display = 'none';
-                element.classList.remove('expired', 'warning');
-                if (hours <= 1) element.classList.add('expired');
-                else if (hours <= 6) element.classList.add('warning');
-            } else {
-                element.textContent = 'Expired';
-                element.classList.add('expired');
-                if (refundMessage) refundMessage.style.display = 'block';
-            }
-        });
-    }
-    updateCountdowns();
-    setInterval(updateCountdowns, 1000);
-
     function openTopicModal(topicId) {
         fetch(`../api/get-topic.php?id=${topicId}`)
             .then(response => response.json())
@@ -593,69 +489,70 @@ $completed_topics = $db->resultSet();
 
                 const progress = Math.min(100, (topic.current_funding / topic.funding_threshold) * 100);
 
-                // Build funding form HTML (only for active topics)
                 let actionHTML = '';
                 if (topic.status === 'completed' && topic.content_url) {
-                    actionHTML = `<a href="${topic.content_url}" target="_blank" style="display: block; background: #10b981; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 15px;">▶️ Watch Content</a>`;
+                    actionHTML = `<a href="${topic.content_url}" target="_blank" style="display: block; background: #10b981; color: white; text-align: center; padding: 13px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16,185,129,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">▶️ Watch Content</a>`;
                 } else if (topic.status === 'active') {
                     actionHTML = `
                         <div id="fundingFormContainer">
-                            <div id="errorMessage" style="display: none; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;"></div>
+                            <div id="errorMessage" style="display: none; color: #dc2626; background: #fef2f2; border: 1px solid #fee2e2; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;"></div>
 
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #333;">Enter Amount ($1 - $1,000)</label>
+                            <div style="margin-bottom: 18px;">
+                                <label style="display: flex; align-items: center; gap: 7px; font-weight: 400; margin-bottom: 10px; color: #111827; font-size: 14px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
+                                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                    </svg>
+                                    Amount
+                                </label>
                                 <input
                                     type="number"
                                     id="fundingAmount"
-                                    placeholder="$1 - $1000"
+                                    placeholder="10"
                                     min="1"
                                     max="1000"
                                     step="1"
-                                    value="1"
-                                    style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 18px; box-sizing: border-box; transition: border-color 0.3s;"
+                                    value="10"
+                                    style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;"
                                     oninput="validateFundingAmount()"
-                                    onfocus="this.style.borderColor='#FF0000'"
-                                    onblur="this.style.borderColor='#e0e0e0'"
+                                    onfocus="this.style.borderColor='#FF0000'; this.style.boxShadow='0 0 0 3px rgba(255,0,0,0.1)'"
+                                    onblur="this.style.borderColor='#e5e7eb'; this.style.boxShadow='none'"
                                 >
                             </div>
 
                             <button
                                 id="fundButton"
                                 onclick="submitFunding(${topic.id})"
-                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.3s;"
-                                onmouseover="this.style.opacity='0.9'"
-                                onmouseout="this.style.opacity='1'"
+                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255,0,0,0.35)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'"
                             >
-                                💰 Fund This Topic
+                                Fund This Topic
                             </button>
 
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; color: #10b981; font-weight: 600; font-size: 14px;">
-                                <span>🔒</span>
-                                <span>Secure payment by Stripe</span>
-                            </div>
                         </div>
                     `;
                 }
 
                 const modalHTML = `
-                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="closeTopicModal(event)">
-                        <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative;" onclick="event.stopPropagation()">
-                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999;">×</button>
+                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);" onclick="closeTopicModal(event)">
+                        <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);" onclick="event.stopPropagation()">
+                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 24px; height: 24px; font-size: 24px; cursor: pointer; color: #9ca3af; transition: color 0.2s; padding: 0; line-height: 1;" onmouseover="this.style.color='#6b7280'" onmouseout="this.style.color='#9ca3af'">×</button>
 
-                            <h2 style="margin: 0 0 20px 0; font-size: 28px; color: #333;">${topic.title}</h2>
+                            <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #111827; font-weight: 600; line-height: 1.4; padding-right: 30px;">${topic.title}</h2>
 
-                            <p style="color: #666; line-height: 1.6; margin-bottom: 30px; font-size: 16px;">${topic.description}</p>
+                            <p style="color: #6b7280; line-height: 1.6; margin-bottom: 0px; font-size: 14px;">${topic.description}</p>
 
-                            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                    <span style="font-size: 14px; color: #666;">Funding Progress</span>
-                                    <span style="font-size: 14px; font-weight: bold; color: #FF0000;">${Math.round(progress)}%</span>
+                            <div style="background: #fafafa; padding: 16px; border-radius: 12px; margin-bottom: 0px;">
+                                <div style="display: flex; margin-bottom: 8px; align-items: center;">
+                                    <span style="font-size: 13px; color: #6b7280; font-weight: 500;">Funding Progress</span>
+                                    
                                 </div>
-                                <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                                    <div style="height: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); width: ${progress}%;"></div>
+                                <div style="height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; background: linear-gradient(90deg, #FF0000, #CC0000); width: ${progress}%; transition: width 0.3s; border-radius: 999px;"></div>
                                 </div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">
-                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #999; font-size: 16px;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
+                                <div style="font-size: 18px; font-weight: 600; color: #111827;">
+                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #9ca3af; font-size: 14px; font-weight: 500;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
                                 </div>
                             </div>
 
@@ -692,11 +589,9 @@ $completed_topics = $db->resultSet();
         const errorDiv = document.getElementById('errorMessage');
         const button = document.getElementById('fundButton');
 
-        // Clear previous errors
         errorDiv.style.display = 'none';
         errorDiv.textContent = '';
 
-        // Validate amount
         if (!amount || amount < 1) {
             errorDiv.textContent = 'Minimum contribution is $1';
             errorDiv.style.display = 'block';
@@ -709,18 +604,15 @@ $completed_topics = $db->resultSet();
             return;
         }
 
-        // Show loading state
         button.disabled = true;
-        button.innerHTML = '⏳ Processing...';
+        button.innerHTML = 'Processing...';
         button.style.opacity = '0.6';
 
-        // Prepare request data
         const requestData = {
             topic_id: topicId,
             amount: amount
         };
 
-        // Submit to API
         fetch('../api/get-topic.php', {
             method: 'POST',
             headers: {
@@ -734,10 +626,9 @@ $completed_topics = $db->resultSet();
                 errorDiv.textContent = data.error;
                 errorDiv.style.display = 'block';
                 button.disabled = false;
-                button.innerHTML = '💰 Fund This Topic';
+                button.innerHTML = 'Fund This Topic';
                 button.style.opacity = '1';
             } else if (data.checkout_url) {
-                // Redirect to Stripe checkout
                 window.location.href = data.checkout_url;
             }
         })
@@ -746,7 +637,7 @@ $completed_topics = $db->resultSet();
             errorDiv.textContent = 'An error occurred. Please try again.';
             errorDiv.style.display = 'block';
             button.disabled = false;
-            button.innerHTML = '💰 Fund This Topic';
+            button.innerHTML = 'Fund This Topic';
             button.style.opacity = '1';
         });
     }
@@ -756,6 +647,25 @@ $completed_topics = $db->resultSet();
         const modal = document.getElementById('topicModal');
         if (modal) modal.remove();
     }
-    </script>
+        // Mobile: Scroll to Active Topics on page load
+    if (window.innerWidth <= 768) {
+        window.addEventListener('load', function() {
+            const activeTopicsSection = document.querySelector('.section');
+            if (activeTopicsSection) {
+                setTimeout(function() {
+                    activeTopicsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        });
+    }
+</script>
 </body>
 </html>
+<?php
+    exit;
+    
+} catch (Exception $e) {
+    error_log("Vanity URL error: " . $e->getMessage());
+    header('Location: /');
+    exit;
+}
