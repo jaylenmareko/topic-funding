@@ -114,7 +114,7 @@ if ($db_available) {
             }
         }
         
-        /* Navigation */
+        /* Navigation - Rizzdem Style */
         .topiclaunch-nav {
             background: white;
             padding: 15px 0;
@@ -136,7 +136,26 @@ if ($db_available) {
             text-decoration: none;
         }
 
-        /* Nav Buttons */
+        /* Nav Center Links - Rizzdem Style */
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #FF0000;
+        }
+
+        /* Nav Right Buttons */
         .nav-buttons {
             display: flex;
             gap: 15px;
@@ -522,6 +541,11 @@ if ($db_available) {
             .fan-heading { font-size: 28px; }
             .fan-subheading { font-size: 16px; }
             
+            /* Hide nav center links on mobile */
+            .nav-center {
+                display: none;
+            }
+            
             /* Stack signup steps on mobile */
             .signup-steps {
                 flex-direction: column;
@@ -538,13 +562,21 @@ if ($db_available) {
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+    <!-- Navigation - Rizzdem Style -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <span class="nav-logo">TopicLaunch</span>
+            <a href="/" class="nav-logo">TopicLaunch</a>
+            
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a href="/#creators" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+            </div>
+            
+            <!-- Right Navigation Buttons -->
             <div class="nav-buttons">
-                <a href="auth/login.php" class="nav-login-btn">Log In</a>
-                <a href="creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
             </div>
         </div>
     </nav>
@@ -580,7 +612,7 @@ if ($db_available) {
         </div>
     </div>
 
-    <div class="creators-section">
+    <div class="creators-section" id="creators">
         <div class="fan-section-header">
             <h2 class="fan-heading">Trending YouTubers</h2>
             <p class="fan-subheading">Top YouTubers growing fast this week.</p>
@@ -800,6 +832,12 @@ if ($db_available) {
             </a>
         `;
     }
+    
+    // Smooth scroll for Browse YouTubers link
+    document.querySelector('a[href="/#creators"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('creators').scrollIntoView({ behavior: 'smooth' });
+    });
     </script>
 </body>
 </html>
