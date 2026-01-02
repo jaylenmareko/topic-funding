@@ -75,7 +75,7 @@ try {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
             margin: 0; 
             padding: 0; 
             background: #fafafa;
@@ -174,24 +174,27 @@ try {
             border: 1px solid #e5e7eb;
             padding: 32px;
             margin-bottom: 30px;
-            max-width: 700px;
+            max-width: 500px;
             margin-left: auto;
             margin-right: auto;
         }
         
         .profile-header {
-            display: flex;
+            flex-direction: column;
+            text-align: center;
+            display: inline-flex;
             align-items: flex-start;
-            gap: 24px;
-            margin-bottom: 24px;
+            gap: 0px;
+            margin-bottom: 0px;
         }
         
         .profile-avatar {
+            margin: 0 auto 16px auto;
             width: 100px;
             height: 100px;
             border-radius: 50%;
             background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             color: white;
@@ -213,16 +216,16 @@ try {
         }
         
         .profile-name {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: #111827;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         
         .profile-handle {
-            font-size: 16px;
+            font-size: 15px;
             color: #6b7280;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .profile-price {
@@ -247,6 +250,7 @@ try {
         }
         
         .profile-bio {
+            text-align: left;
             font-size: 15px;
             color: #4b5563;
             line-height: 1.6;
@@ -256,6 +260,8 @@ try {
         }
         
         .create-topic-btn {
+            margin-left: auto;
+            margin-right: auto;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -264,10 +270,10 @@ try {
             padding: 14px 28px;
             text-decoration: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             transition: all 0.2s;
-            margin-top: 24px;
+            margin-top: 20px;
         }
         
         .create-topic-btn:hover {
@@ -344,7 +350,7 @@ try {
         }
         
         .funding-info { 
-            display: flex;
+            display: inline-flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 15px;
@@ -353,7 +359,7 @@ try {
         .funding-amount { 
             font-weight: 700;
             color: #10b981;
-            font-size: 16px;
+            font-size: 15px;
         }
         
         .empty-state { 
@@ -373,11 +379,9 @@ try {
             font-size: 14px;
         }
         
-        @media (max-width: 768px) {
+            @media (max-width: 768px) {
             .container { padding: 20px 15px; }
-            .profile-box { padding: 24px; }
-            .profile-header { flex-direction: column; text-align: center; }
-            .profile-avatar { margin: 0 auto; }
+            .profile-box { padding: 32px; }
             .topic-grid { grid-template-columns: 1fr; }
             .nav-center { display: none; }
         }
@@ -413,8 +417,7 @@ try {
                 </div>
                 
                 <div class="profile-info">
-                    <div class="profile-name"><?php echo htmlspecialchars($creator->display_name); ?></div>
-                    <div class="profile-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
+                    <div class="profile-name">@<?php echo htmlspecialchars($creator->display_name); ?></div>
                     
                     <div class="profile-price">
                         <span class="profile-price-amount">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
@@ -488,66 +491,68 @@ try {
 
                 let actionHTML = '';
                 if (topic.status === 'completed' && topic.content_url) {
-                    actionHTML = `<a href="${topic.content_url}" target="_blank" style="display: block; background: #10b981; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 15px;">▶️ Watch Content</a>`;
+                    actionHTML = `<a href="${topic.content_url}" target="_blank" style="display: block; background: #10b981; color: white; text-align: center; padding: 13px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16,185,129,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">▶️ Watch Content</a>`;
                 } else if (topic.status === 'active') {
                     actionHTML = `
                         <div id="fundingFormContainer">
-                            <div id="errorMessage" style="display: none; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;"></div>
+                            <div id="errorMessage" style="display: none; color: #dc2626; background: #fef2f2; border: 1px solid #fee2e2; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;"></div>
 
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #333;">Enter Amount ($1 - $1,000)</label>
+                            <div style="margin-bottom: 18px;">
+                                <label style="display: flex; align-items: center; gap: 7px; font-weight: 400; margin-bottom: 10px; color: #111827; font-size: 14px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
+                                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                    </svg>
+                                    Amount
+                                </label>
                                 <input
                                     type="number"
                                     id="fundingAmount"
-                                    placeholder="$1 - $1000"
+                                    placeholder="10"
                                     min="1"
                                     max="1000"
                                     step="1"
-                                    value="1"
-                                    style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 18px; box-sizing: border-box; transition: border-color 0.3s;"
+                                    value="10"
+                                    style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;"
                                     oninput="validateFundingAmount()"
-                                    onfocus="this.style.borderColor='#FF0000'"
-                                    onblur="this.style.borderColor='#e0e0e0'"
+                                    onfocus="this.style.borderColor='#FF0000'; this.style.boxShadow='0 0 0 3px rgba(255,0,0,0.1)'"
+                                    onblur="this.style.borderColor='#e5e7eb'; this.style.boxShadow='none'"
                                 >
                             </div>
 
                             <button
                                 id="fundButton"
                                 onclick="submitFunding(${topic.id})"
-                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.3s;"
-                                onmouseover="this.style.opacity='0.9'"
-                                onmouseout="this.style.opacity='1'"
+                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255,0,0,0.35)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'"
                             >
-                                💰 Fund This Topic
+                                Fund This Topic
                             </button>
 
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; color: #10b981; font-weight: 600; font-size: 14px;">
-                                <span>🔒</span>
-                                <span>Secure payment by Stripe</span>
-                            </div>
                         </div>
                     `;
                 }
 
                 const modalHTML = `
-                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="closeTopicModal(event)">
-                        <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative;" onclick="event.stopPropagation()">
-                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999;">×</button>
+                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);" onclick="closeTopicModal(event)">
+                        <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);" onclick="event.stopPropagation()">
+                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 24px; height: 24px; font-size: 24px; cursor: pointer; color: #9ca3af; transition: color 0.2s; padding: 0; line-height: 1;" onmouseover="this.style.color='#6b7280'" onmouseout="this.style.color='#9ca3af'">×</button>
 
-                            <h2 style="margin: 0 0 20px 0; font-size: 28px; color: #333;">${topic.title}</h2>
+                            <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #111827; font-weight: 600; line-height: 1.4; padding-right: 30px;">${topic.title}</h2>
 
-                            <p style="color: #666; line-height: 1.6; margin-bottom: 30px; font-size: 16px;">${topic.description}</p>
+                            <p style="color: #6b7280; line-height: 1.6; margin-bottom: 0px; font-size: 14px;">${topic.description}</p>
 
-                            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                    <span style="font-size: 14px; color: #666;">Funding Progress</span>
-                                    <span style="font-size: 14px; font-weight: bold; color: #FF0000;">${Math.round(progress)}%</span>
+                            <div style="background: #fafafa; padding: 16px; border-radius: 12px; margin-bottom: 0px;">
+                                <div style="display: flex; margin-bottom: 8px; align-items: center;">
+                                    <span style="font-size: 13px; color: #6b7280; font-weight: 500;">Funding Progress</span>
+                                    
                                 </div>
-                                <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                                    <div style="height: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); width: ${progress}%;"></div>
+                                <div style="height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
+                                    <div style="height: 100%; background: linear-gradient(90deg, #FF0000, #CC0000); width: ${progress}%; transition: width 0.3s; border-radius: 999px;"></div>
                                 </div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">
-                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #999; font-size: 16px;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
+                                <div style="font-size: 18px; font-weight: 600; color: #111827;">
+                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #9ca3af; font-size: 14px; font-weight: 500;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
                                 </div>
                             </div>
 
@@ -600,7 +605,7 @@ try {
         }
 
         button.disabled = true;
-        button.innerHTML = '⏳ Processing...';
+        button.innerHTML = 'Processing...';
         button.style.opacity = '0.6';
 
         const requestData = {
@@ -621,7 +626,7 @@ try {
                 errorDiv.textContent = data.error;
                 errorDiv.style.display = 'block';
                 button.disabled = false;
-                button.innerHTML = '💰 Fund This Topic';
+                button.innerHTML = 'Fund This Topic';
                 button.style.opacity = '1';
             } else if (data.checkout_url) {
                 window.location.href = data.checkout_url;
@@ -632,7 +637,7 @@ try {
             errorDiv.textContent = 'An error occurred. Please try again.';
             errorDiv.style.display = 'block';
             button.disabled = false;
-            button.innerHTML = '💰 Fund This Topic';
+            button.innerHTML = 'Fund This Topic';
             button.style.opacity = '1';
         });
     }
@@ -642,7 +647,18 @@ try {
         const modal = document.getElementById('topicModal');
         if (modal) modal.remove();
     }
-    </script>
+        // Mobile: Scroll to Active Topics on page load
+    if (window.innerWidth <= 768) {
+        window.addEventListener('load', function() {
+            const activeTopicsSection = document.querySelector('.section');
+            if (activeTopicsSection) {
+                setTimeout(function() {
+                    activeTopicsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        });
+    }
+</script>
 </body>
 </html>
 <?php
