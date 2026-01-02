@@ -68,7 +68,7 @@ $completed_topics = $db->resultSet();
             background: #fafafa;
         }
         
-        /* Navigation */
+        /* Navigation - Rizzdem Style */
         .topiclaunch-nav {
             background: white;
             padding: 15px 0;
@@ -90,6 +90,25 @@ $completed_topics = $db->resultSet();
             font-weight: bold;
             color: #FF0000;
             text-decoration: none;
+        }
+
+        /* Nav Center Links */
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #FF0000;
         }
         
         .nav-buttons {
@@ -380,6 +399,10 @@ $completed_topics = $db->resultSet();
             .profile-header { flex-direction: column; text-align: center; }
             .profile-avatar { margin: 0 auto; }
             .topic-grid { grid-template-columns: 1fr; }
+
+            .nav-center {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -387,10 +410,17 @@ $completed_topics = $db->resultSet();
     <!-- Navigation -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <a href="../index.php" class="nav-logo">TopicLaunch</a>
+            <a href="/" class="nav-logo">TopicLaunch</a>
+            
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a href="/#creators" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+            </div>
+
             <div class="nav-buttons">
-                <a href="../auth/login.php" class="nav-login-btn">Log In</a>
-                <a href="../creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
             </div>
         </div>
     </nav>
