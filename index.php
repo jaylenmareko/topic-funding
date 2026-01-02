@@ -136,7 +136,7 @@ if ($db_available) {
             text-decoration: none;
         }
 
-        /* Login Bar */
+        /* Nav Buttons */
         .nav-buttons {
             display: flex;
             gap: 15px;
@@ -170,31 +170,6 @@ if ($db_available) {
         .nav-getstarted-btn:hover {
             background: #CC0000;
             transform: translateY(-1px);
-        } {
-            width: 180px;
-        }
-        .login-bar input[type="password"] {
-            width: 140px;
-        }
-        .login-bar button {
-            padding: 8px 20px;
-            background: white;
-            color: #FF0000;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        .login-bar button:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
-        }
-        .login-error {
-            color: #ffe6e6;
-            font-size: 12px;
-            margin-left: 10px;
         }
         
         /* Hero Section */
@@ -294,23 +269,6 @@ if ($db_available) {
             font-size: 28px;
         }
         
-        .step-number {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: white;
-            color: #FF0000;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
         .step-box h3 {
             color: #000;
             font-size: 17px;
@@ -325,53 +283,7 @@ if ($db_available) {
             margin: 0;
         }
         
-        /* Demo Video Section */
-        .demo-video-section {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-        .demo-video-section iframe {
-            width: 100%;
-            height: 450px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-        
-        /* 2-Step Process */
-        .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 60px 0; }
-        .process-step { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
-        .process-step::before {
-            content: attr(data-step);
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #FF0000;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .process-icon { font-size: 48px; margin-bottom: 20px; }
-        .process-step h3 { color: #333; margin-bottom: 15px; font-size: 22px; }
-        .process-step p { color: #666; line-height: 1.6; }
-        
-        /* Testimonial Label */
-        .testimonial-label {
-            text-align: center;
-            font-size: 28px;
-            color: #333;
-            margin: 40px 0 20px 0;
-            font-weight: 600;
-        }
         
         /* Creators Section - Kalshi Style */
         .creators-section {
@@ -396,13 +308,6 @@ if ($db_available) {
             font-size: 16px;
             color: #666;
             margin-bottom: 30px;
-        }
-        
-        .creators-section h2 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: 600;
         }
         
         .creators-grid-landing {
@@ -566,21 +471,6 @@ if ($db_available) {
             border-color: #FF0000;
         }
         
-        .search-creators-btn {
-            padding: 12px 24px;
-            background: #FF0000;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .search-creators-btn:hover {
-            background: #CC0000;
-        }
-        
         .load-more-container {
             text-align: center;
             margin-top: 30px;
@@ -599,34 +489,12 @@ if ($db_available) {
         }
         
         .load-more-btn:hover {
-            background: #5568d3;
+            background: #CC0000;
         }
         
         .load-more-btn:disabled {
             background: #9ca3af;
             cursor: not-allowed;
-        }
-        
-        .view-all-creators {
-            text-align: center;
-            margin-top: 30px;
-        }
-        
-        .view-all-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: white;
-            color: #FF0000;
-            border: 2px solid #FF0000;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        
-        .view-all-btn:hover {
-            background: #FF0000;
-            color: white;
         }
         
         /* Footer */
@@ -650,11 +518,7 @@ if ($db_available) {
             .hero { padding-top: 60px; }
             .hero h1 { font-size: 40px; }
             .hero p { font-size: 16px; margin-bottom: 30px; }
-            .demo-video-section iframe { height: 250px; }
-            .process-steps { grid-template-columns: 1fr; }
-            .testimonial-label { font-size: 24px; }
             .creators-grid-landing { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-            .creators-section h2 { font-size: 24px; }
             .fan-heading { font-size: 28px; }
             .fan-subheading { font-size: 16px; }
             
@@ -678,8 +542,6 @@ if ($db_available) {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <span class="nav-logo">TopicLaunch</span>
-
-            <!-- Nav Buttons -->
             <div class="nav-buttons">
                 <a href="auth/login.php" class="nav-login-btn">Log In</a>
                 <a href="creators/signup.php" class="nav-getstarted-btn">Get Started</a>
@@ -692,7 +554,6 @@ if ($db_available) {
         <h1>Fans Fund Topics for <span class="red">YouTubers</span></h1>
         <p>Request that video from your favorite YouTuber and get it delivered for a small contribution</p>
         
-        <!-- YouTuber Signup Button -->
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -705,35 +566,26 @@ if ($db_available) {
             </a>
         </div>
         
-        <!-- 2-Step Process -->
         <div class="signup-steps">
             <div class="step-box">
-                <div class="step-icon">
-                    💡
-                </div>
+                <div class="step-icon">💡</div>
                 <h3>Fans Crowdfund Topics</h3>
                 <p>Fans make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
             </div>
-            
             <div class="step-box">
-                <div class="step-icon">
-                    ⚡
-                </div>
+                <div class="step-icon">⚡</div>
                 <h3>48-Hour Delivery</h3>
                 <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
             </div>
         </div>
     </div>
 
-    <!-- Creators Grid Section - Kalshi Style -->
     <div class="creators-section">
-        <!-- Fan Section Header -->
         <div class="fan-section-header">
             <h2 class="fan-heading">Trending YouTubers</h2>
             <p class="fan-subheading">Top YouTubers growing fast this week.</p>
         </div>
         
-        <!-- Search Bar -->
         <div class="search-creators-container">
             <form method="GET" action="" class="search-creators-form" id="searchForm">
                 <input type="text" 
@@ -789,16 +641,14 @@ if ($db_available) {
         </div>
         
         <?php if (!$search_query): ?>
-        <!-- Load More Button (only shown when not searching) -->
         <div class="load-more-container">
             <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCreators()">
-                Load More Creators
+                Load More
             </button>
         </div>
         <?php endif; ?>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div>
             <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
@@ -810,7 +660,6 @@ if ($db_available) {
     </footer>
 
     <script>
-    // Live Search Functionality
     const searchInput = document.getElementById('searchInput');
     const creatorsGrid = document.getElementById('creatorsGrid');
     const loadMoreContainer = document.querySelector('.load-more-container');
@@ -820,28 +669,23 @@ if ($db_available) {
             const query = e.target.value.trim();
             
             if (query.length === 0) {
-                // Show all creators when search is empty
                 const cards = creatorsGrid.querySelectorAll('.creator-card-kalshi');
                 cards.forEach(card => {
                     card.style.display = 'flex';
                 });
-                // Show load more button when not searching
                 if (loadMoreContainer) {
                     loadMoreContainer.style.display = 'block';
                 }
             } else {
-                // Search as user types
                 performSearch(query);
             }
         });
     }
     
     function performSearch(query) {
-        // Normalize query - lowercase
         const searchQuery = query.toLowerCase();
         const searchQueryNoSpaces = searchQuery.replace(/\s+/g, '');
         
-        // Get all creator cards
         const cards = creatorsGrid.querySelectorAll('.creator-card-kalshi');
         let visibleCount = 0;
         
@@ -851,13 +695,11 @@ if ($db_available) {
             
             if (!nameElement || !handleElement) return;
             
-            // Get text and normalize
             const name = nameElement.textContent.toLowerCase();
             const handle = handleElement.textContent.replace('@', '').toLowerCase();
             const nameNoSpaces = name.replace(/\s+/g, '');
             const handleNoSpaces = handle.replace(/\s+/g, '');
             
-            // Match in multiple ways for flexibility
             const matches = 
                 name.includes(searchQuery) || 
                 nameNoSpaces.includes(searchQueryNoSpaces) ||
@@ -872,13 +714,12 @@ if ($db_available) {
             }
         });
         
-        // Hide load more button during search
         if (loadMoreContainer) {
             loadMoreContainer.style.display = 'none';
         }
     }
     
-    let offset = 24; // Start after initial 24 creators
+    let offset = 24;
     let loading = false;
 
     function loadMoreCreators() {
@@ -906,7 +747,7 @@ if ($db_available) {
                         btn.textContent = 'No More Creators';
                         btn.disabled = true;
                     } else {
-                        btn.textContent = 'Load More Creators';
+                        btn.textContent = 'Load More';
                         btn.disabled = false;
                     }
                 } else {
@@ -929,6 +770,12 @@ if ($db_available) {
             ? `<img src="/uploads/creators/${creator.profile_image}" alt="${creator.display_name}">` 
             : initial;
         
+        const bioSection = creator.bio 
+            ? `<div class="creator-bio">${creator.bio}</div>` 
+            : '';
+        
+        const price = creator.minimum_topic_price || 100;
+        
         return `
             <a href="/${creator.display_name}" class="creator-card-kalshi">
                 <div class="creator-card-header">
@@ -940,9 +787,16 @@ if ($db_available) {
                         <div class="creator-handle-kalshi">@${creator.display_name}</div>
                     </div>
                 </div>
-                <button class="fund-topics-btn" onclick="event.preventDefault(); window.location.href='/${creator.display_name}'">
-                    Fund Topics
-                </button>
+                ${bioSection}
+                <div class="creator-price-section">
+                    <div class="creator-price">
+                        <span class="price-amount">$${parseFloat(price).toFixed(2)}</span>
+                        <span class="price-label">/ PER TOPIC</span>
+                    </div>
+                    <button class="fund-topics-btn" onclick="event.preventDefault(); window.location.href='/${creator.display_name}'">
+                        Fund Topics
+                    </button>
+                </div>
             </a>
         `;
     }
