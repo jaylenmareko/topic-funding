@@ -448,7 +448,7 @@ try {
             <?php else: ?>
                 <div class="topic-grid">
                     <?php foreach ($active_topics as $topic): ?>
-                    <div class="topic-card" onclick="alert('Topic details coming soon!')">
+                    <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)">
                         <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                         <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
                         
@@ -473,6 +473,176 @@ try {
             <?php endif; ?>
         </div>
     </div>
+
+    <script>
+    function openTopicModal(topicId) {
+        fetch(`/api/get-topic.php?id=${topicId}`)
+            .then(response => response.json())
+            .then(topic => {
+                if (!topic || topic.error) {
+                    alert('Topic not found');
+                    return;
+                }
+
+                const progress = Math.min(100, (topic.current_funding / topic.funding_threshold) * 100);
+
+                let actionHTML = '';
+                if (topic.status === 'completed' && topic.content_url) {
+                    actionHTML = `<a href="${topic.content_url}" target="_blank" style="display: block; background: #10b981; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 15px;">▶️ Watch Content</a>`;
+                } else if (topic.status === 'active') {
+                    actionHTML = `
+                        <div id="fundingFormContainer">
+                            <div id="errorMessage" style="display: none; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;"></div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #333;">Enter Amount ($1 - $1,000)</label>
+                                <input
+                                    type="number"
+                                    id="fundingAmount"
+                                    placeholder="$1 - $1000"
+                                    min="1"
+                                    max="1000"
+                                    step="1"
+                                    value="1"
+                                    style="width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 18px; box-sizing: border-box; transition: border-color 0.3s;"
+                                    oninput="validateFundingAmount()"
+                                    onfocus="this.style.borderColor='#FF0000'"
+                                    onblur="this.style.borderColor='#e0e0e0'"
+                                >
+                            </div>
+
+                            <button
+                                id="fundButton"
+                                onclick="submitFunding(${topic.id})"
+                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.3s;"
+                                onmouseover="this.style.opacity='0.9'"
+                                onmouseout="this.style.opacity='1'"
+                            >
+                                💰 Fund This Topic
+                            </button>
+
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; color: #10b981; font-weight: 600; font-size: 14px;">
+                                <span>🔒</span>
+                                <span>Secure payment by Stripe</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const modalHTML = `
+                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="closeTopicModal(event)">
+                        <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative;" onclick="event.stopPropagation()">
+                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999;">×</button>
+
+                            <h2 style="margin: 0 0 20px 0; font-size: 28px; color: #333;">${topic.title}</h2>
+
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 30px; font-size: 16px;">${topic.description}</p>
+
+                            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="font-size: 14px; color: #666;">Funding Progress</span>
+                                    <span style="font-size: 14px; font-weight: bold; color: #FF0000;">${Math.round(progress)}%</span>
+                                </div>
+                                <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                                    <div style="height: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); width: ${progress}%;"></div>
+                                </div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">
+                                    $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #999; font-size: 16px;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            ${actionHTML}
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            })
+            .catch(error => {
+                console.error('Error loading topic:', error);
+                alert('Failed to load topic details');
+            });
+    }
+
+    function validateFundingAmount() {
+        const amount = parseFloat(document.getElementById('fundingAmount').value);
+        const button = document.getElementById('fundButton');
+
+        if (amount >= 1 && amount <= 1000) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        } else {
+            button.disabled = true;
+            button.style.opacity = '0.6';
+            button.style.cursor = 'not-allowed';
+        }
+    }
+
+    function submitFunding(topicId) {
+        const amount = parseFloat(document.getElementById('fundingAmount').value);
+        const errorDiv = document.getElementById('errorMessage');
+        const button = document.getElementById('fundButton');
+
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+
+        if (!amount || amount < 1) {
+            errorDiv.textContent = 'Minimum contribution is $1';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (amount > 1000) {
+            errorDiv.textContent = 'Maximum contribution is $1,000';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        button.disabled = true;
+        button.innerHTML = '⏳ Processing...';
+        button.style.opacity = '0.6';
+
+        const requestData = {
+            topic_id: topicId,
+            amount: amount
+        };
+
+        fetch('/api/get-topic.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                errorDiv.textContent = data.error;
+                errorDiv.style.display = 'block';
+                button.disabled = false;
+                button.innerHTML = '💰 Fund This Topic';
+                button.style.opacity = '1';
+            } else if (data.checkout_url) {
+                window.location.href = data.checkout_url;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            errorDiv.textContent = 'An error occurred. Please try again.';
+            errorDiv.style.display = 'block';
+            button.disabled = false;
+            button.innerHTML = '💰 Fund This Topic';
+            button.style.opacity = '1';
+        });
+    }
+
+    function closeTopicModal(event) {
+        if (event && event.target.id !== 'topicModal') return;
+        const modal = document.getElementById('topicModal');
+        if (modal) modal.remove();
+    }
+    </script>
 </body>
 </html>
 <?php
