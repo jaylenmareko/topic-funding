@@ -1,127 +1,93 @@
 <?php
-// topics/create.php - FIXED Guest-friendly topic creation for ALL platforms
+// topics/create.php - Modern topic creation page
 session_start();
 require_once '../config/database.php';
-require_once '../config/stripe.php';
-require_once '../config/csrf.php';
-require_once '../config/sanitizer.php';
 
-// Allow both logged-in users and guests
-$is_logged_in = isset($_SESSION['user_id']);
-
-$helper = new DatabaseHelper();
+// Get creator from URL
 $creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
 
-// Creator ID is required - redirect if not provided
 if (!$creator_id) {
-    header('Location: ../creators/index.php');
+    header('Location: ../index.php');
     exit;
 }
 
-// Get creator info - ALLOW ALL PLATFORMS
+// Fetch creator data
+$helper = new DatabaseHelper();
 $creator = $helper->getCreatorById($creator_id);
+
 if (!$creator) {
-    header('Location: ../creators/index.php');
+    header('Location: ../index.php');
     exit;
 }
 
-$errors = [];
+$error = '';
 $success = '';
 
-if ($_POST) {
-    // CSRF Protection - only for logged-in users
-    if ($is_logged_in) {
-        require_once '../config/csrf.php';
-        CSRFProtection::requireValidToken();
-    }
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim($_POST['title'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $funding_amount = trim($_POST['funding_amount'] ?? '');
     
-    $title = InputSanitizer::sanitizeString($_POST['title']);
-    $description = html_entity_decode(InputSanitizer::sanitizeString($_POST['description']), ENT_QUOTES, 'UTF-8');
-    $funding_threshold = (float)$_POST['funding_threshold'];
-    $initial_contribution = (float)$_POST['initial_contribution'];
-    
-    // Validation - NO FREE TOPICS ALLOWED
-    if (empty($title) || strlen($title) < 10) {
-        $errors[] = "Topic title required (10+ characters)";
-    }
-    
-    if (empty($description) || strlen($description) < 30) {
-        $errors[] = "Description required (30+ characters)";
-    }
-    
-    // UPDATED: No free topics, minimum $1, no maximum limit
-    if ($funding_threshold < 1) {
-        $errors[] = "Funding goal must be at least $1";
-    }
-    
-    // UPDATED: Minimum $1 payment required, no maximum limit
-    if ($initial_contribution < 1) {
-        $errors[] = "Initial payment must be at least $1";
-    } elseif ($initial_contribution > $funding_threshold) {
-        $errors[] = "Initial payment cannot exceed funding goal";
-    } elseif ($initial_contribution < ($funding_threshold * 0.1)) {
-        $errors[] = "Initial payment must be at least 10% of goal";
-    }
-    
-    // Process topic creation if no errors
-    if (empty($errors)) {
+    // Validation
+    if (empty($title)) {
+        $error = 'Topic title is required';
+    } elseif (strlen($title) < 10) {
+        $error = 'Title must be at least 10 characters';
+    } elseif (strlen($title) > 200) {
+        $error = 'Title must be less than 200 characters';
+    } elseif (empty($description)) {
+        $error = 'Description is required';
+    } elseif (strlen($description) < 20) {
+        $error = 'Description must be at least 20 characters';
+    } elseif (strlen($description) > 2000) {
+        $error = 'Description must be less than 2000 characters';
+    } elseif (empty($funding_amount) || !is_numeric($funding_amount)) {
+        $error = 'Valid funding amount is required';
+    } elseif ($funding_amount < ($creator->minimum_topic_price ?? 100)) {
+        $error = 'Funding amount must be at least $' . number_format($creator->minimum_topic_price ?? 100, 2);
+    } elseif ($funding_amount > 10000) {
+        $error = 'Maximum funding amount is $10,000';
+    } else {
         try {
-            // Create comprehensive metadata for webhook processing
-            $metadata = [
-                'type' => 'topic_creation',
-                'creator_id' => (string)$creator_id,
-                'title' => $title,
-                'description' => $description,
-                'funding_threshold' => (string)$funding_threshold,
-                'initial_contribution' => (string)$initial_contribution,
-                'is_guest' => $is_logged_in ? 'false' : 'true',
-                'timestamp' => (string)time()
-            ];
+            $db = new Database();
             
-            // Add user ID if logged in
-            if ($is_logged_in) {
-                $metadata['user_id'] = (string)$_SESSION['user_id'];
-            }
+            // Insert topic
+            $db->query('
+                INSERT INTO topics (
+                    creator_id, 
+                    title, 
+                    description, 
+                    funding_threshold, 
+                    current_funding,
+                    status,
+                    created_at
+                ) VALUES (
+                    :creator_id,
+                    :title,
+                    :description,
+                    :funding_threshold,
+                    0,
+                    "active",
+                    NOW()
+                )
+            ');
             
-            error_log("Creating Stripe session with metadata: " . json_encode($metadata));
+            $db->bind(':creator_id', $creator_id);
+            $db->bind(':title', $title);
+            $db->bind(':description', $description);
+            $db->bind(':funding_threshold', floatval($funding_amount));
+            $db->execute();
             
-            // Create different success URLs for guests vs logged-in users
-            if ($is_logged_in) {
-                $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation';
-            } else {
-                // For guests, redirect to signup after payment with topic creation data
-                $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_created=1&session_id={CHECKOUT_SESSION_ID}&creator_id=' . $creator_id;
-            }
+            $topic_id = $db->lastInsertId();
             
-            $session = \Stripe\Checkout\Session::create([
-                'payment_method_types' => ['card'],
-                'line_items' => [[
-                    'price_data' => [
-                        'currency' => STRIPE_CURRENCY,
-                        'product_data' => [
-                            'name' => 'Create Topic: ' . $title,
-                            'description' => 'Fund this topic idea for ' . $creator->display_name,
-                        ],
-                        'unit_amount' => $initial_contribution * 100,
-                    ],
-                    'quantity' => 1,
-                ]],
-                'mode' => 'payment',
-                'success_url' => $success_url,
-                'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_creation',
-                'metadata' => $metadata,
-                'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
-            ]);
-            
-            error_log("Created Stripe session: " . $session->id);
-            error_log("Redirecting to: " . $session->url);
-            
-            header('Location: ' . $session->url);
+            // Redirect to profile page with success message
+            header('Location: ../creators/profile.php?id=' . $creator_id . '&topic_created=1');
             exit;
             
         } catch (Exception $e) {
-            $errors[] = "Topic creation error. Please try again.";
-            error_log("Topic creation error: " . $e->getMessage());
+            $error = 'Failed to create topic. Please try again.';
+            error_log('Topic creation error: ' . $e->getMessage());
         }
     }
 }
@@ -129,18 +95,25 @@ if ($_POST) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Create New Topic for <?php echo htmlspecialchars($creator->display_name); ?> - TopicLaunch</title>
+    <title>Create Topic for <?php echo htmlspecialchars($creator->display_name); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+        }
         
         /* Navigation */
-        .nav {
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+        .topiclaunch-nav {
+            background: white;
             padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #f0f0f0;
         }
+        
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -149,236 +122,574 @@ if ($_POST) {
             align-items: center;
             padding: 0 20px;
         }
+        
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: white;
-            cursor: default;
+            color: #FF0000;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
-        .nav-user {
-            color: white;
+        
+        .nav-logo:hover {
+            opacity: 0.8;
+        }
+        
+        /* Creator Info Badge */
+        .creator-badge {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-        .nav-user a {
-            color: white;
-            text-decoration: none;
+            gap: 10px;
+            background: #f3f4f6;
             padding: 8px 16px;
-            border-radius: 6px;
-            transition: background 0.3s;
-        }
-        .nav-user a:hover {
-            background: rgba(255,255,255,0.2);
+            border-radius: 50px;
         }
         
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-        .header h1 { margin: 0 0 10px 0; color: #333; }
-        .back-link { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        .back-link:hover { text-decoration: underline; }
-        .creator-info { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
-        .creator-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; font-weight: bold; }
-        .creator-details h3 { margin: 0 0 5px 0; color: #1976d2; }
+        .creator-badge-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF0000, #CC0000);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            overflow: hidden;
+        }
         
-        .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        textarea { height: 100px; resize: vertical; }
-        .btn { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
-        .btn:hover { background: #218838; }
-        .btn:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: red; margin-bottom: 15px; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; }
-        small { color: #666; font-size: 14px; }
+        .creator-badge-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
         
-        @media (max-width: 600px) {
-            .container { padding: 15px; }
-            .creator-info { flex-direction: column; text-align: center; }
+        .creator-badge-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+        
+        .page-subtitle {
+            font-size: 15px;
+            color: #6b7280;
+        }
+        
+        /* Form Card */
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+            padding: 32px;
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Form Groups */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        
+        .form-label .required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+        
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #FF0000;
+            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+        }
+        
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .form-help {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+        
+        .char-counter {
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: right;
+            margin-top: 4px;
+        }
+        
+        .char-counter.warning {
+            color: #f59e0b;
+        }
+        
+        .char-counter.error {
+            color: #ef4444;
+        }
+        
+        /* Funding Amount Input */
+        .funding-input-wrapper {
+            position: relative;
+        }
+        
+        .currency-symbol {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            color: #6b7280;
+            pointer-events: none;
+        }
+        
+        .funding-input {
+            padding-left: 36px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .funding-breakdown {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        
+        .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .breakdown-row:last-child {
+            margin-bottom: 0;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            font-weight: 600;
+        }
+        
+        .breakdown-label {
+            color: #6b7280;
+        }
+        
+        .breakdown-value {
+            color: #111827;
+            font-weight: 600;
+        }
+        
+        .breakdown-value.highlight {
+            color: #10b981;
+        }
+        
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 24px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,0,0,0.3);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 3-Step Process */
+        .steps-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        
+        .step-item {
+            flex: 1;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        
+        .step-number {
+            width: 26px;
+            height: 26px;
+            background: #FF0000;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            margin: 0 auto 8px;
+        }
+        
+        .step-text {
+            font-size: 12px;
+            color: #374151;
+            line-height: 1.3;
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .info-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+        
+        .info-box-text {
+            font-size: 13px;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+                margin: 30px auto;
+            }
+            
+            .form-card {
+                padding: 24px;
+            }
+            
+            .page-title {
+                font-size: 24px;
+            }
+            
+            .page-subtitle {
+                font-size: 14px;
+            }
+            
+            .creator-badge {
+                display: none;
+            }
+            
+            .steps-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .step-item {
+                padding: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Simple navigation without YouTubers button -->
-    <nav class="nav">
+    <!-- Navigation -->
+    <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <span class="nav-logo">TopicLaunch</span>
+            <a href="../creators/profile.php?id=<?php echo $creator_id; ?>" class="nav-logo">TopicLaunch</a>
             
-            <?php if ($is_logged_in): ?>
-                <div class="nav-user">
-                    <span>Hi, <?php echo htmlspecialchars($_SESSION['username']); ?>!</span>
-                    <a href="../auth/logout.php">Logout</a>
+            <div class="creator-badge">
+                <div class="creator-badge-avatar">
+                    <?php if ($creator->profile_image): ?>
+                        <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                             alt="<?php echo htmlspecialchars($creator->display_name); ?>">
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
+                <span class="creator-badge-name">@<?php echo htmlspecialchars($creator->display_name); ?></span>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-        <a href="../creators/profile.php?id=<?php echo $creator->id; ?>" class="back-link">← Back to <?php echo htmlspecialchars($creator->display_name); ?></a>
-
-        <!-- Creator Info -->
-        <div class="creator-info">
-            <div class="creator-avatar">
-                <?php if ($creator->profile_image && file_exists('../uploads/creators/' . $creator->profile_image)): ?>
-                    <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
-                         alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                <?php else: ?>
-                    <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
-                <?php endif; ?>
-            </div>
-            <div class="creator-details">
-                <h3>Creating topic for: @<?php echo htmlspecialchars($creator->display_name); ?></h3>
-                <p style="margin: 0; color: #666;"><?php echo ucfirst($creator->platform_type); ?> Creator</p>
-            </div>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Create a Topic</h1>
+            <p class="page-subtitle">Request a video from @<?php echo htmlspecialchars($creator->display_name); ?></p>
         </div>
 
-        <div class="form-container">
-            <form method="POST" id="topicForm">
-                <?php if ($is_logged_in): ?>
-                    <?php 
-                    require_once '../config/csrf.php';
-                    echo CSRFProtection::getTokenField(); 
-                    ?>
-                <?php endif; ?>
-                
-                <!-- Hidden creator ID -->
-                <input type="hidden" name="creator_id" value="<?php echo $creator->id; ?>">
+        <!-- Form Card -->
+        <div class="form-card">
+            <?php if ($error): ?>
+                <div class="alert alert-error">
+                    <span>⚠️</span>
+                    <span><?php echo htmlspecialchars($error); ?></span>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($success): ?>
+                <div class="alert alert-success">
+                    <span>✓</span>
+                    <span><?php echo htmlspecialchars($success); ?></span>
+                </div>
+            <?php endif; ?>
+            
+            <!-- 3-Step Process -->
+            <div class="steps-container">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-text">Set goal & make first contribution</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-text">Others fund until goal is reached</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-text">Creator delivers in 48hrs or refund</div>
+                </div>
+            </div>
 
+            <form method="POST" action="" id="createTopicForm">
+                <!-- Title -->
                 <div class="form-group">
-                    <label>Topic Title:</label>
-                    <input type="text" name="title" required minlength="10" maxlength="100" 
-                           placeholder="What should they make a video about?"
-                           value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-                    <small>Minimum 10 characters</small>
+                    <label class="form-label">
+                        Topic Title <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="title" 
+                        id="title"
+                        class="form-input"
+                        placeholder="e.g., How to start a successful YouTube channel in 2025"
+                        maxlength="200"
+                        value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>"
+                        required>
+                    <div class="char-counter" id="titleCounter">0 / 200</div>
                 </div>
 
+                <!-- Description -->
                 <div class="form-group">
-                    <label>Description:</label>
-                    <textarea name="description" required minlength="30" 
-                              placeholder="Explain in detail what you want them to cover, specific points to address, format preferences, etc."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-                    <small>Minimum 30 characters</small>
+                    <label class="form-label">
+                        Description <span class="required">*</span>
+                    </label>
+                    <textarea 
+                        name="description" 
+                        id="description"
+                        class="form-textarea"
+                        placeholder="Describe in detail what you'd like to see in this video. The more specific you are, the better!"
+                        maxlength="2000"
+                        required><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
+                    <div class="char-counter" id="descCounter">0 / 2000</div>
                 </div>
 
+                <!-- Set Funding Goal -->
                 <div class="form-group">
-                    <label>Funding Goal ($):</label>
-                    <input type="number" name="funding_threshold" id="funding_threshold" 
-                           value="<?php echo isset($_POST['funding_threshold']) ? $_POST['funding_threshold'] : '10'; ?>" 
-                           min="1" step="1" required>
-                    <small>Minimum $1</small>
+                    <label class="form-label">
+                        Set Funding Goal <span class="required">*</span>
+                    </label>
+                    <div class="funding-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input 
+                            type="number" 
+                            name="funding_amount" 
+                            id="fundingAmount"
+                            class="form-input funding-input"
+                            placeholder="<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?>"
+                            min="<?php echo $creator->minimum_topic_price ?? 100; ?>"
+                            max="10000"
+                            step="1"
+                            value="<?php echo htmlspecialchars($_POST['funding_amount'] ?? ''); ?>"
+                            required>
+                    </div>
+                    <div class="form-help">
+                        Enter funding goal • Minimum: $<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?> | Maximum: $10,000
+                    </div>
+                    
+                    <div class="funding-breakdown" id="fundingBreakdown" style="display: none;">
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Total Funding Goal</span>
+                            <span class="breakdown-value" id="totalAmount">$0.00</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Platform Fee (10%)</span>
+                            <span class="breakdown-value" id="platformFee">$0.00</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Creator Receives</span>
+                            <span class="breakdown-value highlight" id="creatorReceives">$0.00</span>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Your Funding Amount -->
                 <div class="form-group">
-                    <label>Your Initial Payment ($):</label>
-                    <input type="number" name="initial_contribution" id="initial_contribution" 
-                           value="<?php echo isset($_POST['initial_contribution']) ? $_POST['initial_contribution'] : '1'; ?>" 
-                           min="1" step="1" placeholder="Minimum $1" required>
-                    <small>Minimum $1</small>
+                    <label class="form-label">
+                        Your Funding Amount <span class="required">*</span>
+                    </label>
+                    <div class="funding-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input 
+                            type="number" 
+                            name="initial_contribution" 
+                            id="initialContribution"
+                            class="form-input funding-input"
+                            placeholder="1.00"
+                            min="1"
+                            max="1000"
+                            step="1"
+                            value="<?php echo htmlspecialchars($_POST['initial_contribution'] ?? ''); ?>"
+                            required>
+                    </div>
+                    <div class="form-help">
+                        Your contribution to start this topic • $1 - $1,000
+                    </div>
                 </div>
 
-                <button type="submit" class="btn" id="submitBtn">
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn">
                     Create Topic
                 </button>
             </form>
         </div>
-        
-        <?php if (!empty($errors)): ?>
-            <?php foreach ($errors as $error): ?>
-                <div class="error" style="margin-top: 20px;"><?php echo htmlspecialchars($error); ?></div>
-            <?php endforeach; ?>
-        <?php endif; ?>
     </div>
 
     <script>
-    // Update preview when funding threshold changes
-    document.getElementById('funding_threshold').addEventListener('input', function() {
-        const goal = parseInt(this.value) || 0;
+        // Character counters
+        const titleInput = document.getElementById('title');
+        const descInput = document.getElementById('description');
+        const titleCounter = document.getElementById('titleCounter');
+        const descCounter = document.getElementById('descCounter');
         
-        // Auto-set minimum payment when goal changes
-        const paymentField = document.getElementById('initial_contribution');
-        const currentPayment = parseInt(paymentField.value) || 0;
-        
-        // If current payment is less than minimum (10% of goal or $1), auto-adjust
-        const minPayment = Math.max(1, Math.ceil(goal * 0.1));
-        if (currentPayment < minPayment) {
-            paymentField.value = minPayment;
+        function updateCounter(input, counter, max) {
+            const count = input.value.length;
+            counter.textContent = count + ' / ' + max;
+            
+            if (count > max * 0.9) {
+                counter.classList.add('warning');
+                counter.classList.remove('error');
+            }
+            if (count >= max) {
+                counter.classList.add('error');
+                counter.classList.remove('warning');
+            }
+            if (count < max * 0.9) {
+                counter.classList.remove('warning', 'error');
+            }
         }
         
-        updateButtons();
-    });
-
-    // Track when user types in payment field
-    document.getElementById('initial_contribution').addEventListener('input', function() {
-        updateButtons();
-    });
-
-    // Button update function
-    function updateButtons() {
-        const goal = parseInt(document.getElementById('funding_threshold').value) || 0;
-        const payment = parseInt(document.getElementById('initial_contribution').value) || 0;
-
-        // Update submit button
-        const submitBtn = document.getElementById('submitBtn');
+        titleInput.addEventListener('input', () => updateCounter(titleInput, titleCounter, 200));
+        descInput.addEventListener('input', () => updateCounter(descInput, descCounter, 2000));
         
-        const minPayment = Math.max(1, goal * 0.1);
+        // Update counters on load
+        updateCounter(titleInput, titleCounter, 200);
+        updateCounter(descInput, descCounter, 2000);
         
-        if (payment >= minPayment && payment <= goal && goal >= 1) {
-            submitBtn.disabled = false;
-            submitBtn.style.opacity = '1';
-        } else {
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.6';
-        }
-    }
-
-    // Form submission
-    document.getElementById('topicForm').addEventListener('submit', function(e) {
-        const goal = parseInt(document.getElementById('funding_threshold').value);
-        const payment = parseInt(document.getElementById('initial_contribution').value);
-        const title = document.querySelector('input[name="title"]').value.trim();
-        const description = document.querySelector('textarea[name="description"]').value.trim();
-
-        // Validation
-        if (goal < 1) {
-            e.preventDefault();
-            alert('Minimum funding goal is $1');
-            return;
-        }
-
-        if (payment < 1) {
-            e.preventDefault();
-            alert('Minimum payment is $1');
-            return;
-        }
-
-        if (title.length < 10) {
-            e.preventDefault();
-            alert('Topic title must be at least 10 characters');
-            return;
-        }
-
-        if (description.length < 30) {
-            e.preventDefault();
-            alert('Description must be at least 30 characters');
-            return;
-        }
-
-        <?php if ($is_logged_in): ?>
-        const confirmText = `Create topic for @<?php echo addslashes($creator->display_name); ?> with $${payment} payment?\n\nTopic will go live immediately for community funding!`;
-        <?php else: ?>
-        const confirmText = `Pay $${payment} and create account?\n\nAfter payment, you'll create a free account to track your topic!`;
-        <?php endif; ?>
+        // Funding breakdown calculator
+        const fundingInput = document.getElementById('fundingAmount');
+        const fundingBreakdown = document.getElementById('fundingBreakdown');
+        const totalAmount = document.getElementById('totalAmount');
+        const platformFee = document.getElementById('platformFee');
+        const creatorReceives = document.getElementById('creatorReceives');
         
-        if (!confirm(confirmText)) {
-            e.preventDefault();
-            return;
-        }
+        fundingInput.addEventListener('input', function() {
+            const amount = parseFloat(this.value);
+            
+            if (amount && amount > 0) {
+                fundingBreakdown.style.display = 'block';
+                const fee = amount * 0.10;
+                const creatorAmount = amount * 0.90;
+                
+                totalAmount.textContent = '$' + amount.toFixed(2);
+                platformFee.textContent = '$' + fee.toFixed(2);
+                creatorReceives.textContent = '$' + creatorAmount.toFixed(2);
+            } else {
+                fundingBreakdown.style.display = 'none';
+            }
+        });
         
-        document.getElementById('submitBtn').innerHTML = '⏳ Processing Payment...';
-        document.getElementById('submitBtn').disabled = true;
-    });
-
-    // Initial validation
-    updateButtons();
+        // Trigger on load if value exists
+        if (fundingInput.value) {
+            fundingInput.dispatchEvent(new Event('input'));
+        }
     </script>
 </body>
 </html>
