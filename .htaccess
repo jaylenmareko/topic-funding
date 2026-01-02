@@ -5,7 +5,15 @@ RewriteEngine On
 # Must be more specific to avoid catching root domain
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/(index\.php|auth/|creators/|topics/|admin/|uploads/|config/)
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteCond %{REQUEST_URI} !^/auth/
+RewriteCond %{REQUEST_URI} !^/creators/
+RewriteCond %{REQUEST_URI} !^/topics/
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{REQUEST_URI} !^/uploads/
+RewriteCond %{REQUEST_URI} !^/config/
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !\.php$
 RewriteRule ^([a-zA-Z0-9_.-]+)$ username.php?username=$1 [L,QSA]
 
 # If you have other RewriteRules, add them below
