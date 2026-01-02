@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 100vh;
         }
         
-        /* Navigation */
+        /* Navigation - Rizzdem Style */
         .topiclaunch-nav {
             background: white;
             padding: 15px 0;
@@ -134,6 +134,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .nav-logo:hover {
             opacity: 0.8;
+        }
+
+        /* Nav Center Links */
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #FF0000;
         }
         
         /* Creator Info Badge */
@@ -174,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         /* Main Container */
         .container {
-            max-width: 600px;
+            max-width: 480px;
             margin: 40px auto;
             padding: 0 20px;
         }
@@ -466,6 +485,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .step-item {
                 padding: 12px;
             }
+
+            .nav-center {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -473,7 +496,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Navigation -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <a href="../creators/profile.php?id=<?php echo $creator_id; ?>" class="nav-logo">TopicLaunch</a>
+            <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="nav-logo">TopicLaunch</a>
+            
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a href="/#creators" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+            </div>
             
             <div class="creator-badge">
                 <div class="creator-badge-avatar">
