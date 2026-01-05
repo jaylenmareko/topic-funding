@@ -109,6 +109,12 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Get creator info for redirect
+        $db = new Database();
+        $db->query('SELECT display_name FROM creators WHERE id = :creator_id');
+        $db->bind(':creator_id', $topic->creator_id);
+        $creator = $db->single();
+
         // Create metadata for both logged-in and guest users
         $metadata = [
             'type' => 'topic_funding',
@@ -130,6 +136,9 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_funded=1&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
         }
 
+        // Cancel URL - redirect back to creator profile using vanity URL
+        $cancel_url = 'https://topiclaunch.com/' . ($creator->display_name ?? '') . '?payment=cancelled';
+
         // Create Stripe Checkout Session
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
@@ -146,7 +155,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]],
             'mode' => 'payment',
             'success_url' => $success_url,
-            'cancel_url' => 'https://topiclaunch.com/payment_cancelled.php?type=topic_funding&topic_id=' . $topic_id,
+            'cancel_url' => $cancel_url,
             'metadata' => $metadata,
             'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
         ]);
