@@ -5,11 +5,31 @@ require_once '../config/database.php';
 require_once '../config/navigation.php';
 
 if (!isset($_SESSION['user_id'])) {
-header('Location: /index.php');
+    header('Location: /index.php');
     exit;
 }
 
 $db = new Database();
+
+// Get creator info first
+$db->query('SELECT c.*, u.email FROM creators c LEFT JOIN users u ON c.applicant_user_id = u.id WHERE c.applicant_user_id = :user_id AND c.is_active = 1');
+$db->bind(':user_id', $_SESSION['user_id']);
+$creator = $db->single();
+
+if (!$creator) {
+    header('Location: ../creators/index.php');
+    exit;
+}
+
+// RESTRICT ACCESS: Only allow dashboard.php and edit.php
+$current_script = basename($_SERVER['PHP_SELF']);
+$allowed_pages = ['dashboard.php', 'edit.php'];
+
+if (!in_array($current_script, $allowed_pages)) {
+    // If creator tries to access any other page, redirect to dashboard
+    header('Location: /creators/dashboard.php');
+    exit;
+}
 
 // URL Validation Function - FIXED for all platforms
 function validateContentUrl($url, $creator) {
@@ -912,7 +932,7 @@ if (isset($_SESSION['profile_updated'])) {
         // Update countdown timers
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
-                const deadline = parseInt(element.getAttribute('data-deadline')) * 1000; // Convert to milliseconds
+                const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
                 const now = new Date().getTime();
                 const timeLeft = deadline - now;
                 
@@ -931,12 +951,11 @@ if (isset($_SESSION['profile_updated'])) {
             });
         }
 
-        // Run countdown update every second
         setInterval(updateCountdowns, 1000);
-        updateCountdowns(); // Initial call
+        updateCountdowns();
 
         function copyTopicLink(topicId) {
-            const topicUrl = window.location.origin + '/topics/fund.php?id=' + topicId;
+            const topicUrl = window.location.origin + '/<?php echo $creator->display_name; ?>?topic=' + topicId;
             const btn = document.getElementById('copyBtn-' + topicId);
             
             if (navigator.clipboard && window.isSecureContext) {
@@ -1146,7 +1165,6 @@ if (isset($_SESSION['profile_updated'])) {
         document.addEventListener('DOMContentLoaded', function() {
             initializeCards();
             
-            // Auto-hide success messages
             setTimeout(() => {
                 document.querySelectorAll('.upload-message').forEach(msg => {
                     msg.style.transition = 'opacity 0.5s';
