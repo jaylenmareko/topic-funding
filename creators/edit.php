@@ -168,10 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         /* Navigation */
         .topiclaunch-nav {
-            background: white;
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-bottom: 1px solid #f0f0f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
         
         .nav-container {
@@ -186,21 +185,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: white;
             text-decoration: none;
         }
         
+        .nav-links {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
         .nav-link {
-            color: #333;
+            color: white;
             text-decoration: none;
             font-size: 15px;
             font-weight: 500;
             padding: 8px 16px;
-            transition: color 0.2s;
+            border-radius: 6px;
+            transition: all 0.2s;
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            background: rgba(255,255,255,0.2);
         }
         
         /* Page Wrapper */
@@ -239,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #f0f0f0;
             padding: 30px;
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
         }
         
         .form-group {
@@ -453,6 +459,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
+            <div class="nav-links">
+                <a href="dashboard.php" class="nav-link">Dashboard</a>
+                <a href="../auth/logout.php" class="nav-link">Logout</a>
+            </div>
         </div>
     </nav>
 
