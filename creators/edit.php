@@ -239,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #f0f0f0;
             padding: 30px;
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
         }
         
         .form-group {
