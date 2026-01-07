@@ -1,6 +1,10 @@
 <?php
 // creators/index.php - Browse YouTubers page
 session_start();
+
+// RESTRICT LOGGED-IN CREATORS
+require_once '../config/check_creator_access.php';
+
 require_once '../config/database.php';
 
 // Fetch all creators
