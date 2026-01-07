@@ -1,5 +1,5 @@
 <?php
-// config/navigation.php - Updated navigation with conditional logo behavior
+// config/navigation.php - Updated navigation with Browse YouTubers as default
 function renderNavigation($current_page = '', $is_profile_page = false) {
     // Check if user is logged in
     $is_logged_in = isset($_SESSION['user_id']);
@@ -32,7 +32,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
     
     // Determine if logo should be clickable
     $logo_clickable = true;
-    $logo_link = $base_path . 'creators/index.php'; // Default to browse creators
+    $logo_link = $base_path . 'creators/'; // Default to browse creators
     
     // Disable logo click on specific pages
     if ($current_page === 'topic_create' || $current_page === 'topic_view') {
@@ -47,11 +47,11 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
                 $logo_link = $base_path . 'creators/dashboard.php';
             } else {
                 // Fans: logo goes to browse creators
-                $logo_link = $base_path . 'creators/index.php';
+                $logo_link = $base_path . 'creators/';
             }
         } else {
-            // Guests: logo goes to browse creators (NOT landing page)
-            $logo_link = $base_path . 'creators/index.php';
+            // Guests: logo goes to browse creators
+            $logo_link = $base_path . 'creators/';
         }
     }
     ?>
@@ -207,9 +207,9 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
                         </a>
                         <?php endif; ?>
                     <?php else: ?>
-                        <!-- Fan Navigation - NO DASHBOARD BUTTON, just YouTubers link -->
-                        <a href="<?php echo $base_path; ?>creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
-                            YouTubers
+                        <!-- Fan Navigation - Browse YouTubers link -->
+                        <a href="/creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
+                            Browse YouTubers
                         </a>
                     <?php endif; ?>
                     
