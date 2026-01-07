@@ -1,5 +1,5 @@
 <?php
-// auth/login.php - Modern login page
+// auth/login.php - Minimal login page matching Rizzdem
 session_start();
 
 // If already logged in, redirect to appropriate page
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #fafafa;
             min-height: 100vh;
             padding: 0;
@@ -95,6 +95,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #FF0000;
             text-decoration: none;
             cursor: pointer;
+        }
+        
+        /* Nav Center Links */
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #FF0000;
         }
         
         .nav-buttons {
@@ -135,19 +154,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         /* Login Page */
         .login-wrapper {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: calc(100vh - 70px);
-            padding: 40px 20px;
-        }
-        
-        .login-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-            padding: 48px;
-            width: 100%;
-            max-width: 460px;
+            padding: 80px 20px 40px;
         }
         
         .login-icon {
@@ -180,6 +191,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 15px;
             color: #6b7280;
             margin-bottom: 32px;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
         }
         
         .form-group {
@@ -293,8 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding: 32px 24px;
             }
             
-            .login-title {
-                font-size: 24px;
+            .login-wrapper {
+                padding-top: 40px;
             }
         }
     </style>
@@ -304,6 +324,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
+            
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a href="/creators/index.php" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+            </div>
+            
             <div class="nav-buttons">
                 <a href="/auth/login.php" class="nav-login-btn">Log In</a>
                 <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
@@ -312,17 +339,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
 
     <div class="login-wrapper">
+        <div class="login-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </div>
+        
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-subtitle">Sign in to your TopicLaunch account</p>
+        
         <div class="login-container">
-            <div class="login-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-            </div>
-            
-            <h1 class="login-title">Welcome Back</h1>
-            <p class="login-subtitle">Sign in to your TopicLaunch account</p>
-            
             <?php if ($error): ?>
                 <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
