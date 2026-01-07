@@ -132,8 +132,8 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_logged_in) {
             $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
         } else {
-            // For guests, redirect to signup after payment
-            $success_url = 'https://topiclaunch.com/auth/register.php?type=fan&topic_funded=1&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
+            // For guests, redirect to creator profile after payment with success message
+            $success_url = 'https://topiclaunch.com/' . ($creator->display_name ?? '') . '?payment=success&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
         }
 
         // Cancel URL - redirect back to creator profile using vanity URL
