@@ -322,8 +322,8 @@ $topics = $db->resultSet();
         /* Topic Grid */
         .topics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
         }
         
         /* Empty State */
@@ -376,7 +376,7 @@ $topics = $db->resultSet();
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 12px;
-            padding: 10px;
+            padding: 16px;
             transition: all 0.2s;
             cursor: pointer;
             position: relative;
@@ -388,18 +388,18 @@ $topics = $db->resultSet();
         }
         
         .topic-tile-header {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         
         .topic-status-badge {
             display: inline-block;
             background: #f0f0f0;
             color: #666;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         
         .topic-status-badge.funded {
@@ -413,11 +413,11 @@ $topics = $db->resultSet();
         }
         
         .topic-tile-title {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
             color: #000;
-            margin-bottom: 4px;
-            line-height: 1.2;
+            margin-bottom: 6px;
+            line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -425,68 +425,68 @@ $topics = $db->resultSet();
         }
         
         .topic-tile-subtitle {
-            font-size: 10px;
+            font-size: 12px;
             color: #999;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         
         .topic-tile-earnings {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 8px;
+            margin-bottom: 12px;
+            padding: 12px;
             background: #f8f9fa;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         
         .earnings-amount {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
             color: #28a745;
         }
         
         .earnings-label {
-            font-size: 9px;
+            font-size: 11px;
             color: #666;
         }
         
         .topic-tile-progress {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         
         .progress-label {
-            font-size: 10px;
+            font-size: 12px;
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             text-align: center;
         }
         
         .progress-bar-container {
-            height: 4px;
+            height: 6px;
             background: #e0e0e0;
-            border-radius: 2px;
+            border-radius: 3px;
             overflow: hidden;
         }
         
         .progress-bar-fill {
             height: 100%;
             background: #FF0000;
-            border-radius: 2px;
+            border-radius: 3px;
             transition: width 0.3s;
         }
         
         .topic-tile-actions {
             display: flex;
-            gap: 4px;
+            gap: 6px;
         }
         
         .tile-btn {
             flex: 1;
-            padding: 6px 8px;
+            padding: 8px 12px;
             border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 10px;
+            border-radius: 6px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             background: white;
@@ -519,7 +519,7 @@ $topics = $db->resultSet();
         }
         
         .countdown-timer {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
             color: #28a745;
         }
