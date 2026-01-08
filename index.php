@@ -316,6 +316,9 @@ if ($db_available) {
         }
         
         .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             font-size: 32px;
             font-weight: 700;
             margin-bottom: 12px;
@@ -512,31 +515,6 @@ if ($db_available) {
             transform: scale(1.05);
         }
         
-        .search-creators-container {
-            margin-bottom: 40px;
-            display: flex;
-            justify-content: center;
-        }
-        
-        .search-creators-form {
-            display: flex;
-            gap: 10px;
-            max-width: 500px;
-            width: 100%;
-        }
-        
-        .search-creators-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        
-        .search-creators-input:focus {
-            outline: none;
-            border-color: #FF0000;
-        }
         
         .load-more-container {
             text-align: center;
@@ -631,8 +609,8 @@ if ($db_available) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Fans Fund Topics for <span class="red">YouTubers</span></h1>
-        <p>Request that video from your favorite YouTuber and get it delivered for a small contribution</p>
+        <h1>Get Guaranteed<br><span class="red">Videos.</span></h1>
+        <p>Request video topics from your favorite YouTubers and get guaranteed content when fully funded.</p>
         
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
@@ -663,6 +641,12 @@ if ($db_available) {
     <div class="creators-section" id="creators">
         <div class="header">
             <h2 class="header-title">
+                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
                 Trending YouTubers
             </h2>
             <p class="header-subtitle">Top YouTubers growing fast this week.</p>
