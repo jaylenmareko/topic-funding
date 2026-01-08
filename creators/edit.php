@@ -168,9 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         /* Navigation */
         .topiclaunch-nav {
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
-            padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px 40px;
         }
         
         .nav-container {
@@ -179,34 +179,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 40px;
         }
         
         .nav-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            color: #FF0000;
             text-decoration: none;
         }
         
         .nav-links {
             display: flex;
-            gap: 5px;
+            gap: 24px;
             align-items: center;
         }
         
         .nav-link {
-            color: white;
+            padding: 8px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
             text-decoration: none;
-            font-size: 15px;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             transition: all 0.2s;
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.2);
+            border-color: #999;
         }
         
         /* Page Wrapper */
@@ -460,8 +466,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
             <div class="nav-links">
-                <a href="dashboard.php" class="nav-link">Dashboard</a>
-                <a href="../auth/logout.php" class="nav-link">Logout</a>
+                <a href="dashboard.php" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="../auth/logout.php" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
+                    </svg>
+                    Log Out
+                </a>
             </div>
         </div>
     </nav>
