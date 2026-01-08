@@ -32,11 +32,17 @@ if (isset($_SESSION['user_id']) && $db_available) {
 // Fetch all active creators for display
 $creators = [];
 $total_creators = 0;
+$total_creators_in_db = 0;
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 if ($db_available) {
     try {
         $db = new Database();
+        
+        // Get total count first
+        $db->query('SELECT COUNT(*) as total FROM creators WHERE is_active = 1');
+        $count_result = $db->single();
+        $total_creators_in_db = $count_result->total ?? 0;
         
         if ($search_query) {
             // Remove spaces from search query for flexible matching
@@ -466,6 +472,8 @@ if ($db_available) {
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
+            min-height: 42px;
+            max-height: 42px;
         }
         
         .creator-price-section {
@@ -692,11 +700,9 @@ if ($db_available) {
                         </div>
                     </div>
                     
-                    <?php if (!empty($creator->bio)): ?>
                     <div class="creator-bio">
-                        <?php echo htmlspecialchars($creator->bio); ?>
+                        <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : '&nbsp;'; ?>
                     </div>
-                    <?php endif; ?>
                     
                     <div class="creator-price-section">
                         <div class="creator-price">
@@ -712,7 +718,7 @@ if ($db_available) {
             <?php endforeach; ?>
         </div>
         
-        <?php if (!$search_query): ?>
+        <?php if (!$search_query && $total_creators_in_db > 24): ?>
         <div class="load-more-container">
             <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCreators()">
                 Load More
