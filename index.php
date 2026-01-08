@@ -304,29 +304,77 @@ if ($db_available) {
         
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         
-        /* Creators Section - Kalshi Style */
+        /* Creators Section */
         .creators-section {
             max-width: 1200px;
             margin: 25px auto 60px auto;
             padding: 0 20px;
         }
         
-        .fan-section-header {
-            text-align: center;
-            margin-bottom: 10px;
+        .header {
+            margin-bottom: 32px;
         }
         
-        .fan-heading {
+        .header-title {
             font-size: 32px;
-            color: #000;
-            margin-bottom: 5px;
             font-weight: 700;
+            margin-bottom: 12px;
         }
         
-        .fan-subheading {
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            color: #FF0000;
+        }
+        
+        .header-subtitle {
             font-size: 16px;
-            color: #666;
-            margin-bottom: 30px;
+            color: #6b7280;
+        }
+        
+        /* Search Section */
+        .search-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .search-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .search-input:focus {
+            border-color: #FF0000;
+            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
         }
         
         .creators-grid-landing {
@@ -538,8 +586,8 @@ if ($db_available) {
             .hero h1 { font-size: 40px; }
             .hero p { font-size: 16px; margin-bottom: 30px; }
             .creators-grid-landing { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-            .fan-heading { font-size: 28px; }
-            .fan-subheading { font-size: 16px; }
+            .header-title { font-size: 28px; }
+            .header-subtitle { font-size: 16px; }
             
             /* Hide nav center links on mobile */
             .nav-center {
@@ -569,7 +617,7 @@ if ($db_available) {
             
             <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/#creators" class="nav-link">Browse YouTubers</a>
+                <a href="/creators/" class="nav-link">Browse YouTubers</a>
                 <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
             </div>
             
@@ -591,7 +639,7 @@ if ($db_available) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                     <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
                 Start Earning
@@ -613,21 +661,29 @@ if ($db_available) {
     </div>
 
     <div class="creators-section" id="creators">
-        <div class="fan-section-header">
-            <h2 class="fan-heading">Trending YouTubers</h2>
-            <p class="fan-subheading">Top YouTubers growing fast this week.</p>
+        <div class="header">
+            <h2 class="header-title">
+                Trending YouTubers
+            </h2>
+            <p class="header-subtitle">Top YouTubers growing fast this week.</p>
         </div>
         
-        <div class="search-creators-container">
-            <form method="GET" action="" class="search-creators-form" id="searchForm">
-                <input type="text" 
-                       id="searchInput"
-                       name="search" 
-                       class="search-creators-input" 
-                       placeholder="Search YouTubers" 
-                       autocomplete="off"
-                       value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
-            </form>
+        <div class="search-section">
+            <div class="search-row">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" 
+                           id="searchInput"
+                           name="search" 
+                           class="search-input" 
+                           placeholder="Search by name, username, or topic..." 
+                           autocomplete="off"
+                           value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
+                </div>
+            </div>
         </div>
         
         <div class="creators-grid-landing" id="creatorsGrid">
@@ -832,12 +888,6 @@ if ($db_available) {
             </a>
         `;
     }
-    
-    // Smooth scroll for Browse YouTubers link
-    document.querySelector('a[href="/#creators"]').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('creators').scrollIntoView({ behavior: 'smooth' });
-    });
     </script>
 </body>
 </html>
