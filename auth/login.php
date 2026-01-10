@@ -308,6 +308,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-left: 4px solid #c33;
         }
         
+        @media (max-width: 768px) {
+            /* Hide nav center links on mobile */
+            .nav-center {
+                display: none;
+            }
+        }
+        
         @media (max-width: 640px) {
             .login-container {
                 padding: 32px 24px;
