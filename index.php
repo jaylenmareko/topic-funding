@@ -76,8 +76,27 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Fund Topics from Your Favorite YouTubers</title>
+    <title>TopicLaunch - Get Guaranteed Videos from YouTubers</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://topiclaunch.com/">
+    <meta property="og:title" content="TopicLaunch - Get Guaranteed Videos">
+    <meta property="og:description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    <meta property="og:image" content="https://topiclaunch.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://topiclaunch.com/">
+    <meta property="twitter:title" content="TopicLaunch - Get Guaranteed Videos">
+    <meta property="twitter:description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    <meta property="twitter:image" content="https://topiclaunch.com/og-image.png">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -171,9 +190,9 @@ if ($db_available) {
         .nav-login-btn {
             color: #333;
             text-decoration: none;
-            font-size: 15px;
-            font-weight: 500;
-            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0;
             transition: color 0.2s;
         }
         
@@ -185,16 +204,15 @@ if ($db_available) {
             background: #FF0000;
             color: white;
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            padding: 10px 24px;
+            padding: 8px 20px;
             border-radius: 50px;
             transition: all 0.2s;
         }
         
         .nav-getstarted-btn:hover {
             background: #CC0000;
-            transform: translateY(-1px);
         }
         
         /* Hero Section */
@@ -231,27 +249,25 @@ if ($db_available) {
         .youtuber-signup-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            background: #FF0000;
             color: white;
-            padding: 16px 32px;
+            padding: 14px 40px;
             border-radius: 50px;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 700;
             text-decoration: none;
-            box-shadow: 0 4px 15px rgba(255,0,0,0.3);
-            transition: all 0.3s ease;
+            box-shadow: none;
+            transition: all 0.2s ease;
             border: none;
+            cursor: pointer;
         }
         
         .youtuber-signup-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 25px rgba(255,0,0,0.4);
-            filter: brightness(1.1);
-        }
-        
-        .youtuber-signup-btn svg {
-            stroke: white;
+            background: #CC0000;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255,0,0,0.2);
         }
         
         /* 2-Step Process Boxes */
@@ -622,13 +638,7 @@ if ($db_available) {
         
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                Start Earning
+                START EARNING
             </a>
         </div>
         
