@@ -2,6 +2,9 @@
 // username.php - Vanity URL handler
 session_start();
 
+// RESTRICT LOGGED-IN CREATORS
+require_once 'config/check_creator_access.php';
+
 $username = isset($_GET['username']) ? trim($_GET['username']) : '';
 
 if (empty($username)) {
@@ -916,6 +919,15 @@ function submitCreateTopic(event, creatorId, minPrice) {
             }
         });
     }
+    
+    // Auto-open topic modal if topic parameter is in URL (NO DELAY)
+    window.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const topicId = urlParams.get('topic');
+        if (topicId) {
+            openTopicModal(parseInt(topicId));
+        }
+    });
 </script>
 </body>
 </html>
