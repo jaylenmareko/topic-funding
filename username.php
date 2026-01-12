@@ -2,9 +2,6 @@
 // username.php - Vanity URL handler
 session_start();
 
-// RESTRICT LOGGED-IN CREATORS
-require_once 'config/check_creator_access.php';
-
 $username = isset($_GET['username']) ? trim($_GET['username']) : '';
 
 if (empty($username)) {
@@ -449,7 +446,7 @@ try {
             font-size: 14px;
         }
         
-        @media (max-width: 768px) {
+            @media (max-width: 768px) {
             .container { 
                 padding: 20px 15px;
                 grid-template-columns: 1fr;
@@ -481,8 +478,8 @@ try {
         }
         
         @media (min-width: 769px) {
-            /* Desktop: Hide first box, show desktop one */
-            .request-topic-box:first-of-type {
+            /* Desktop: Hide first box ONLY when there are active topics, show desktop one */
+            .request-topic-box:first-of-type:not(.request-topic-box-empty-state) {
                 display: none;
             }
             
@@ -542,10 +539,27 @@ try {
             <!-- Active Topics Section -->
             <div class="section">
             <h2>Active Topics</h2>
+            <!-- DEBUG: Active topics count = <?php echo count($active_topics); ?> -->
+            <!-- DEBUG: File version = 2025-01-11-V5-DESKTOP-FIX -->
             <?php if (empty($active_topics)): ?>
+                <!-- Request Video Topic Box - Shows when no active topics -->
+                <div class="request-topic-box request-topic-box-empty-state" style="margin-bottom: 20px; justify-content: space-between;">
+                    <div class="request-content">
+                        <h3 class="request-title">Request a Video Topic</h3>
+                        <p class="request-text">Get a specific video from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></strong>.</p>
+                    </div>
+                    <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn" style="position: static !important; margin-left: 0 !important; flex-shrink: 0 !important; background: #FF0000 !important; color: white !important; display: inline-flex !important; padding: 12px 24px !important;">
+                        Create Topic
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </a>
+                </div>
+                
                 <div class="empty-state">
                     <h3>No active topics</h3>
-                    <p>This creator doesn't have any topics seeking funding right now.</p>
+                    <p>This creator doesn't have any topics seeking funding right now. Be the first to create one!</p>
                 </div>
             <?php else: ?>
                 <!-- Request Video Topic Box - Full Width (shows first on mobile) -->
@@ -643,7 +657,7 @@ try {
 
     <script>
     function openTopicModal(topicId) {
-        fetch(`/api/get-topic.php?id=${topicId}`)
+        fetch(`../api/get-topic.php?id=${topicId}`)
             .then(response => response.json())
             .then(topic => {
                 if (!topic || topic.error) {
@@ -777,7 +791,7 @@ try {
             amount: amount
         };
 
-        fetch('/api/get-topic.php', {
+        fetch('../api/get-topic.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -887,7 +901,7 @@ function submitCreateTopic(event, creatorId, minPrice) {
     button.innerHTML = 'Processing...';
     button.style.opacity = '0.6';
     const requestData = { creator_id: creatorId, title: title, description: description, funding_goal: fundingGoal, initial_amount: amount };
-    fetch('/api/create-topic.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestData) })
+    fetch('../api/create-topic.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestData) })
     .then(response => response.json())
     .then(data => {
         if (data.error) {
@@ -919,15 +933,6 @@ function submitCreateTopic(event, creatorId, minPrice) {
             }
         });
     }
-    
-    // Auto-open topic modal if topic parameter is in URL (NO DELAY)
-    window.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const topicId = urlParams.get('topic');
-        if (topicId) {
-            openTopicModal(parseInt(topicId));
-        }
-    });
 </script>
 </body>
 </html>
