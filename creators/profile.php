@@ -478,8 +478,8 @@ try {
         }
         
         @media (min-width: 769px) {
-            /* Desktop: Hide first box, show desktop one */
-            .request-topic-box:first-of-type {
+            /* Desktop: Hide first box ONLY when there are active topics, show desktop one */
+            .request-topic-box:first-of-type:not(.request-topic-box-empty-state) {
                 display: none;
             }
             
@@ -510,8 +510,8 @@ try {
         <div class="profile-box">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    <?php if ($creator->profile_image && file_exists('../../uploads/creators/' . $creator->profile_image)): ?>
-                        <img src="../../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                    <?php if ($creator->profile_image && file_exists('uploads/creators/' . $creator->profile_image)): ?>
+                        <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
                              alt="<?php echo htmlspecialchars($creator->display_name); ?>">
                     <?php else: ?>
                         <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
@@ -539,10 +539,27 @@ try {
             <!-- Active Topics Section -->
             <div class="section">
             <h2>Active Topics</h2>
+            <!-- DEBUG: Active topics count = <?php echo count($active_topics); ?> -->
+            <!-- DEBUG: File version = 2025-01-11-V5-DESKTOP-FIX -->
             <?php if (empty($active_topics)): ?>
+                <!-- Request Video Topic Box - Shows when no active topics -->
+                <div class="request-topic-box request-topic-box-empty-state" style="margin-bottom: 20px; justify-content: space-between;">
+                    <div class="request-content">
+                        <h3 class="request-title">Request a Video Topic</h3>
+                        <p class="request-text">Get a specific video from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></strong>.</p>
+                    </div>
+                    <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn" style="position: static !important; margin-left: 0 !important; flex-shrink: 0 !important; background: #FF0000 !important; color: white !important; display: inline-flex !important; padding: 12px 24px !important;">
+                        Create Topic
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </a>
+                </div>
+                
                 <div class="empty-state">
                     <h3>No active topics</h3>
-                    <p>This creator doesn't have any topics seeking funding right now.</p>
+                    <p>This creator doesn't have any topics seeking funding right now. Be the first to create one!</p>
                 </div>
             <?php else: ?>
                 <!-- Request Video Topic Box - Full Width (shows first on mobile) -->
