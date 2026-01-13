@@ -3,6 +3,7 @@
 session_start();
 
 $username = isset($_GET['username']) ? trim($_GET['username']) : '';
+$topic_num = isset($_GET['topic_num']) ? intval($_GET['topic_num']) : 0;
 
 if (empty($username)) {
     header('Location: /');
@@ -42,6 +43,12 @@ try {
     $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
     $db->bind(':creator_id', $creator_id);
     $active_topics = $db->resultSet();
+    
+    // If topic_num is provided, convert it to topic_id
+    $auto_open_topic_id = 0;
+    if ($topic_num > 0 && $topic_num <= count($active_topics)) {
+        $auto_open_topic_id = $active_topics[$topic_num - 1]->id;
+    }
 
     // Waiting Upload topics
     $db->query('
@@ -934,14 +941,24 @@ function submitCreateTopic(event, creatorId, minPrice) {
         });
     }
     
-    // Auto-open topic modal if topic_id is in URL
+    // Auto-open topic modal if topic_num or topic_id is in URL
     window.addEventListener('load', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const topicId = urlParams.get('topic_id');
-        if (topicId) {
+        // Check for topic_id from PHP (converted from topic_num)
+        const autoOpenTopicId = <?php echo $auto_open_topic_id; ?>;
+        
+        if (autoOpenTopicId > 0) {
             setTimeout(function() {
-                openTopicModal(parseInt(topicId));
+                openTopicModal(autoOpenTopicId);
             }, 300);
+        } else {
+            // Fallback: check URL params for topic_id
+            const urlParams = new URLSearchParams(window.location.search);
+            const topicId = urlParams.get('topic_id');
+            if (topicId) {
+                setTimeout(function() {
+                    openTopicModal(parseInt(topicId));
+                }, 300);
+            }
         }
     });
 </script>
