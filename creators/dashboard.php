@@ -715,7 +715,23 @@ $topics = $db->resultSet();
         
         function copyTopicLink(id) {
             event.stopPropagation();
-            const url = window.location.origin + '/<?php echo $creator->display_name; ?>?topic=' + id;
+            // Get only ACTIVE topics IDs (matching the profile page)
+            const allTopics = <?php echo json_encode($topics); ?>;
+            console.log('All topics:', allTopics);
+            console.log('Looking for topic ID:', id);
+            
+            const activeTopics = allTopics.filter(t => t.status == 'active').map(t => parseInt(t.id));
+            console.log('Active topic IDs:', activeTopics);
+            
+            const topicNum = activeTopics.indexOf(parseInt(id)) + 1;
+            console.log('Topic number:', topicNum);
+            
+            if (topicNum === 0) {
+                alert('Only active topics can be shared. Status: ' + allTopics.find(t => t.id == id)?.status);
+                return;
+            }
+            
+            const url = window.location.origin + '/<?php echo $creator->display_name; ?>/topic' + topicNum;
             navigator.clipboard.writeText(url).then(() => {
                 alert('Topic link copied!');
             });
