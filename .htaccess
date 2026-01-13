@@ -12,8 +12,14 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Header always set X-Frame-Options "SAMEORIGIN"
 </IfModule>
 
-# Vanity URL handler - redirect username to username.php (without @)
-# Must be more specific to avoid catching root domain
+# Vanity URL handler
+
+# Handle username/topic# URLs first
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_.-]+)/topic([0-9]+)$ username.php?username=$1&topic_num=$2 [L,QSA]
+
+# Handle regular username URLs
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !^/index\.php
@@ -26,5 +32,3 @@ RewriteCond %{REQUEST_URI} !^/config/
 RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{REQUEST_URI} !\.php$
 RewriteRule ^([a-zA-Z0-9_.-]+)$ username.php?username=$1 [L,QSA]
-
-# If you have other RewriteRules, add them below
