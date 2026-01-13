@@ -2,8 +2,23 @@
 // creators/index.php - Browse YouTubers page
 session_start();
 
-// RESTRICT LOGGED-IN CREATORS
-require_once '../config/check_creator_access.php';
+// Redirect logged-in creators to dashboard
+if (isset($_SESSION['user_id'])) {
+    require_once '../config/database.php';
+    try {
+        $db = new Database();
+        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $is_creator = $db->single();
+        
+        if ($is_creator) {
+            header('Location: /creators/dashboard.php');
+            exit;
+        }
+    } catch (Exception $e) {
+        error_log("Creator redirect check error: " . $e->getMessage());
+    }
+}
 
 require_once '../config/database.php';
 
@@ -358,12 +373,8 @@ try {
             
             <!-- Right Navigation Buttons -->
             <div class="nav-buttons">
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="/dashboard.php" class="nav-login-btn">Dashboard</a>
-                <?php else: ?>
-                    <a href="/auth/login.php" class="nav-login-btn">Log In</a>
-                    <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
-                <?php endif; ?>
+                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
             </div>
         </div>
     </nav>
