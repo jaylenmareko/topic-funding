@@ -20,6 +20,23 @@ if (file_exists('config/database.php')) {
     exit;
 }
 
+// Redirect logged-in creators to dashboard
+if (isset($_SESSION['user_id'])) {
+    try {
+        $db = new Database();
+        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $is_creator = $db->single();
+        
+        if ($is_creator) {
+            header('Location: /creators/dashboard.php');
+            exit;
+        }
+    } catch (Exception $e) {
+        error_log("Creator redirect check error: " . $e->getMessage());
+    }
+}
+
 try {
     $db = new Database();
     
