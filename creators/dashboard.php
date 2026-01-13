@@ -128,6 +128,17 @@ $db->query('
 ');
 $db->bind(':creator_id', $creator->id);
 $topics = $db->resultSet();
+
+// Count funded and active topics
+$funded_count = 0;
+$active_count = 0;
+foreach ($topics as $topic) {
+    if ($topic->status === 'funded') {
+        $funded_count++;
+    } elseif ($topic->status === 'active') {
+        $active_count++;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -233,6 +244,9 @@ $topics = $db->resultSet();
         
         .page-title-section {
             flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         
         .page-title {
@@ -530,6 +544,30 @@ $topics = $db->resultSet();
             .header-buttons { width: 100%; }
             .btn { flex: 1; justify-content: center; }
             .topics-grid { grid-template-columns: 1fr; }
+            
+            /* Hide log out button on mobile */
+            .signout-btn { display: none; }
+            
+            /* Fix earnings section on mobile */
+            .earnings-section {
+                padding: 24px 20px !important;
+            }
+            
+            .earnings-stats {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 20px !important;
+                align-items: stretch !important;
+            }
+            
+            .earnings-stats > div {
+                text-align: center;
+            }
+            
+            .earnings-stats > div:last-child {
+                grid-column: 1 / -1;
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
@@ -540,13 +578,6 @@ $topics = $db->resultSet();
             <a href="/" class="logo">TopicLaunch</a>
             <div style="flex: 1;"></div>
             <div class="top-nav-right">
-                <div class="inbox-link">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                    </svg>
-                    My Topics
-                </div>
                 <a href="../auth/logout.php" class="signout-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
@@ -562,15 +593,25 @@ $topics = $db->resultSet();
         <!-- Page Header -->
         <div class="page-header">
             <div class="page-title-section">
-                <h1 class="page-title">
-                    <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                    </svg>
-                    My Topics
-                </h1>
-                <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?> !</p>
+                <div>
+                    <h1 class="page-title">
+                        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        My Topics
+                    </h1>
+                    <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>! You have <?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
+                </div>
+                
+                <!-- Your Price Box -->
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Your Price</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #111827;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
+                    <div style="font-size: 11px; color: #9ca3af;">per video topic</div>
+                </div>
             </div>
+            
             <div class="header-buttons">
                 <a href="edit.php?id=<?php echo $creator->id; ?>" class="btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -592,6 +633,47 @@ $topics = $db->resultSet();
         <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
             🔗 Copy Profile Link
         </button>
+
+        <!-- Earnings & Payout Section -->
+        <div class="earnings-section" style="background: linear-gradient(135deg, #fef3f3 0%, #fdeef0 100%); border-radius: 16px; padding: 32px; margin: 24px 0; border: 1px solid #fecdd3;">
+            <div class="earnings-stats" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                <!-- Total Earnings -->
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Total Earnings</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #1f2937;">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
+                </div>
+                
+                <!-- Available Balance -->
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Available Balance</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #dc2626;">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
+                </div>
+                
+                <!-- Pending Payout -->
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Pending Payout</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #f97316;">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
+                </div>
+                
+                <!-- Paid Out -->
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Paid Out</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #10b981;">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
+                </div>
+                
+                <!-- Request Payout Button -->
+                <div style="flex-shrink: 0; text-align: right;">
+                    <button onclick="requestPayout()" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(220,38,38,0.3); transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(220,38,38,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(220,38,38,0.3)'">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        Request Payout →
+                    </button>
+                    <div style="font-size: 12px; color: #991b1b; margin-top: 8px;">Minimum $50 required</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Content Box -->
         <div class="content-box">
@@ -711,6 +793,20 @@ $topics = $db->resultSet();
                 btn.textContent = '✅ Copied!';
                 setTimeout(() => btn.textContent = orig, 2000);
             });
+        }
+        
+        function requestPayout() {
+            const availableBalance = <?php echo $creator->available_balance ?? 0; ?>;
+            
+            if (availableBalance < 50) {
+                alert('Minimum payout amount is $50. Your current available balance is $' + availableBalance.toFixed(2));
+                return;
+            }
+            
+            if (confirm('Request payout of $' + availableBalance.toFixed(2) + '?')) {
+                // TODO: Implement payout request API
+                alert('Payout request feature coming soon!');
+            }
         }
         
         function copyTopicLink(id) {
