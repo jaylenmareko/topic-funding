@@ -657,7 +657,7 @@ try {
 
     <script>
     function openTopicModal(topicId) {
-        fetch(`../api/get-topic.php?id=${topicId}`)
+        fetch(`/api/get-topic.php?id=${topicId}`)
             .then(response => response.json())
             .then(topic => {
                 if (!topic || topic.error) {
@@ -791,7 +791,7 @@ try {
             amount: amount
         };
 
-        fetch('../api/get-topic.php', {
+        fetch('/api/get-topic.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -901,7 +901,7 @@ function submitCreateTopic(event, creatorId, minPrice) {
     button.innerHTML = 'Processing...';
     button.style.opacity = '0.6';
     const requestData = { creator_id: creatorId, title: title, description: description, funding_goal: fundingGoal, initial_amount: amount };
-    fetch('../api/create-topic.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestData) })
+    fetch('/api/create-topic.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestData) })
     .then(response => response.json())
     .then(data => {
         if (data.error) {
@@ -933,6 +933,17 @@ function submitCreateTopic(event, creatorId, minPrice) {
             }
         });
     }
+    
+    // Auto-open topic modal if topic_id is in URL
+    window.addEventListener('load', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const topicId = urlParams.get('topic_id');
+        if (topicId) {
+            setTimeout(function() {
+                openTopicModal(parseInt(topicId));
+            }, 300);
+        }
+    });
 </script>
 </body>
 </html>
