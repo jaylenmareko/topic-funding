@@ -1,6 +1,17 @@
 # .htaccess
 RewriteEngine On
 
+# Force HTTPS redirect - MUST BE FIRST
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Additional security headers
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
 # Vanity URL handler - redirect username to username.php (without @)
 # Must be more specific to avoid catching root domain
 RewriteCond %{REQUEST_FILENAME} !-f
