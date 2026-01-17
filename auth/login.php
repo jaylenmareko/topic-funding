@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #FF0000;
             text-decoration: none;
             cursor: pointer;
+            flex-shrink: 0;
         }
         
         /* Nav Center Links */
@@ -102,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             gap: 30px;
             align-items: center;
+            flex: 1;
+            justify-content: center;
         }
         
         .nav-link {
@@ -120,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             gap: 15px;
             align-items: center;
+            flex-shrink: 0;
         }
         
         .nav-login-btn {
@@ -133,6 +137,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .nav-login-btn:hover {
             color: #FF0000;
+        }
+        
+        .nav-login-btn.active {
+            color: #FF0000;
+            pointer-events: none;
+            cursor: default;
         }
         
         .nav-getstarted-btn {
@@ -339,7 +349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <div class="nav-buttons">
-                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                <span class="nav-login-btn active">Log In</span>
                 <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
             </div>
         </div>
