@@ -140,6 +140,11 @@ foreach ($topics as $topic) {
         $active_count++;
     }
 }
+
+// Count completed videos
+$db->query('SELECT COUNT(*) as completed_count FROM topics WHERE creator_id = :creator_id AND status = "completed"');
+$db->bind(':creator_id', $creator->id);
+$completed_count = $db->single()->completed_count ?? 0;
 ?>
 <!DOCTYPE html>
 <html>
@@ -225,10 +230,6 @@ foreach ($topics as $topic) {
         }
         
         .signout-btn:hover {
-            border-color: #999;
-        }
-        
-        .notifications-btn:hover {
             border-color: #999;
         }
         
@@ -587,13 +588,6 @@ foreach ($topics as $topic) {
             <a href="/" class="logo">TopicLaunch</a>
             <div style="flex: 1;"></div>
             <div class="top-nav-right">
-                <button onclick="openNotifications()" class="notifications-btn" style="padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; color: #333; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; position: relative;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <span id="notificationCount" style="display: none; position: absolute; top: 4px; right: 4px; background: #FF0000; color: white; border-radius: 10px; padding: 2px 6px; font-size: 10px; font-weight: 700;">3</span>
-                </button>
                 <a href="../auth/logout.php" class="signout-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
@@ -621,10 +615,17 @@ foreach ($topics as $topic) {
                 </div>
                 
                 <!-- Your Price Box -->
-                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Your Price</div>
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 12px; color: #6b7280; font-weight: 500; white-space: nowrap;">Your Price</div>
                     <div style="font-size: 24px; font-weight: 700; color: #111827;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
-                    <div style="font-size: 11px; color: #9ca3af;">per video topic</div>
+                    <div style="font-size: 11px; color: #9ca3af; white-space: nowrap;">per video topic</div>
+                </div>
+                
+                <!-- Completed Videos Box -->
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 12px; color: #6b7280; font-weight: 500; white-space: nowrap;">Completed Videos</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #111827;"><?php echo $completed_count; ?></div>
+                    <div style="font-size: 11px; color: #9ca3af; white-space: nowrap;">videos delivered</div>
                 </div>
             </div>
             
@@ -909,125 +910,6 @@ foreach ($topics as $topic) {
                 form.submit();
             }
         }
-    
-    function openNotifications() {
-        // Fetch notifications
-        fetch('../api/get_notifications.php')
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error + (data.debug ? '\n\nDebug: ' + data.debug : ''));
-                    return;
-                }
-                
-                showNotificationsModal(data.notifications);
-                
-                // Update badge count
-                const badge = document.getElementById('notificationCount');
-                if (data.unread_count > 0) {
-                    badge.textContent = data.unread_count;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            })
-            .catch(err => {
-                console.error('Error fetching notifications:', err);
-                alert('Failed to load notifications: ' + err.message);
-            });
-    }
-    
-    function showNotificationsModal(notifications) {
-        let notificationsHtml = '';
-        
-        if (notifications.length === 0) {
-            notificationsHtml = `
-                <div style="text-align: center; padding: 60px 20px; color: #9ca3af;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 16px; color: #d1d5db;">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <div style="font-size: 16px; color: #6b7280; font-weight: 500;">No notifications yet</div>
-                </div>
-            `;
-        } else {
-            notifications.forEach(notif => {
-                const timeAgo = formatTimeAgo(notif.minutes_ago);
-                const icon = notif.type === 'topic_funded' ? '✅' : '📝';
-                const unreadDot = notif.is_read == 0 ? '<div style="width: 8px; height: 8px; background: #FF0000; border-radius: 50%; margin-right: 12px;"></div>' : '<div style="width: 8px; height: 8px; margin-right: 12px;"></div>';
-                
-                notificationsHtml += `
-                    <div style="display: flex; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f3f4f6; ${notif.is_read == 0 ? 'background: #fef2f2;' : ''}">
-                        ${unreadDot}
-                        <div style="font-size: 24px; margin-right: 12px;">${icon}</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${notif.title || notif.topic_title}</div>
-                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">${notif.message}</div>
-                            <div style="font-size: 12px; color: #9ca3af;">${timeAgo}</div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-        
-        const modalHtml = `
-            <div id="notificationsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);" onclick="closeNotificationsModal(event)">
-                <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; max-height: 600px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);" onclick="event.stopPropagation()">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f3f4f6;">
-                        <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827;">Notifications</h2>
-                        <div style="display: flex; gap: 12px; align-items: center;">
-                            <button onclick="markAllAsRead()" style="background: transparent; border: none; color: #FF0000; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px;">Mark all read</button>
-                            <button onclick="closeNotificationsModal()" style="background: transparent; border: none; font-size: 24px; color: #9ca3af; cursor: pointer; padding: 0; line-height: 1;">×</button>
-                        </div>
-                    </div>
-                    <div style="overflow-y: auto; flex: 1;">
-                        ${notificationsHtml}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-    
-    function closeNotificationsModal(event) {
-        if (event && event.target.id !== 'notificationsModal') return;
-        const modal = document.getElementById('notificationsModal');
-        if (modal) modal.remove();
-    }
-    
-    function markAllAsRead() {
-        fetch('../api/mark_notifications_read.php', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('notificationCount').style.display = 'none';
-                    closeNotificationsModal();
-                }
-            });
-    }
-    
-    function formatTimeAgo(minutes) {
-        if (minutes < 1) return 'Just now';
-        if (minutes < 60) return minutes + ' min ago';
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return hours + ' hour' + (hours > 1 ? 's' : '') + ' ago';
-        const days = Math.floor(hours / 24);
-        return days + ' day' + (days > 1 ? 's' : '') + ' ago';
-    }
-    
-    // Load unread count on page load
-    window.addEventListener('load', function() {
-        fetch('../api/get_notifications.php')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.unread_count > 0) {
-                    const badge = document.getElementById('notificationCount');
-                    badge.textContent = data.unread_count;
-                    badge.style.display = 'block';
-                }
-            });
-    });
     </script>
 </body>
 </html>
