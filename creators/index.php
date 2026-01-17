@@ -1,5 +1,5 @@
 <?php
-// creators/index.php - Browse YouTubers page
+// creators/index.php - Browse Influencers page
 session_start();
 
 // Redirect logged-in creators to dashboard
@@ -36,7 +36,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse YouTubers - TopicLaunch</title>
+    <title>Browse Influencers - TopicLaunch</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -64,7 +64,7 @@ try {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
 
@@ -84,11 +84,11 @@ try {
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-link.active {
-            color: #FF0000;
+            color: #FF1F7D;
         }
 
         /* Nav Right Buttons */
@@ -108,11 +108,11 @@ try {
         }
         
         .nav-login-btn:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-getstarted-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             text-decoration: none;
             font-size: 15px;
@@ -123,7 +123,7 @@ try {
         }
         
         .nav-getstarted-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
         }
         
@@ -150,7 +150,7 @@ try {
         .header-icon {
             width: 32px;
             height: 32px;
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .header-subtitle {
@@ -199,8 +199,8 @@ try {
         }
         
         .search-input:focus {
-            border-color: #FF0000;
-            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
         }
         
         /* Results Count */
@@ -233,8 +233,8 @@ try {
         }
         
         .creator-card-kalshi:hover {
-            border-color: #FF0000;
-            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.15);
             transform: translateY(-2px);
         }
         
@@ -250,7 +250,7 @@ try {
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -367,8 +367,8 @@ try {
             
             <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/creators/" class="nav-link active">Browse YouTubers</a>
-                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+                <a href="/creators/" class="nav-link active">Browse Influencers</a>
+                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
             </div>
             
             <!-- Right Navigation Buttons -->
@@ -390,9 +390,9 @@ try {
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Browse YouTubers
+                Browse Influencers
             </h1>
-            <p class="header-subtitle">Find the perfect YouTuber to create content on topics you care about</p>
+            <p class="header-subtitle">Find the perfect influencer to create content on topics you care about</p>
         </div>
 
         <!-- Search Section -->
@@ -409,7 +409,7 @@ try {
         </div>
 
         <!-- Results Count -->
-        <div class="results-count"><?php echo count($creators); ?> YouTubers found</div>
+        <div class="results-count"><?php echo count($creators); ?> Influencers found</div>
 
         <!-- Creator Grid -->
         <div class="creators-grid-landing" id="creatorsGrid">
@@ -475,7 +475,7 @@ try {
             
             // Update count
             const visibleCards = Array.from(creatorCards).filter(card => card.style.display !== 'none');
-            document.querySelector('.results-count').textContent = `${visibleCards.length} YouTubers found`;
+            document.querySelector('.results-count').textContent = `${visibleCards.length} Influencers found`;
         });
     </script>
 </body>
