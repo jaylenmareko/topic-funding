@@ -1,5 +1,5 @@
 <?php
-// index.php - YOUTUBE CREATORS ONLY
+// index.php - INFLUENCERS ONLY
 session_start();
 
 // Try to load database config
@@ -76,16 +76,16 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Get Guaranteed Videos from YouTubers</title>
+    <title>TopicLaunch - Get Guaranteed Content from Influencers</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <meta name="description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    <meta name="description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - Get Guaranteed Videos">
-    <meta property="og:description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    <meta property="og:title" content="TopicLaunch - Request Videos from Your Favorite Influencers">
+    <meta property="og:description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -93,8 +93,8 @@ if ($db_available) {
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://topiclaunch.com/">
-    <meta property="twitter:title" content="TopicLaunch - Get Guaranteed Videos">
-    <meta property="twitter:description" content="Request video topics from your favorite YouTubers and get guaranteed content when fully funded.">
+    <meta property="twitter:title" content="TopicLaunch - Request Videos from Your Favorite Influencers">
+    <meta property="twitter:description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
     <meta property="twitter:image" content="https://topiclaunch.com/og-image.png">
     
     <style>
@@ -157,7 +157,7 @@ if ($db_available) {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
 
@@ -177,7 +177,7 @@ if ($db_available) {
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
 
         /* Nav Right Buttons */
@@ -197,11 +197,11 @@ if ($db_available) {
         }
         
         .nav-login-btn:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-getstarted-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             text-decoration: none;
             font-size: 14px;
@@ -212,7 +212,7 @@ if ($db_available) {
         }
         
         .nav-getstarted-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
         }
         
         /* Hero Section */
@@ -237,21 +237,21 @@ if ($db_available) {
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: radial-gradient(circle at 20% 50%, rgba(255, 0, 0, 0.03) 0%, transparent 50%),
-                              radial-gradient(circle at 80% 80%, rgba(255, 0, 102, 0.03) 0%, transparent 50%);
+            background-image: radial-gradient(circle at 20% 50%, rgba(255, 31, 125, 0.06) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 80%, rgba(224, 27, 111, 0.06) 0%, transparent 50%);
             pointer-events: none;
         }
         .hero h1 { font-size: 56px; margin: 0 0 15px 0; font-weight: bold; color: #000; line-height: 1.2; }
-        .hero h1 span.red { color: #FF0000; }
+        .hero h1 span.red { color: #FF1F7D; }
         .hero p { font-size: 18px; margin: 0 0 35px 0; color: #666; max-width: 600px; }
         
-        /* YouTuber Signup Button */
+        /* Influencer Signup Button */
         .youtuber-signup-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             padding: 14px 40px;
             border-radius: 50px;
@@ -265,9 +265,9 @@ if ($db_available) {
         }
         
         .youtuber-signup-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
         }
         
         /* 2-Step Process Boxes */
@@ -277,7 +277,7 @@ if ($db_available) {
             justify-content: center;
             margin-top: 50px;
             padding: 0 20px;
-            max-width: 900px;
+            max-width: 1100px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -301,7 +301,7 @@ if ($db_available) {
         .step-icon {
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, #FF0000, #FF6B6B);
+            background: linear-gradient(135deg, #FF1F7D, #FF6BA9);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -349,7 +349,7 @@ if ($db_available) {
         .header-icon {
             width: 32px;
             height: 32px;
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .header-subtitle {
@@ -398,8 +398,8 @@ if ($db_available) {
         }
         
         .search-input:focus {
-            border-color: #FF0000;
-            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
         }
         
         .creators-grid-landing {
@@ -424,8 +424,8 @@ if ($db_available) {
         }
         
         .creator-card-kalshi:hover {
-            border-color: #FF0000;
-            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.15);
             transform: translateY(-2px);
         }
         
@@ -441,7 +441,7 @@ if ($db_available) {
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -548,7 +548,7 @@ if ($db_available) {
         .load-more-btn {
             display: inline-block;
             padding: 12px 32px;
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 8px;
@@ -558,7 +558,7 @@ if ($db_available) {
         }
         
         .load-more-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
         }
         
         .load-more-btn:disabled {
@@ -619,8 +619,8 @@ if ($db_available) {
             
             <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/creators/" class="nav-link">Browse YouTubers</a>
-                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+                <a href="/creators/" class="nav-link">Browse Influencers</a>
+                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
             </div>
             
             <!-- Right Navigation Buttons -->
@@ -633,8 +633,8 @@ if ($db_available) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Get Guaranteed<br><span class="red">Videos.</span></h1>
-        <p>Request video topics from your favorite YouTubers and get guaranteed content when fully funded.</p>
+        <h1>Get Guaranteed<br><span class="red">Content.</span></h1>
+        <p>Request videos from your favorite influencers and get guaranteed content when fully funded.</p>
         
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
@@ -653,6 +653,11 @@ if ($db_available) {
                 <h3>48-Hour Delivery</h3>
                 <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
             </div>
+            <div class="step-box">
+                <div class="step-icon">📱</div>
+                <h3>Instagram & TikTok Compatible</h3>
+                <p>Built for short-form creators. Post your Reels or TikToks directly from funded topics.</p>
+            </div>
         </div>
     </div>
 
@@ -665,9 +670,9 @@ if ($db_available) {
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Trending YouTubers
+                Trending Influencers
             </h2>
-            <p class="header-subtitle">Top YouTubers growing fast this week.</p>
+            <p class="header-subtitle">Top influencers growing fast this week.</p>
         </div>
         
         <div class="search-section">
