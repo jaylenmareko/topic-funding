@@ -1,19 +1,15 @@
 <?php
-// Copy of the signup.php content with the navigation link fixed
+// creators/signup.php - Updated with username field
 session_start();
 
-// Only redirect to dashboard if already logged in AND verified
+// Redirect if already logged in as verified creator
 if (isset($_SESSION['user_id'])) {
-    // Try to find database.php
     if (file_exists('../config/database.php')) {
         require_once '../config/database.php';
     } elseif (file_exists(__DIR__ . '/../config/database.php')) {
         require_once __DIR__ . '/../config/database.php';
-    } elseif (file_exists($_SERVER['DOCUMENT_ROOT'] . '/config/database.php')) {
-        require_once $_SERVER['DOCUMENT_ROOT'] . '/config/database.php';
     }
     
-    // Check if user is a verified creator
     try {
         $db = new Database();
         $db->query('SELECT c.id FROM creators c JOIN users u ON c.applicant_user_id = u.id WHERE c.applicant_user_id = :user_id AND c.is_active = 1 AND u.is_verified = 1');
@@ -25,177 +21,33 @@ if (isset($_SESSION['user_id'])) {
             exit;
         }
     } catch (Exception $e) {
-        // Continue to signup page
+        // Continue to signup
     }
 }
 
 $error = '';
 $success = '';
-$step = $_GET['step'] ?? 'signup'; // signup, verify
 
-// [REST OF PHP CODE REMAINS THE SAME - INCLUDING ALL VERIFICATION AND SIGNUP LOGIC]
-// Handle verification step
-if ($step === 'verify' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_code'])) {
+// Handle signup form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (file_exists('../config/database.php')) {
         require_once '../config/database.php';
     } elseif (file_exists(__DIR__ . '/../config/database.php')) {
         require_once __DIR__ . '/../config/database.php';
-    } elseif (file_exists($_SERVER['DOCUMENT_ROOT'] . '/config/database.php')) {
-        require_once $_SERVER['DOCUMENT_ROOT'] . '/config/database.php';
-    } else {
-        die('ERROR: Cannot find config/database.php. Please check file location.');
     }
     
-    $entered_code = trim($_POST['verify_code'] ?? '');
-    $signup_data = $_SESSION['pending_signup'] ?? null;
-    
-    if (!$signup_data) {
-        $error = 'Session expired. Please sign up again.';
-        $step = 'signup';
-    } else {
-        if ($entered_code === $signup_data['verification_code']) {
-            $youtube_api_key = 'YOUR_YOUTUBE_API_KEY';
-            $skip_youtube_validation = ($youtube_api_key === 'YOUR_YOUTUBE_API_KEY');
-            
-            $code_found_in_channel = false;
-            
-            if (!$skip_youtube_validation) {
-                $youtube_api_url = "https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle={$signup_data['youtube_handle']}&key={$youtube_api_key}";
-                
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $youtube_api_url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                $response = curl_exec($ch);
-                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                
-                if ($http_code === 200 && $response) {
-                    $data = json_decode($response, true);
-                    if (isset($data['items'][0]['snippet']['description'])) {
-                        $description = $data['items'][0]['snippet']['description'];
-                        if (stripos($description, $entered_code) !== false) {
-                            $code_found_in_channel = true;
-                        } else {
-                            $error = 'Verification code not found in your YouTube channel description. Please add "TopicLaunch Verification: ' . $entered_code . '" to your channel About section and try again.';
-                        }
-                    } else {
-                        $error = 'Could not access your YouTube channel description. Please try again.';
-                    }
-                } else {
-                    $error = 'Could not verify your YouTube channel. Please ensure the handle is correct.';
-                }
-            } else {
-                $code_found_in_channel = true;
-            }
-            
-            if ($code_found_in_channel && !$error) {
-                try {
-                    $db = new Database();
-                    
-                    error_log("Creating verified user account...");
-                    
-                    $db->query('INSERT INTO users (username, email, password_hash, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, NOW(), NOW())');
-                    $db->bind(':username', $signup_data['username']);
-                    $db->bind(':email', $signup_data['email']);
-                    $db->bind(':password_hash', $signup_data['password_hash']);
-                    $db->execute();
-                    
-                    $user_id = $db->lastInsertId();
-                    error_log("User created with ID: " . $user_id);
-                    
-                    $db->query('INSERT INTO creators (applicant_user_id, username, display_name, minimum_topic_price, is_active, created_at) VALUES (:user_id, :username, :display_name, :minimum_topic_price, 1, NOW())');
-                    $db->bind(':user_id', $user_id);
-                    $db->bind(':username', $signup_data['youtube_handle']);
-                    $db->bind(':display_name', $signup_data['youtube_handle']);
-                    $db->bind(':minimum_topic_price', $signup_data['minimum_topic_price']);
-                    $db->execute();
-                    
-                    $creator_id = $db->lastInsertId();
-                    error_log("Creator profile created with ID: " . $creator_id);
-                    
-                    if (!empty($signup_data['profile_photo_temp'])) {
-                        $temp_path = '../uploads/temp/' . $signup_data['profile_photo_temp'];
-                        $final_dir = '../uploads/creators/';
-                        
-                        if (!file_exists($final_dir)) {
-                            mkdir($final_dir, 0755, true);
-                        }
-                        
-                        $file_extension = pathinfo($signup_data['profile_photo_temp'], PATHINFO_EXTENSION);
-                        $final_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
-                        $final_path = $final_dir . $final_filename;
-                        
-                        if (file_exists($temp_path) && rename($temp_path, $final_path)) {
-                            $db->query('UPDATE creators SET profile_image = :profile_image, bio = :bio, paypal_email = :paypal_email, venmo_handle = :venmo_handle WHERE id = :creator_id');
-                            $db->bind(':profile_image', $final_filename);
-                            $db->bind(':bio', $signup_data['bio'] ?? '');
-                            $db->bind(':paypal_email', $signup_data['paypal_email'] ?? '');
-                            $db->bind(':venmo_handle', $signup_data['venmo_handle'] ?? '');
-                            $db->bind(':creator_id', $creator_id);
-                            $db->execute();
-                            error_log("Profile photo, bio, and payout methods saved");
-                        }
-                    } else {
-                        $db->query('UPDATE creators SET bio = :bio, paypal_email = :paypal_email, venmo_handle = :venmo_handle WHERE id = :creator_id');
-                        $db->bind(':bio', $signup_data['bio'] ?? '');
-                        $db->bind(':paypal_email', $signup_data['paypal_email'] ?? '');
-                        $db->bind(':venmo_handle', $signup_data['venmo_handle'] ?? '');
-                        $db->bind(':creator_id', $creator_id);
-                        $db->execute();
-                    }
-                    
-                    error_log("Creator profile fully configured");
-                    
-                    $_SESSION['user_id'] = $user_id;
-                    $_SESSION['email'] = $signup_data['email'];
-                    unset($_SESSION['pending_signup']);
-                    
-                    error_log("User verified and logged in, redirecting to dashboard");
-                    
-                    header('Location: dashboard.php');
-                    exit;
-                    
-                } catch (Exception $e) {
-                    error_log("Account creation error: " . $e->getMessage());
-                    $error = 'Failed to create account. Please try again or contact support.';
-                }
-            }
-        } else {
-            $error = 'Invalid verification code. Please check the code we sent to your email.';
-        }
-    }
-}
-
-if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (file_exists('../config/database.php')) {
-        require_once '../config/database.php';
-    } elseif (file_exists(__DIR__ . '/../config/database.php')) {
-        require_once __DIR__ . '/../config/database.php';
-    } elseif (file_exists($_SERVER['DOCUMENT_ROOT'] . '/config/database.php')) {
-        require_once $_SERVER['DOCUMENT_ROOT'] . '/config/database.php';
-    } else {
-        die('ERROR: Cannot find config/database.php. Please check file location.');
-    }
-    
-    error_log("=== SIGNUP ATTEMPT START ===");
-    
+    $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-    $youtube_handle = trim($_POST['youtube_handle'] ?? '');
     $bio = trim($_POST['bio'] ?? '');
     $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
     $paypal_email = trim($_POST['paypal_email'] ?? '');
     $venmo_handle = trim($_POST['venmo_handle'] ?? '');
     $agree_terms = isset($_POST['agree_terms']);
     
-    error_log("Email: " . $email);
-    error_log("YouTube Handle: " . $youtube_handle);
-    error_log("Minimum Topic Price: " . $minimum_topic_price);
-    
-    if (empty($email) || empty($password) || empty($confirm_password) || empty($youtube_handle) || empty($minimum_topic_price)) {
+    // Validation
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password) || empty($minimum_topic_price)) {
         $error = 'All required fields must be filled';
     } elseif (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] !== 0) {
         $error = 'Profile photo is required';
@@ -209,151 +61,90 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Passwords do not match';
     } elseif (strlen($password) < 8) {
         $error = 'Password must be at least 8 characters long';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
+        $error = 'Username must be 3-30 characters and contain only letters, numbers, and underscores';
     } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price < 10) {
         $error = 'Minimum topic price must be at least $10';
     } elseif ($minimum_topic_price > 10000) {
         $error = 'Minimum topic price cannot exceed $10,000';
     } else {
+        // Validate profile photo
         $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-        $max_size = 5 * 1024 * 1024;
+        $max_size = 10 * 1024 * 1024; // 10MB
         
         if (!in_array($_FILES['profile_photo']['type'], $allowed_types)) {
             $error = 'Profile photo must be JPG, PNG, or WebP format';
         } elseif ($_FILES['profile_photo']['size'] > $max_size) {
-            $error = 'Profile photo must be less than 5MB';
+            $error = 'Profile photo must be less than 10MB';
         } else {
-        $youtube_handle_clean = str_replace('@', '', $youtube_handle);
-        
-        $youtube_api_key = 'YOUR_YOUTUBE_API_KEY';
-        $skip_youtube_validation = ($youtube_api_key === 'YOUR_YOUTUBE_API_KEY');
-        
-        $youtube_exists = false;
-        
-        if (!$skip_youtube_validation) {
-            $youtube_api_url = "https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle={$youtube_handle_clean}&key={$youtube_api_key}";
-            
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $youtube_api_url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            
-            if ($http_code === 200 && $response) {
-                $data = json_decode($response, true);
-                if (isset($data['pageInfo']['totalResults']) && $data['pageInfo']['totalResults'] > 0) {
-                    $youtube_exists = true;
-                }
-            }
-            
-            if (!$youtube_exists) {
-                $error = 'YouTube handle does not exist. Please enter a valid YouTube handle.';
-            }
-        } else {
-            $youtube_exists = true;
-        }
-        
-        if ($youtube_exists && !$error) {
             try {
                 $db = new Database();
                 
-                error_log("Checking for existing email...");
+                // Check if username exists
+                $db->query('SELECT id FROM creators WHERE username = :username');
+                $db->bind(':username', $username);
+                $existing_username = $db->single();
                 
-                $db->query('SELECT id FROM users WHERE email = :email');
-                $db->bind(':email', $email);
-                $existing_user = $db->single();
-                
-                if ($existing_user) {
-                    $error = 'Email already registered';
-                    error_log("Email already exists");
+                if ($existing_username) {
+                    $error = 'Username already taken. Please choose another.';
                 } else {
-                    error_log("Checking for existing YouTube handle...");
+                    // Check if email exists
+                    $db->query('SELECT id FROM users WHERE email = :email');
+                    $db->bind(':email', $email);
+                    $existing_email = $db->single();
                     
-                    $db->query('SELECT id FROM creators WHERE username = :username');
-                    $db->bind(':username', $youtube_handle_clean);
-                    $existing_creator = $db->single();
-                    
-                    if ($existing_creator) {
-                        $error = 'YouTube handle already registered on TopicLaunch';
-                        error_log("YouTube handle already exists");
+                    if ($existing_email) {
+                        $error = 'Email already registered';
                     } else {
-                        error_log("Creating user account...");
+                        // Create user account
+                        $password_hash = password_hash($password, PASSWORD_DEFAULT);
                         
-                        $verification_code = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+                        $db->query('INSERT INTO users (username, email, password_hash, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, NOW(), NOW())');
+                        $db->bind(':username', $username);
+                        $db->bind(':email', $email);
+                        $db->bind(':password_hash', $password_hash);
+                        $db->execute();
                         
-                        $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode('@', $email)[0]));
+                        $user_id = $db->lastInsertId();
                         
-                        error_log("Generated username: " . $username);
-                        error_log("Verification code: " . $verification_code);
-                        
-                        $profile_photo_path = null;
-                        if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === 0) {
-                            $upload_dir = '../uploads/temp/';
-                            if (!file_exists($upload_dir)) {
-                                mkdir($upload_dir, 0755, true);
-                            }
-                            
-                            $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
-                            $temp_filename = 'temp_' . uniqid() . '.' . $file_extension;
-                            $temp_path = $upload_dir . $temp_filename;
-                            
-                            if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $temp_path)) {
-                                $profile_photo_path = $temp_filename;
-                                error_log("Profile photo uploaded temporarily: " . $temp_filename);
-                            }
+                        // Upload profile photo
+                        $upload_dir = '../uploads/creators/';
+                        if (!file_exists($upload_dir)) {
+                            mkdir($upload_dir, 0755, true);
                         }
                         
-                        $_SESSION['pending_signup'] = [
-                            'email' => $email,
-                            'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                            'username' => $username,
-                            'youtube_handle' => $youtube_handle_clean,
-                            'bio' => $bio,
-                            'profile_photo_temp' => $profile_photo_path,
-                            'minimum_topic_price' => floatval($minimum_topic_price),
-                            'paypal_email' => $paypal_email,
-                            'venmo_handle' => $venmo_handle,
-                            'verification_code' => $verification_code,
-                            'created_at' => time()
-                        ];
+                        $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
+                        $profile_filename = 'creator_' . $user_id . '_' . time() . '.' . $file_extension;
+                        $profile_path = $upload_dir . $profile_filename;
                         
-                        error_log("Signup data stored in session, waiting for verification");
-                        
-                        $to = $email;
-                        $subject = 'Verify Your TopicLaunch Account';
-                        $message = "Welcome to TopicLaunch!\n\n";
-                        $message .= "Your verification code is: {$verification_code}\n\n";
-                        $message .= "To verify your YouTube channel ownership:\n";
-                        $message .= "1. Go to your YouTube channel: https://youtube.com/@{$youtube_handle_clean}\n";
-                        $message .= "2. Click 'Customize Channel' or go to your About section\n";
-                        $message .= "3. Add this text anywhere in your channel description:\n\n";
-                        $message .= "TopicLaunch Verification: {$verification_code}\n\n";
-                        $message .= "4. Return to TopicLaunch and enter your verification code\n\n";
-                        $message .= "This code expires in 24 hours.\n\n";
-                        $message .= "If you didn't sign up for TopicLaunch, please ignore this email.\n\n";
-                        $message .= "Questions? Contact us at support@topiclaunch.com";
-                        
-                        $headers = "From: TopicLaunch <noreply@topiclaunch.com>\r\n";
-                        $headers .= "Reply-To: support@topiclaunch.com\r\n";
-                        $headers .= "X-Mailer: PHP/" . phpversion();
-                        
-                        $mail_sent = mail($to, $subject, $message, $headers);
-                        error_log("Email sent: " . ($mail_sent ? 'YES' : 'NO'));
-                        
-                        error_log("Redirecting to verification page...");
-                        
-                        header('Location: signup.php?step=verify');
-                        exit;
+                        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $profile_path)) {
+                            // Create creator profile
+                            $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, 1, NOW())');
+                            $db->bind(':user_id', $user_id);
+                            $db->bind(':username', $username);
+                            $db->bind(':display_name', $username);
+                            $db->bind(':profile_image', $profile_filename);
+                            $db->bind(':bio', $bio);
+                            $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                            $db->bind(':paypal_email', $paypal_email);
+                            $db->bind(':venmo_handle', $venmo_handle);
+                            $db->execute();
+                            
+                            // Log user in
+                            $_SESSION['user_id'] = $user_id;
+                            $_SESSION['email'] = $email;
+                            
+                            header('Location: dashboard.php');
+                            exit;
+                        } else {
+                            $error = 'Failed to upload profile photo. Please try again.';
+                        }
                     }
                 }
             } catch (Exception $e) {
-                error_log("ERROR: " . $e->getMessage());
-                error_log("Stack trace: " . $e->getTraceAsString());
-                $error = 'An error occurred during signup. Please try again. Error: ' . $e->getMessage();
+                error_log("Signup error: " . $e->getMessage());
+                $error = 'An error occurred during signup. Please try again.';
             }
-        }
         }
     }
 }
@@ -361,19 +152,17 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>YouTuber Signup - TopicLaunch</title>
+    <title>Creator Signup - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: white;
             min-height: 100vh;
-            padding: 0;
-            margin: 0;
         }
         
-        /* Navigation - Rizzdem Style */
+        /* Navigation */
         .topiclaunch-nav {
             background: white;
             padding: 15px 0;
@@ -395,10 +184,8 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             font-weight: bold;
             color: #FF0000;
             text-decoration: none;
-            cursor: pointer;
         }
 
-        /* Nav Center Links */
         .nav-center {
             display: flex;
             gap: 30px;
@@ -452,6 +239,7 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translateY(-1px);
         }
         
+        /* Page Layout */
         .page-wrapper {
             display: flex;
             flex-direction: column;
@@ -484,55 +272,86 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             border: 1px solid #f0f0f0;
-            padding: 30px;
+            padding: 40px;
             width: 100%;
-            max-width: 480px;
+            max-width: 520px;
         }
         
+        /* Form Styles */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 24px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 6px;
-            color: #333;
-            font-weight: 500;
-            font-size: 13px;
+            margin-bottom: 8px;
+            color: #111827;
+            font-weight: 600;
+            font-size: 14px;
         }
         
-        .form-group input {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #FF0000;
+            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
         }
         
         .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             resize: vertical;
-            transition: border-color 0.3s;
+            min-height: 80px;
         }
         
-        .form-group input[type="file"] {
-            display: none;
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 13px;
         }
         
-        .profile-photo-group {
-            margin-bottom: 20px;
+        /* Username Field - Rizzdem Style */
+        .username-group {
+            margin-bottom: 24px;
         }
         
-        .required-star {
-            color: #FF0000;
+        .username-input-wrapper {
+            position: relative;
         }
         
+        .username-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        
+        .username-input {
+            padding-left: 38px !important;
+            font-size: 16px;
+        }
+        
+        .username-url-preview {
+            margin-top: 8px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        /* Profile Photo */
         .profile-photo-container {
             display: flex;
             gap: 20px;
@@ -540,8 +359,8 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .profile-photo-preview {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border: 2px dashed #e5e7eb;
             border-radius: 12px;
             display: flex;
@@ -566,16 +385,15 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: white;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #374151;
             cursor: pointer;
             transition: all 0.2s;
-            margin-bottom: 8px;
         }
         
         .upload-button:hover {
@@ -583,21 +401,13 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #FF0000;
         }
         
-        .upload-button svg {
-            stroke: currentColor;
-        }
-        
-        .payout-section {
-            margin-bottom: 20px;
-            padding-top: 10px;
-        }
-        
+        /* Payout Section */
         .payout-section-label {
             display: block;
             margin-bottom: 12px;
-            color: #000;
+            color: #111827;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
         }
         
         .label-note {
@@ -609,50 +419,30 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .payout-fields {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 8px;
+            gap: 16px;
         }
         
         .input-with-prefix {
             position: relative;
-            display: flex;
-            align-items: center;
         }
         
         .input-prefix {
             position: absolute;
-            left: 12px;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
             color: #6b7280;
             font-size: 15px;
             pointer-events: none;
         }
         
         .input-with-prefix-field {
-            padding-left: 28px !important;
+            padding-left: 32px !important;
         }
         
-        .payout-note {
-            display: block;
-            color: #6b7280;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-        
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #FF0000;
-        }
-        
-        .form-group small {
-            display: block;
-            margin-top: 4px;
-            color: #666;
-            font-size: 12px;
-        }
-        
+        /* Checkbox */
         .checkbox-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         
         .checkbox-label {
@@ -660,19 +450,19 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: flex-start;
             gap: 10px;
             cursor: pointer;
-            font-weight: normal;
         }
         
         .checkbox-label input[type="checkbox"] {
-            width: auto;
-            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
             cursor: pointer;
         }
         
         .checkbox-label span {
             flex: 1;
             font-size: 14px;
-            color: #333;
+            color: #374151;
         }
         
         .checkbox-label a {
@@ -684,111 +474,46 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: underline;
         }
         
+        /* Messages */
         .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px 15px;
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
-            border-left: 4px solid #c33;
+            border-left: 4px solid #dc2626;
         }
         
-        .success-message {
-            background: #efe;
-            color: #3c3;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #3c3;
-        }
-        
+        /* Submit Button */
         .submit-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: #FF0000;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
         
         .submit-btn:hover {
             background: #CC0000;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(255,0,0,0.3);
         }
         
-        .password-requirements {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-top: 6px;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .password-requirements ul {
-            margin: 3px 0 0 18px;
-        }
-        
-        .password-requirements li {
-            margin: 2px 0;
-        }
-        
-        .info-box {
-            background: #e7f3ff;
-            border-left: 4px solid #2196F3;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #0c5460;
-        }
-        
-        .info-box h3 {
-            color: #0c5460;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        
-        .info-box ol {
-            margin-left: 20px;
-        }
-        
-        .info-box li {
-            margin: 8px 0;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
-            .signup-container {
-                padding: 30px 20px;
-            }
-            
-            .page-title {
-                font-size: 32px;
-            }
-            
-            .payout-fields {
-                grid-template-columns: 1fr;
-            }
-            
+            .nav-center { display: none; }
+            .signup-container { padding: 30px 20px; }
+            .page-title { font-size: 32px; }
+            .payout-fields { grid-template-columns: 1fr; }
             .profile-photo-container {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-            
-            .profile-photo-preview {
-                width: 100px;
-                height: 100px;
-            }
-
-            .nav-center {
-                display: none;
             }
         }
     </style>
@@ -799,10 +524,9 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
             
-            <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/creators/index.php" class="nav-link">Browse YouTubers</a>
-                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+                <a href="/creators/" class="nav-link">Browse Creators</a>
+                <a href="/creators/signup.php" class="nav-link">For Creators</a>
             </div>
 
             <div class="nav-buttons">
@@ -814,77 +538,48 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="page-wrapper">
         <div class="page-header">
-            <h1 class="page-title"><?php echo $step === 'verify' ? 'Verify Your Channel' : 'Get Started'; ?></h1>
-            <p class="page-subtitle"><?php echo $step === 'verify' ? 'Complete your verification to start earning' : 'Join TopicLaunch as a YouTuber'; ?></p>
+            <h1 class="page-title">Get Started</h1>
+            <p class="page-subtitle">Join TopicLaunch and start earning from your audience</p>
         </div>
         
         <div class="signup-container">
-        
-        <?php if ($error): ?>
-            <div class="error-message">
-                <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="success-message">
-                <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if ($step === 'verify'): ?>
-            <div class="info-box">
-                <h3>📧 Check Your Email!</h3>
-                <p style="margin-bottom: 10px;">We've sent a verification code to your email. Follow these steps:</p>
-                <ol>
-                    <li>Check your email for the verification code</li>
-                    <li>Go to your YouTube channel and click "Customize Channel"</li>
-                    <li>Add the code to your channel description or About section</li>
-                    <li>Enter the code below to complete verification</li>
-                </ol>
-            </div>
+            <?php if ($error): ?>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
             
-            <form method="POST" action="?step=verify" id="verifyForm">
-                <div class="form-group">
-                    <label for="verify_code">Verification Code</label>
-                    <input type="text" 
-                           id="verify_code" 
-                           name="verify_code" 
-                           placeholder="Enter 8-character code"
-                           maxlength="8"
-                           style="text-transform: uppercase; letter-spacing: 2px; font-family: 'Courier New', monospace;"
-                           required>
-                    <small>Enter the code from your email (e.g., ABC12345)</small>
+            <form method="POST" enctype="multipart/form-data" id="signupForm">
+                <!-- Username Field -->
+                <div class="form-group username-group">
+                    <label for="username">Username</label>
+                    <div class="username-input-wrapper">
+                        <span class="username-prefix">@</span>
+                        <input type="text" 
+                               id="username" 
+                               name="username" 
+                               class="username-input"
+                               placeholder="username"
+                               pattern="[a-zA-Z0-9_]{3,30}"
+                               value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
+                               required>
+                    </div>
+                    <div class="username-url-preview">
+                        This will be your unique profile URL: topiclaunch.com/<span id="usernamePreview">username</span>
+                    </div>
                 </div>
                 
-                <button type="submit" class="submit-btn">Verify & Complete Signup</button>
-            </form>
-            
-        <?php else: ?>
-            <form method="POST" action="" id="signupForm" enctype="multipart/form-data">
+                <!-- Profile Photo -->
                 <div class="form-group">
-                    <label for="youtube_handle">YouTube Handle</label>
-                    <input type="text" 
-                           id="youtube_handle" 
-                           name="youtube_handle" 
-                           placeholder="@yourchannel"
-                           value="<?php echo htmlspecialchars($_POST['youtube_handle'] ?? ''); ?>"
-                           required>
-                    <small>Enter your YouTube handle (e.g., @mrbeast)</small>
-                </div>
-                
-                <div class="form-group profile-photo-group">
-                    <label for="profile_photo">Profile Photo <span class="required-star">*</span></label>
+                    <label for="profile_photo">Profile Photo</label>
                     <div class="profile-photo-container">
                         <div class="profile-photo-preview" id="photoPreview">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
                         <div class="profile-photo-upload">
                             <label for="profile_photo" class="upload-button">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="17 8 12 3 7 8"></polyline>
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -902,15 +597,15 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 
+                <!-- Bio -->
                 <div class="form-group">
                     <label for="bio">Bio (Optional)</label>
-                    <textarea 
-                           id="bio" 
-                           name="bio" 
-                           placeholder="Tell fans about yourself and what kind of videos you create..."
-                           rows="3"><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
+                    <textarea id="bio" 
+                              name="bio" 
+                              placeholder="Tell your audience about yourself..."><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
                 </div>
                 
+                <!-- Email -->
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" 
@@ -921,6 +616,7 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                            required>
                 </div>
                 
+                <!-- Password -->
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" 
@@ -928,13 +624,10 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                            name="password" 
                            placeholder="Create a password"
                            required>
-                    <div class="password-requirements">
-                        <ul>
-                            <li>Be at least 8 characters long</li>
-                        </ul>
-                    </div>
+                    <small>Must be at least 8 characters long</small>
                 </div>
                 
+                <!-- Confirm Password -->
                 <div class="form-group">
                     <label for="confirm_password">Confirm Password</label>
                     <input type="password" 
@@ -944,12 +637,13 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                            required>
                 </div>
                 
-                <div class="payout-section">
+                <!-- Payout Methods -->
+                <div class="form-group">
                     <label class="payout-section-label">Payout Method <span class="label-note">(at least one required)</span></label>
                     
                     <div class="payout-fields">
-                        <div class="form-group">
-                            <label for="paypal_email">PayPal Email</label>
+                        <div>
+                            <label for="paypal_email" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">PayPal Email</label>
                             <input type="email" 
                                    id="paypal_email" 
                                    name="paypal_email" 
@@ -957,8 +651,8 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?php echo htmlspecialchars($_POST['paypal_email'] ?? ''); ?>">
                         </div>
                         
-                        <div class="form-group">
-                            <label for="venmo_handle">Venmo Handle</label>
+                        <div>
+                            <label for="venmo_handle" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">Venmo Handle</label>
                             <div class="input-with-prefix">
                                 <span class="input-prefix">@</span>
                                 <input type="text" 
@@ -970,10 +664,9 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
-                    
-                    <small class="payout-note">We'll use your preferred method to send your earnings securely.</small>
                 </div>
                 
+                <!-- Minimum Topic Price -->
                 <div class="form-group">
                     <label for="minimum_topic_price">Minimum Price per Topic ($)</label>
                     <input type="number" 
@@ -988,37 +681,39 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <small>Set your price per topic. You'll keep 90% of this amount.</small>
                 </div>
                 
-                <div class="form-group checkbox-group">
+                <!-- Terms Checkbox -->
+                <div class="checkbox-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" 
-                               id="agree_terms" 
-                               name="agree_terms" 
-                               required>
+                        <input type="checkbox" name="agree_terms" required>
                         <span>I agree to the <a href="/terms.php" target="_blank">Terms of Service</a></span>
                     </label>
-                    <small>You must agree to the terms to create an account.</small>
                 </div>
                 
                 <button type="submit" class="submit-btn">Create Account</button>
             </form>
-        <?php endif; ?>
         </div>
     </div>
     
     <script>
-    <?php if ($step === 'signup'): ?>
+    // Username preview
+    document.getElementById('username').addEventListener('input', function() {
+        const username = this.value.trim() || 'username';
+        document.getElementById('usernamePreview').textContent = username;
+    });
+    
+    // Profile photo preview
     document.getElementById('profile_photo').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const preview = document.getElementById('photoPreview');
-                preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+                document.getElementById('photoPreview').innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
             };
             reader.readAsDataURL(file);
         }
     });
     
+    // Form validation
     document.getElementById('signupForm').addEventListener('submit', function(e) {
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
@@ -1044,20 +739,6 @@ if ($step === 'signup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             return false;
         }
     });
-    
-    document.getElementById('youtube_handle').addEventListener('blur', function() {
-        let value = this.value.trim();
-        if (value && !value.startsWith('@')) {
-            this.value = '@' + value;
-        }
-    });
-    <?php endif; ?>
-    
-    <?php if ($step === 'verify'): ?>
-    document.getElementById('verify_code').addEventListener('input', function() {
-        this.value = this.value.toUpperCase();
-    });
-    <?php endif; ?>
     </script>
 </body>
 </html>
