@@ -1,5 +1,5 @@
 <?php
-// creators/edit.php - Clean edit profile page
+// creators/edit.php - Updated with username field
 session_start();
 require_once '../config/database.php';
 
@@ -38,18 +38,17 @@ $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $youtube_handle = trim($_POST['youtube_handle'] ?? '');
+        $username = trim($_POST['username'] ?? '');
         $bio = trim($_POST['bio'] ?? '');
         $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
         $paypal_email = trim($_POST['paypal_email'] ?? '');
         $venmo_handle = trim($_POST['venmo_handle'] ?? '');
         
-        // Remove @ from YouTube handle
-        $youtube_handle = str_replace('@', '', $youtube_handle);
-        
         // Validation
-        if (empty($youtube_handle)) {
-            $error = 'YouTube handle is required';
+        if (empty($username)) {
+            $error = 'Username is required';
+        } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
+            $error = 'Username must be 3-30 characters and contain only letters, numbers, and underscores';
         } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price < 10) {
             $error = 'Minimum topic price must be at least $10';
         } elseif ($minimum_topic_price > 10000) {
@@ -57,92 +56,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!empty($paypal_email) && !filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid PayPal email format';
         } else {
-            // Handle profile image upload
-            $profile_image = $creator->profile_image;
-            if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = '../uploads/creators/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-                
-                $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-                $file_type = $_FILES['profile_image']['type'];
-                $file_size = $_FILES['profile_image']['size'];
-                
-                if (!in_array($file_type, $allowed_types)) {
-                    $error = 'Only JPG, PNG, and WebP images allowed';
-                } elseif ($file_size > 5 * 1024 * 1024) {
-                    $error = 'Image must be under 5MB';
-                } else {
-                    $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
-                    $new_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
-                    $upload_path = $upload_dir . $new_filename;
+            // Check if username is taken by another creator
+            $db->query('SELECT id FROM creators WHERE username = :username AND id != :creator_id');
+            $db->bind(':username', $username);
+            $db->bind(':creator_id', $creator_id);
+            $existing_username = $db->single();
+            
+            if ($existing_username) {
+                $error = 'Username already taken. Please choose another.';
+            } else {
+                // Handle profile image upload
+                $profile_image = $creator->profile_image;
+                if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                    $upload_dir = '../uploads/creators/';
+                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                     
-                    if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
-                        if ($creator->profile_image && file_exists($upload_dir . $creator->profile_image)) {
-                            @unlink($upload_dir . $creator->profile_image);
-                        }
-                        $profile_image = $new_filename;
+                    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+                    $file_type = $_FILES['profile_image']['type'];
+                    $file_size = $_FILES['profile_image']['size'];
+                    
+                    if (!in_array($file_type, $allowed_types)) {
+                        $error = 'Only JPG, PNG, and WebP images allowed';
+                    } elseif ($file_size > 5 * 1024 * 1024) {
+                        $error = 'Image must be under 5MB';
                     } else {
-                        $error = 'Failed to upload image';
+                        $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
+                        $new_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
+                        $upload_path = $upload_dir . $new_filename;
+                        
+                        if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
+                            if ($creator->profile_image && file_exists($upload_dir . $creator->profile_image)) {
+                                @unlink($upload_dir . $creator->profile_image);
+                            }
+                            $profile_image = $new_filename;
+                        } else {
+                            $error = 'Failed to upload image';
+                        }
                     }
                 }
-            }
-            
-            // Handle password change (optional)
-            if (!empty($_POST['new_password']) || !empty($_POST['confirm_password'])) {
-                $new_password = $_POST['new_password'] ?? '';
-                $confirm_password = $_POST['confirm_password'] ?? '';
                 
-                if (strlen($new_password) < 8) {
-                    $error = 'New password must be at least 8 characters';
-                } elseif ($new_password !== $confirm_password) {
-                    $error = 'Passwords do not match';
-                } else {
-                    // Update password
-                    try {
-                        $db->query('UPDATE users SET password_hash = :password_hash WHERE id = :user_id');
-                        $db->bind(':password_hash', password_hash($new_password, PASSWORD_DEFAULT));
-                        $db->bind(':user_id', $_SESSION['user_id']);
-                        $db->execute();
-                    } catch (Exception $e) {
-                        $error = 'Failed to update password: ' . $e->getMessage();
+                // Handle password change (optional)
+                if (!empty($_POST['new_password']) || !empty($_POST['confirm_password'])) {
+                    $new_password = $_POST['new_password'] ?? '';
+                    $confirm_password = $_POST['confirm_password'] ?? '';
+                    
+                    if (strlen($new_password) < 8) {
+                        $error = 'New password must be at least 8 characters';
+                    } elseif ($new_password !== $confirm_password) {
+                        $error = 'Passwords do not match';
+                    } else {
+                        // Update password
+                        try {
+                            $db->query('UPDATE users SET password_hash = :password_hash WHERE id = :user_id');
+                            $db->bind(':password_hash', password_hash($new_password, PASSWORD_DEFAULT));
+                            $db->bind(':user_id', $_SESSION['user_id']);
+                            $db->execute();
+                        } catch (Exception $e) {
+                            $error = 'Failed to update password: ' . $e->getMessage();
+                        }
                     }
                 }
-            }
-            
-            // Update profile if no errors
-            if (!$error) {
-                try {
-                    $platform_url = 'https://youtube.com/@' . $youtube_handle;
-                    
-                    $db->query('
-                        UPDATE creators 
-                        SET display_name = :display_name, 
-                            username = :username,
-                            bio = :bio,
-                            profile_image = :profile_image, 
-                            platform_url = :platform_url,
-                            minimum_topic_price = :minimum_topic_price,
-                            paypal_email = :paypal_email,
-                            venmo_handle = :venmo_handle
-                        WHERE id = :id
-                    ');
-                    $db->bind(':display_name', $youtube_handle);
-                    $db->bind(':username', $youtube_handle);
-                    $db->bind(':bio', $bio);
-                    $db->bind(':profile_image', $profile_image);
-                    $db->bind(':platform_url', $platform_url);
-                    $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
-                    $db->bind(':paypal_email', $paypal_email);
-                    $db->bind(':venmo_handle', $venmo_handle);
-                    $db->bind(':id', $creator_id);
-                    $db->execute();
-                    
-                    $success = 'Profile updated successfully!';
-                    
-                    // Refresh creator data
-                    $creator = $helper->getCreatorById($creator_id);
-                } catch (Exception $e) {
-                    $error = 'Failed to update profile: ' . $e->getMessage();
+                
+                // Update profile if no errors
+                if (!$error) {
+                    try {
+                        $db->query('
+                            UPDATE creators 
+                            SET display_name = :display_name, 
+                                username = :username,
+                                bio = :bio,
+                                profile_image = :profile_image,
+                                minimum_topic_price = :minimum_topic_price,
+                                paypal_email = :paypal_email,
+                                venmo_handle = :venmo_handle
+                            WHERE id = :id
+                        ');
+                        $db->bind(':display_name', $username);
+                        $db->bind(':username', $username);
+                        $db->bind(':bio', $bio);
+                        $db->bind(':profile_image', $profile_image);
+                        $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                        $db->bind(':paypal_email', $paypal_email);
+                        $db->bind(':venmo_handle', $venmo_handle);
+                        $db->bind(':id', $creator_id);
+                        $db->execute();
+                        
+                        $success = 'Profile updated successfully!';
+                        
+                        // Refresh creator data
+                        $creator = $helper->getCreatorById($creator_id);
+                    } catch (Exception $e) {
+                        $error = 'Failed to update profile: ' . $e->getMessage();
+                    }
                 }
             }
         }
@@ -159,18 +164,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: white;
             min-height: 100vh;
-            padding: 0;
-            margin: 0;
         }
         
         /* Navigation */
         .topiclaunch-nav {
             background: white;
             border-bottom: 1px solid #e0e0e0;
-            padding: 16px 40px;
+            padding: 16px 0;
         }
         
         .nav-container {
@@ -215,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-color: #999;
         }
         
-        /* Page Wrapper */
+        /* Page Layout */
         .page-wrapper {
             display: flex;
             flex-direction: column;
@@ -224,7 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: calc(100vh - 70px);
         }
         
-        /* Page Header */
         .page-header {
             text-align: center;
             margin-bottom: 40px;
@@ -249,32 +251,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             border: 1px solid #f0f0f0;
-            padding: 30px;
+            padding: 40px;
             width: 100%;
-            max-width: 450px;
+            max-width: 520px;
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 24px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 6px;
-            color: #333;
-            font-weight: 500;
-            font-size: 13px;
+            margin-bottom: 8px;
+            color: #111827;
+            font-weight: 600;
+            font-size: 14px;
         }
         
         .form-group input,
         .form-group textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: border-color 0.3s;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #FF0000;
+            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
         }
         
         .form-group textarea {
@@ -282,24 +291,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 80px;
         }
         
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #FF0000;
-        }
-        
         .form-group small {
             display: block;
-            margin-top: 4px;
-            color: #666;
-            font-size: 12px;
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        /* Username Field with @ prefix */
+        .input-with-prefix {
+            position: relative;
+        }
+        
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        
+        .input-with-prefix-field {
+            padding-left: 38px !important;
         }
         
         /* Profile Photo */
-        .profile-photo-group {
-            margin-bottom: 20px;
-        }
-        
         .profile-photo-container {
             display: flex;
             gap: 20px;
@@ -307,8 +326,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .profile-photo-preview {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border: 2px dashed #e5e7eb;
             border-radius: 12px;
             display: flex;
@@ -333,16 +352,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: white;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #374151;
             cursor: pointer;
             transition: all 0.2s;
-            margin-bottom: 8px;
         }
         
         .upload-button:hover {
@@ -351,87 +369,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         /* Payout Section */
-        .payout-section {
-            margin-bottom: 20px;
-            padding-top: 10px;
-        }
-        
         .payout-section-label {
             display: block;
             margin-bottom: 12px;
-            color: #000;
+            color: #111827;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
         }
         
         .payout-fields {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .input-with-prefix {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        
-        .input-prefix {
-            position: absolute;
-            left: 12px;
-            color: #6b7280;
-            font-size: 15px;
-        }
-        
-        .input-with-prefix-field {
-            padding-left: 28px !important;
+            gap: 16px;
         }
         
         /* Password Section */
         .password-section {
             margin-top: 30px;
-            padding-top: 20px;
+            padding-top: 24px;
             border-top: 1px solid #e5e7eb;
         }
         
         .password-section-label {
             display: block;
             margin-bottom: 12px;
-            color: #000;
+            color: #111827;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
         }
         
         /* Submit Button */
         .submit-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: #FF0000;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             margin-top: 10px;
         }
         
         .submit-btn:hover {
             background: #CC0000;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(255,0,0,0.3);
         }
         
         /* Messages */
         .error-message {
-            background: #fee;
-            color: #c33;
+            background: #fef2f2;
+            color: #dc2626;
             padding: 12px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
-            border-left: 4px solid #c33;
+            border-left: 4px solid #dc2626;
         }
         
         .success-message {
@@ -444,15 +440,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-left: 4px solid #28a745;
         }
         
-        @media (max-width: 600px) {
-            .page-title {
-                font-size: 32px;
-            }
-            
-            .payout-fields {
-                grid-template-columns: 1fr;
-            }
-            
+        @media (max-width: 768px) {
+            .edit-container { padding: 30px 20px; }
+            .page-title { font-size: 32px; }
+            .payout-fields { grid-template-columns: 1fr; }
             .profile-photo-container {
                 flex-direction: column;
                 align-items: flex-start;
@@ -484,7 +475,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
 
     <div class="page-wrapper">
-        <!-- Page Header -->
         <div class="page-header">
             <h1 class="page-title">Edit Profile</h1>
             <p class="page-subtitle">Update your profile information and settings</p>
@@ -501,14 +491,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <form method="POST" enctype="multipart/form-data">
                 <!-- Profile Photo -->
-                <div class="form-group profile-photo-group">
+                <div class="form-group">
                     <label>Profile Photo</label>
                     <div class="profile-photo-container">
                         <div class="profile-photo-preview" id="photoPreview">
                             <?php if ($creator->profile_image): ?>
                                 <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" alt="Profile">
                             <?php else: ?>
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                     <circle cx="12" cy="7" r="4"></circle>
                                 </svg>
@@ -516,7 +506,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="profile-photo-upload">
                             <label for="profile_image" class="upload-button">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="17 8 12 3 7 8"></polyline>
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -533,15 +523,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 
-                <!-- YouTube Handle -->
+                <!-- Username -->
                 <div class="form-group">
-                    <label for="youtube_handle">YouTube Handle</label>
-                    <input type="text" 
-                           id="youtube_handle" 
-                           name="youtube_handle" 
-                           placeholder="@yourchannel"
-                           value="<?php echo htmlspecialchars($creator->display_name ?? ''); ?>"
-                           required>
+                    <label for="username">Username</label>
+                    <div class="input-with-prefix">
+                        <span class="input-prefix">@</span>
+                        <input type="text" 
+                               id="username" 
+                               name="username" 
+                               placeholder="username"
+                               class="input-with-prefix-field"
+                               pattern="[a-zA-Z0-9_]{3,30}"
+                               value="<?php echo htmlspecialchars($creator->username ?? ''); ?>"
+                               required>
+                    </div>
+                    <small>3-30 characters. Letters, numbers, and underscores only.</small>
                 </div>
                 
                 <!-- Bio -->
@@ -549,7 +545,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="bio">Bio (Optional)</label>
                     <textarea id="bio" 
                               name="bio" 
-                              placeholder="Tell fans about yourself and what kind of videos you create..."><?php echo htmlspecialchars($creator->bio ?? ''); ?></textarea>
+                              placeholder="Tell your audience about yourself..."><?php echo htmlspecialchars($creator->bio ?? ''); ?></textarea>
                 </div>
                 
                 <!-- Minimum Price per Topic -->
@@ -567,12 +563,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <!-- Payout Methods -->
-                <div class="payout-section">
+                <div class="form-group">
                     <label class="payout-section-label">Payout Methods</label>
                     
                     <div class="payout-fields">
-                        <div class="form-group">
-                            <label for="paypal_email">PayPal Email</label>
+                        <div>
+                            <label for="paypal_email" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">PayPal Email</label>
                             <input type="email" 
                                    id="paypal_email" 
                                    name="paypal_email" 
@@ -580,8 +576,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?php echo htmlspecialchars($creator->paypal_email ?? ''); ?>">
                         </div>
                         
-                        <div class="form-group">
-                            <label for="venmo_handle">Venmo Handle</label>
+                        <div>
+                            <label for="venmo_handle" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">Venmo Handle</label>
                             <div class="input-with-prefix">
                                 <span class="input-prefix">@</span>
                                 <input type="text" 
@@ -632,14 +628,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('photoPreview').innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
             };
             reader.readAsDataURL(file);
-        }
-    });
-    
-    // Add @ to YouTube handle if not present
-    document.getElementById('youtube_handle').addEventListener('blur', function() {
-        let value = this.value.trim();
-        if (value && !value.startsWith('@')) {
-            this.value = '@' + value;
         }
     });
     </script>
