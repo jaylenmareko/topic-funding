@@ -116,8 +116,7 @@ $db->query('
     SELECT t.*, 
            UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
            TIMESTAMPDIFF(SECOND, NOW(), t.content_deadline) as seconds_remaining,
-           (t.funding_threshold * 0.9) as potential_earnings,
-           (SELECT COUNT(*) FROM contributions WHERE topic_id = t.id) as donation_count
+           (t.funding_threshold * 0.9) as potential_earnings
     FROM topics t 
     WHERE t.creator_id = :creator_id 
     AND t.status IN ("active", "funded", "on_hold") 
@@ -140,11 +139,6 @@ foreach ($topics as $topic) {
         $active_count++;
     }
 }
-
-// Count completed videos
-$db->query('SELECT COUNT(*) as completed_count FROM topics WHERE creator_id = :creator_id AND status = "completed"');
-$db->bind(':creator_id', $creator->id);
-$completed_count = $db->single()->completed_count ?? 0;
 ?>
 <!DOCTYPE html>
 <html>
@@ -306,6 +300,11 @@ $completed_count = $db->single()->completed_count ?? 0;
             height: 16px;
         }
         
+        /* Hide mobile logout button on desktop */
+        .mobile-logout-btn {
+            display: none;
+        }
+        
         /* Browse Button */
         .browse-btn {
             width: 100%;
@@ -400,9 +399,6 @@ $completed_count = $db->single()->completed_count ?? 0;
             transition: all 0.2s;
             cursor: pointer;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            min-height: 340px;
         }
         
         .topic-tile:hover {
@@ -502,7 +498,6 @@ $completed_count = $db->single()->completed_count ?? 0;
         .topic-tile-actions {
             display: flex;
             gap: 6px;
-            margin-top: auto;
         }
         
         .tile-btn {
@@ -555,8 +550,17 @@ $completed_count = $db->single()->completed_count ?? 0;
             .btn { flex: 1; justify-content: center; }
             .topics-grid { grid-template-columns: 1fr; }
             
-            /* Hide log out button on mobile */
+            /* Hide top nav log out button on mobile */
             .signout-btn { display: none; }
+            
+            /* Show mobile logout button on mobile */
+            .mobile-logout-btn { display: inline-flex; }
+            
+            /* Make page-title-section wrap properly on mobile */
+            .page-title-section {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
             
             /* Fix earnings section on mobile */
             .earnings-section {
@@ -615,17 +619,17 @@ $completed_count = $db->single()->completed_count ?? 0;
                 </div>
                 
                 <!-- Your Price Box -->
-                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 12px; color: #6b7280; font-weight: 500; white-space: nowrap;">Your Price</div>
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Your Price</div>
                     <div style="font-size: 24px; font-weight: 700; color: #111827;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
-                    <div style="font-size: 11px; color: #9ca3af; white-space: nowrap;">per video topic</div>
+                    <div style="font-size: 11px; color: #9ca3af;">per video topic</div>
                 </div>
                 
                 <!-- Completed Videos Box -->
-                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 12px; color: #6b7280; font-weight: 500; white-space: nowrap;">Completed Videos</div>
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Completed Videos</div>
                     <div style="font-size: 24px; font-weight: 700; color: #111827;"><?php echo $completed_count; ?></div>
-                    <div style="font-size: 11px; color: #9ca3af; white-space: nowrap;">videos delivered</div>
+                    <div style="font-size: 11px; color: #9ca3af;">videos delivered</div>
                 </div>
             </div>
             
@@ -636,6 +640,12 @@ $completed_count = $db->single()->completed_count ?? 0;
                         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
                     </svg>
                     Edit Profile
+                </a>
+                <a href="../auth/logout.php" class="btn mobile-logout-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
+                    </svg>
+                    Log Out
                 </a>
             </div>
         </div>
@@ -702,30 +712,23 @@ $completed_count = $db->single()->completed_count ?? 0;
                     <?php foreach ($topics as $topic): ?>
                         <div class="topic-tile" onclick="openTopicModal(<?php echo $topic->id; ?>)">
                             <div class="topic-tile-header">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                                    <div>
-                                        <?php if ($topic->status === 'funded'): ?>
-                                            <div class="topic-status-badge funded">
-                                                ⏱️ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>">
-                                                    <?php
-                                                    $seconds_left = max(0, $topic->seconds_remaining);
-                                                    $hours = floor($seconds_left / 3600);
-                                                    $minutes = floor(($seconds_left % 3600) / 60);
-                                                    $seconds = $seconds_left % 60;
-                                                    echo sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
-                                                    ?>
-                                                </span>
-                                            </div>
-                                        <?php elseif ($topic->status === 'on_hold'): ?>
-                                            <div class="topic-status-badge on-hold">On Hold</div>
-                                        <?php else: ?>
-                                            <div class="topic-status-badge">Active</div>
-                                        <?php endif; ?>
+                                <?php if ($topic->status === 'funded'): ?>
+                                    <div class="topic-status-badge funded">
+                                        ⏱️ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>">
+                                            <?php
+                                            $seconds_left = max(0, $topic->seconds_remaining);
+                                            $hours = floor($seconds_left / 3600);
+                                            $minutes = floor(($seconds_left % 3600) / 60);
+                                            $seconds = $seconds_left % 60;
+                                            echo sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                                            ?>
+                                        </span>
                                     </div>
-                                    <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: #666;">
-                                        <?php echo $topic->donation_count ?? 0; ?> Donation<?php echo ($topic->donation_count ?? 0) != 1 ? 's' : ''; ?>
-                                    </div>
-                                </div>
+                                <?php elseif ($topic->status === 'on_hold'): ?>
+                                    <div class="topic-status-badge on-hold">On Hold</div>
+                                <?php else: ?>
+                                    <div class="topic-status-badge">Active</div>
+                                <?php endif; ?>
                                 
                                 <h3 class="topic-tile-title"><?php echo htmlspecialchars($topic->title); ?></h3>
                                 <p class="topic-tile-subtitle">
