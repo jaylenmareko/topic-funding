@@ -633,8 +633,10 @@ if ($db_available) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Get Guaranteed<br><span class="red">Content.</span></h1>
-        <p>Request Reels and TikToks from your favorite influencers and get guaranteed content when fully funded.</p>
+        <h1>Get Paid For<br><span class="red">Fan Requests</span></h1>
+        <p>Fans request and pay upfront. You deliver. You get paid.</p>
+        <p style="font-size: 15px; color: #666; margin-top: -25px; margin-bottom: 5px;">📱 Instagram & TikTok Compatible</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Short-form Content Only</p>
         
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
@@ -645,31 +647,20 @@ if ($db_available) {
         <div class="signup-steps">
             <div class="step-box">
                 <div class="step-icon">💡</div>
-                <h3>Fund a Topic</h3>
-                <p>Pay for a topic yourself or split the cost with others.</p>
+                <h3>Fans Request & Pay</h3>
+                <p>Followers pay upfront for the content they want.</p>
             </div>
             <div class="step-box">
                 <div class="step-icon">⚡</div>
                 <h3>48-Hour Delivery</h3>
-                <p>Creator delivers and gets 90% of funding, or fans get refunded.</p>
-            </div>
-            <div class="step-box">
-                <div class="step-icon">📱</div>
-                <h3>Instagram & TikTok Compatible</h3>
-                <p>Built for short-form creators. Post your Reels or TikToks directly from funded topics.</p>
+                <p>Deliver within 48 hours and get 90% of funding, or fans get refunded.</p>
             </div>
         </div>
     </div>
 
     <div class="creators-section" id="creators">
         <div class="header">
-            <h2 class="header-title">
-                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
+            <h2 class="header-title" style="display: block;">
                 Trending Influencers
             </h2>
             <p class="header-subtitle">Top influencers growing fast this week.</p>
