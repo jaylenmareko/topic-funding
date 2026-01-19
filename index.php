@@ -270,7 +270,7 @@ if ($db_available) {
             box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
         }
         
-        /* 2-Step Process Boxes */
+        /* 3-Box Process Layout */
         .signup-steps {
             display: flex;
             gap: 30px;
@@ -596,7 +596,7 @@ if ($db_available) {
                 display: none;
             }
             
-            /* Stack signup steps on mobile */
+            /* Stack all boxes on mobile */
             .signup-steps {
                 flex-direction: column;
                 align-items: center;
@@ -635,7 +635,6 @@ if ($db_available) {
     <div class="hero">
         <h1>Get Paid For<br><span class="red">Fan Requests</span></h1>
         <p>Fans request and pay upfront. You deliver. You get paid.</p>
-        <p style="font-size: 15px; color: #666; margin-top: -25px; margin-bottom: 5px;">📱 Instagram & TikTok Compatible</p>
         <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Short-form Content Only</p>
         
         <div style="margin-top: 30px;">
@@ -645,6 +644,11 @@ if ($db_available) {
         </div>
         
         <div class="signup-steps">
+            <div class="step-box">
+                <div class="step-icon">📱</div>
+                <h3>Instagram & TikTok Compatible</h3>
+                <p>Post your content on any platform you choose.</p>
+            </div>
             <div class="step-box">
                 <div class="step-icon">💡</div>
                 <h3>Fans Request & Pay</h3>
