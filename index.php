@@ -523,7 +523,7 @@ if ($db_available) {
         
         .fund-topics-btn {
             padding: 10px 20px;
-            background: #10b981;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 50px;
@@ -535,7 +535,7 @@ if ($db_available) {
         }
         
         .fund-topics-btn:hover {
-            background: #059669;
+            background: #E01B6F;
             transform: scale(1.05);
         }
         
@@ -634,7 +634,7 @@ if ($db_available) {
     <!-- Hero Section -->
     <div class="hero">
         <h1>Get Guaranteed<br><span class="red">Content.</span></h1>
-        <p>Request videos from your favorite influencers and get guaranteed content when fully funded.</p>
+        <p>Request Reels and TikToks from your favorite influencers and get guaranteed content when fully funded.</p>
         
         <div style="margin-top: 30px;">
             <a href="creators/signup.php" class="youtuber-signup-btn">
@@ -645,8 +645,8 @@ if ($db_available) {
         <div class="signup-steps">
             <div class="step-box">
                 <div class="step-icon">💡</div>
-                <h3>Fans Crowdfund Topics</h3>
-                <p>Fans make the FIRST contribution for a video idea. Then others chip in until goal is reached.</p>
+                <h3>Fund a Topic</h3>
+                <p>Pay for a topic yourself or split the cost with others.</p>
             </div>
             <div class="step-box">
                 <div class="step-icon">⚡</div>
