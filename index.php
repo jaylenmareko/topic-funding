@@ -301,8 +301,6 @@ if ($db_available) {
         .step-icon {
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, #FF1F7D, #FF6BA9);
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
