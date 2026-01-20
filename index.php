@@ -633,7 +633,7 @@ if ($db_available) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Get Paid For<br><span class="red">Fan Requests</span></h1>
+        <h1>Get Paid For<br><span class="red">Video Requests</span></h1>
         <p>Fans request and pay upfront. You deliver. You get paid.</p>
         <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Short-form Content Only</p>
         
