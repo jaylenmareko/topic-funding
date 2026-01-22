@@ -97,6 +97,11 @@ if ($db_available) {
     <meta property="twitter:description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
     <meta property="twitter:image" content="https://topiclaunch.com/og-image.png">
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -301,6 +306,8 @@ if ($db_available) {
         .step-icon {
             width: 60px;
             height: 60px;
+            background: linear-gradient(135deg, #FF1F7D, #FF6BA9);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -594,7 +601,7 @@ if ($db_available) {
                 display: none;
             }
             
-            /* Stack all boxes on mobile */
+            /* Stack signup steps on mobile */
             .signup-steps {
                 flex-direction: column;
                 align-items: center;
