@@ -49,10 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Username is required';
         } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
             $error = 'Username must be 3-30 characters and contain only letters, numbers, and underscores';
-        } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price < 10) {
-            $error = 'Minimum topic price must be at least $10';
-        } elseif ($minimum_topic_price > 10000) {
-            $error = 'Minimum topic price cannot exceed $10,000';
+        } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price <= 0) {
+            $error = 'Please enter a valid price';
         } elseif (!empty($paypal_email) && !filter_var($paypal_email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid PayPal email format';
         } else {
@@ -188,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-logo {
             font-size: 20px;
             font-weight: 700;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
         
@@ -282,8 +280,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #FF0000;
-            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
         }
         
         .form-group textarea {
@@ -364,8 +362,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .upload-button:hover {
-            border-color: #FF0000;
-            color: #FF0000;
+            border-color: #FF1F7D;
+            color: #FF1F7D;
         }
         
         /* Payout Section */
@@ -402,7 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .submit-btn {
             width: 100%;
             padding: 14px;
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 8px;
@@ -414,9 +412,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .submit-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
         }
         
         /* Messages */
@@ -554,8 +552,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="number" 
                            id="minimum_topic_price" 
                            name="minimum_topic_price" 
-                           min="10"
-                           max="10000"
                            step="1"
                            value="<?php echo htmlspecialchars($creator->minimum_topic_price ?? 100); ?>"
                            required>
