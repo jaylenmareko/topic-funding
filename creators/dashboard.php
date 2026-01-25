@@ -1,5 +1,5 @@
 <?php
-// creators/dashboard.php - EXACT RIZZDEM LAYOUT
+// creators/dashboard.php - UPDATED WITH CONSISTENT BRANDING
 session_start();
 require_once '../config/database.php';
 
@@ -17,6 +17,12 @@ if (!$creator) {
     header('Location: ../creators/index.php');
     exit;
 }
+
+// Get completed count
+$db->query('SELECT COUNT(*) as count FROM topics WHERE creator_id = :creator_id AND status = "completed"');
+$db->bind(':creator_id', $creator->id);
+$completed_result = $db->single();
+$completed_count = $completed_result->count ?? 0;
 
 $current_script = basename($_SERVER['PHP_SELF']);
 $allowed_pages = ['dashboard.php', 'edit.php'];
@@ -129,7 +135,6 @@ $db->query('
 $db->bind(':creator_id', $creator->id);
 $topics = $db->resultSet();
 
-// Count funded and active topics
 $funded_count = 0;
 $active_count = 0;
 foreach ($topics as $topic) {
@@ -153,7 +158,12 @@ foreach ($topics as $topic) {
             color: #000;
         }
         
-        /* Top Navigation */
+        /* UPDATED: Use consistent pink */
+        :root {
+            --hot-pink: #FF006B;
+            --deep-pink: #E6005F;
+        }
+        
         .top-nav {
             background: white;
             border-bottom: 1px solid #e0e0e0;
@@ -172,7 +182,7 @@ foreach ($topics as $topic) {
         .logo {
             font-size: 20px;
             font-weight: 700;
-            color: #FF1F7D;
+            color: var(--hot-pink);
             text-decoration: none;
         }
         
@@ -189,23 +199,13 @@ foreach ($topics as $topic) {
         }
         
         .top-nav-links a:hover {
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
         
         .top-nav-right {
             display: flex;
             gap: 24px;
             align-items: center;
-        }
-        
-        .inbox-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #333;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: default;
         }
         
         .signout-btn {
@@ -227,14 +227,12 @@ foreach ($topics as $topic) {
             border-color: #999;
         }
         
-        /* Main Container */
         .container {
             max-width: 1600px;
             margin: 0 auto;
             padding: 40px 280px;
         }
         
-        /* Page Header */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -262,7 +260,7 @@ foreach ($topics as $topic) {
         .title-icon {
             width: 32px;
             height: 32px;
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
         
         .page-subtitle {
@@ -300,12 +298,10 @@ foreach ($topics as $topic) {
             height: 16px;
         }
         
-        /* Hide mobile logout button on desktop */
         .mobile-logout-btn {
             display: none;
         }
         
-        /* Browse Button */
         .browse-btn {
             width: 100%;
             padding: 16px;
@@ -325,11 +321,10 @@ foreach ($topics as $topic) {
         }
         
         .browse-btn:hover {
-            border-color: #FF1F7D;
-            color: #FF1F7D;
+            border-color: var(--hot-pink);
+            color: var(--hot-pink);
         }
         
-        /* Main Content Box */
         .content-box {
             background: white;
             border: 1px solid #e0e0e0;
@@ -338,14 +333,12 @@ foreach ($topics as $topic) {
             min-height: 500px;
         }
         
-        /* Topic Grid */
         .topics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 16px;
         }
         
-        /* Empty State */
         .empty-state {
             text-align: center;
             max-width: 600px;
@@ -375,7 +368,7 @@ foreach ($topics as $topic) {
         }
         
         .empty-btn {
-            background: #FF1F7D;
+            background: var(--hot-pink);
             color: white;
             padding: 12px 32px;
             border-radius: 8px;
@@ -387,10 +380,9 @@ foreach ($topics as $topic) {
         }
         
         .empty-btn:hover {
-            background: #E01B6F;
+            background: var(--deep-pink);
         }
         
-        /* Topic Tile */
         .topic-tile {
             background: white;
             border: 1px solid #e0e0e0;
@@ -402,7 +394,7 @@ foreach ($topics as $topic) {
         }
         
         .topic-tile:hover {
-            border-color: #FF1F7D;
+            border-color: var(--hot-pink);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
@@ -490,7 +482,7 @@ foreach ($topics as $topic) {
         
         .progress-bar-fill {
             height: 100%;
-            background: #FF1F7D;
+            background: var(--hot-pink);
             border-radius: 3px;
             transition: width 0.3s;
         }
@@ -518,13 +510,13 @@ foreach ($topics as $topic) {
         }
         
         .tile-btn.primary {
-            background: #FF1F7D;
+            background: var(--hot-pink);
             color: white;
-            border-color: #FF1F7D;
+            border-color: var(--hot-pink);
         }
         
         .tile-btn.primary:hover {
-            background: #E01B6F;
+            background: var(--deep-pink);
         }
         
         .tile-btn.danger {
@@ -543,50 +535,104 @@ foreach ($topics as $topic) {
             color: #28a745;
         }
         
+        /* UPDATED: Earnings section with consistent pink */
+        .earnings-section {
+            background: linear-gradient(135deg, #fef3f8 0%, #fdeef4 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 24px 0;
+            border: 1px solid #fecde0;
+        }
+        
+        .earnings-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .earnings-stats > div {
+            flex: 0 0 auto;
+        }
+        
+        .earnings-stats .stat-label {
+            font-size: 13px;
+            color: #991b4d;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .earnings-stats .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .earnings-stats .stat-value.balance {
+            color: var(--deep-pink);
+        }
+        
+        .earnings-stats .stat-value.pending {
+            color: #f97316;
+        }
+        
+        .earnings-stats .stat-value.paid {
+            color: #10b981;
+        }
+        
+        .payout-wrapper {
+            flex: 0 0 auto;
+            text-align: center;
+        }
+        
+        .payout-button {
+            background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .payout-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 0, 107, 0.4);
+        }
+        
+        .payout-note {
+            font-size: 11px;
+            color: #991b4d;
+            margin-top: 6px;
+        }
+        
         @media (max-width: 768px) {
             .container { padding: 20px 30px; }
             .page-header { flex-direction: column; gap: 20px; }
             .header-buttons { width: 100%; }
             .btn { flex: 1; justify-content: center; }
             .topics-grid { grid-template-columns: 1fr; }
-            
-            /* Hide top nav log out button on mobile */
             .signout-btn { display: none; }
-            
-            /* Show mobile logout button on mobile */
             .mobile-logout-btn { display: inline-flex; }
-            
-            /* Make page-title-section wrap properly on mobile */
             .page-title-section {
                 flex-wrap: wrap;
                 gap: 12px;
             }
-            
-            /* Fix earnings section on mobile */
-            .earnings-section {
-                padding: 24px 20px !important;
-            }
-            
             .earnings-stats {
-                display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
-                gap: 20px !important;
-                align-items: stretch !important;
-            }
-            
-            .earnings-stats > div {
-                text-align: center;
-            }
-            
-            .earnings-stats > div:last-child {
-                grid-column: 1 / -1;
-                margin-top: 10px;
+                gap: 16px !important;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Top Navigation -->
     <nav class="top-nav">
         <div class="top-nav-content">
             <a href="/" class="logo">TopicLaunch</a>
@@ -602,9 +648,7 @@ foreach ($topics as $topic) {
         </div>
     </nav>
 
-    <!-- Main Container -->
     <div class="container">
-        <!-- Page Header -->
         <div class="page-header">
             <div class="page-title-section">
                 <div>
@@ -618,14 +662,12 @@ foreach ($topics as $topic) {
                     <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>! You have <?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
                 
-                <!-- Your Price Box -->
                 <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
                     <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Your Price</div>
                     <div style="font-size: 24px; font-weight: 700; color: #111827;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
                     <div style="font-size: 11px; color: #9ca3af;">per video topic</div>
                 </div>
                 
-                <!-- Completed Videos Box -->
                 <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
                     <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Completed Videos</div>
                     <div style="font-size: 24px; font-weight: 700; color: #111827;"><?php echo $completed_count; ?></div>
@@ -650,53 +692,45 @@ foreach ($topics as $topic) {
             </div>
         </div>
 
-        <!-- Browse/Copy Profile Button -->
         <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
             🔗 Copy Profile Link
         </button>
 
-        <!-- Earnings & Payout Section -->
-        <div class="earnings-section" style="background: linear-gradient(135deg, #fef3f8 0%, #fdeef4 100%); border-radius: 16px; padding: 32px; margin: 24px 0; border: 1px solid #fecde0;">
-            <div class="earnings-stats" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
-                <!-- Total Earnings -->
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Total Earnings</div>
-                    <div style="font-size: 32px; font-weight: 700; color: #1f2937;">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
+        <div class="earnings-section">
+            <div class="earnings-stats">
+                <div>
+                    <div class="stat-label">Total Earnings</div>
+                    <div class="stat-value">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
                 </div>
                 
-                <!-- Available Balance -->
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Available Balance</div>
-                    <div style="font-size: 32px; font-weight: 700; color: #dc2670;">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
+                <div>
+                    <div class="stat-label">Available Balance</div>
+                    <div class="stat-value balance">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
                 </div>
                 
-                <!-- Pending Payout -->
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Pending Payout</div>
-                    <div style="font-size: 32px; font-weight: 700; color: #f97316;">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
+                <div>
+                    <div class="stat-label">Pending Payout</div>
+                    <div class="stat-value pending">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
                 </div>
                 
-                <!-- Paid Out -->
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Paid Out</div>
-                    <div style="font-size: 32px; font-weight: 700; color: #10b981;">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
+                <div>
+                    <div class="stat-label">Paid Out</div>
+                    <div class="stat-value paid">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
                 </div>
                 
-                <!-- Request Payout Button -->
-                <div style="flex-shrink: 0; text-align: right;">
-                    <button onclick="requestPayout()" style="background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3); transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 31, 125, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 31, 125, 0.3)'">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="payout-wrapper">
+                    <button onclick="requestPayout()" class="payout-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                             <line x1="1" y1="10" x2="23" y2="10"></line>
                         </svg>
-                        Request Payout →
+                        Request Payout
                     </button>
-                    <div style="font-size: 12px; color: #991b4d; margin-top: 8px;">Minimum $50 required</div>
+                    <div class="payout-note">Min. $50</div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content Box -->
         <div class="content-box">
             <?php if (empty($topics)): ?>
                 <div class="empty-state">
@@ -781,7 +815,6 @@ foreach ($topics as $topic) {
     </div>
 
     <script>
-        // Update countdown timers every second
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
                 const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
@@ -825,23 +858,15 @@ foreach ($topics as $topic) {
             }
             
             if (confirm('Request payout of $' + availableBalance.toFixed(2) + '?')) {
-                // TODO: Implement payout request API
                 alert('Payout request feature coming soon!');
             }
         }
         
         function copyTopicLink(id) {
             event.stopPropagation();
-            // Get only ACTIVE topics IDs (matching the profile page)
             const allTopics = <?php echo json_encode($topics); ?>;
-            console.log('All topics:', allTopics);
-            console.log('Looking for topic ID:', id);
-            
             const activeTopics = allTopics.filter(t => t.status == 'active').map(t => parseInt(t.id));
-            console.log('Active topic IDs:', activeTopics);
-            
             const topicNum = activeTopics.indexOf(parseInt(id)) + 1;
-            console.log('Topic number:', topicNum);
             
             if (topicNum === 0) {
                 alert('Only active topics can be shared. Status: ' + allTopics.find(t => t.id == id)?.status);
