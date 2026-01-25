@@ -1,5 +1,5 @@
 <?php
-// index.php - INFLUENCERS ONLY
+// index.php - FOR WOMEN WHO RUN IT
 session_start();
 
 // Try to load database config
@@ -76,61 +76,63 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Get Guaranteed Content from Influencers</title>
+    <title>TopicLaunch - For Creators Who Run It</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <meta name="description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
+    <meta name="description" content="The platform where women monetize their content on their terms. Set your price, get paid upfront, stay in control. Built for the next generation of female entrepreneurs.">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - Request Videos from Your Favorite Influencers">
-    <meta property="og:description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
+    <meta property="og:title" content="TopicLaunch - Turn Your Influence Into Income">
+    <meta property="og:description" content="The platform where women monetize their content on their terms. Set your price, get paid upfront, stay in control.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://topiclaunch.com/">
-    <meta property="twitter:title" content="TopicLaunch - Request Videos from Your Favorite Influencers">
-    <meta property="twitter:description" content="Crowdfund video topics from Instagram and TikTok influencers. Fans request content, influencers deliver within 48 hours, or everyone gets refunded. Start requesting now!">
-    <meta property="twitter:image" content="https://topiclaunch.com/og-image.png">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        :root {
+            --hot-pink: #FF006B;
+            --deep-pink: #E6005F;
+            --black: #000000;
+            --off-white: #FAFAFA;
+            --white: #FFFFFF;
+            --cream: #FFF8F5;
+            --gray-dark: #1A1A1A;
+            --gray-med: #666666;
+            --gray-light: #E5E5E5;
+        }
+        
+        * { 
             margin: 0; 
             padding: 0; 
-            background: white;
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0; 
+            padding: 0; 
+            background: var(--white);
+            color: var(--black);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             animation: fadeIn 0.6s ease-in;
         }
         
-        /* Fade-in animation on page load */
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
-        }
-        
-        /* Staggered animations for sections */
-        .hero {
-            animation: fadeInUp 0.8s ease-out 0.1s both;
-        }
-        
-        .creators-section {
-            animation: fadeInUp 0.8s ease-out 0.3s both;
         }
         
         @keyframes fadeInUp {
@@ -144,29 +146,50 @@ if ($db_available) {
             }
         }
         
-        /* Navigation - Rizzdem Style */
-        .topiclaunch-nav {
-            background: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-bottom: 1px solid #f0f0f0;
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
+        
+        /* Navigation */
+        .topiclaunch-nav {
+            background: var(--white);
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
         .nav-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 30px;
         }
+        
         .nav-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FF1F7D;
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--black);
             text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        
+        .nav-logo span {
+            color: var(--hot-pink);
         }
 
-        /* Nav Center Links - Rizzdem Style */
         .nav-center {
             display: flex;
             gap: 30px;
@@ -174,18 +197,17 @@ if ($db_available) {
         }
         
         .nav-link {
-            color: #6b7280;
+            color: var(--gray-dark);
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             transition: color 0.2s;
         }
         
         .nav-link:hover {
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
 
-        /* Nav Right Buttons */
         .nav-buttons {
             display: flex;
             gap: 15px;
@@ -193,7 +215,7 @@ if ($db_available) {
         }
         
         .nav-login-btn {
-            color: #333;
+            color: var(--gray-dark);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
@@ -202,433 +224,439 @@ if ($db_available) {
         }
         
         .nav-login-btn:hover {
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
         
         .nav-getstarted-btn {
-            background: #FF1F7D;
-            color: white;
+            background: var(--hot-pink);
+            color: var(--white);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            padding: 8px 20px;
+            padding: 10px 24px;
             border-radius: 50px;
             transition: all 0.2s;
         }
         
         .nav-getstarted-btn:hover {
-            background: #E01B6F;
+            background: var(--deep-pink);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
         }
         
         /* Hero Section */
         .hero { 
-            background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
-            color: #333; 
-            padding: 40px 20px 40px 20px; 
+            background: var(--black);
+            padding: 80px 30px 100px 30px; 
             text-align: center;
-            min-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            padding-top: 80px;
             position: relative;
+            overflow: hidden;
         }
         
         .hero::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: radial-gradient(circle at 20% 50%, rgba(255, 31, 125, 0.06) 0%, transparent 50%),
-                              radial-gradient(circle at 80% 80%, rgba(224, 27, 111, 0.06) 0%, transparent 50%);
-            pointer-events: none;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--hot-pink) 0%, transparent 70%);
+            opacity: 0.15;
+            animation: pulse 8s ease-in-out infinite;
         }
-        .hero h1 { font-size: 56px; margin: 0 0 15px 0; font-weight: bold; color: #000; line-height: 1.2; }
-        .hero h1 span.red { color: #FF1F7D; }
-        .hero p { font-size: 18px; margin: 0 0 35px 0; color: #666; max-width: 600px; }
         
-        /* Influencer Signup Button */
-        .youtuber-signup-btn {
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.15; }
+            50% { transform: scale(1.1); opacity: 0.25; }
+        }
+        
+        .hero-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+        
+        .hero-eyebrow {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--hot-pink);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+        
+        .hero h1 { 
+            font-family: 'Playfair Display', serif;
+            font-size: 68px; 
+            margin: 0 0 25px 0; 
+            font-weight: 700; 
+            color: var(--white); 
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+        
+        .hero h1 .pink { 
+            color: var(--hot-pink);
+            font-style: italic;
+        }
+        
+        .hero-subhead {
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--off-white);
+            max-width: 700px;
+            margin: 0 auto 40px auto;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+        
+        .hero-cta {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            background: #FF1F7D;
-            color: white;
-            padding: 14px 40px;
+            background: var(--hot-pink);
+            color: var(--white);
+            padding: 18px 45px;
             border-radius: 50px;
             font-size: 16px;
             font-weight: 700;
             text-decoration: none;
-            box-shadow: none;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(255, 0, 107, 0.25);
+            animation: fadeInScale 0.6s ease-out 0.7s both;
         }
         
-        .youtuber-signup-btn:hover {
-            background: #E01B6F;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
+        .hero-cta:hover {
+            background: var(--deep-pink);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 0, 107, 0.35);
         }
         
-        /* 3-Box Process Layout */
-        .signup-steps {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
-            margin-top: 50px;
-            padding: 0 20px;
-            max-width: 1100px;
-            margin-left: auto;
-            margin-right: auto;
+        /* Value Props */
+        .value-props {
+            background: var(--white);
+            padding: 80px 30px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
-        .step-box {
-            background: #fafafa;
-            border-radius: 12px;
-            padding: 30px 25px;
-            flex: 1;
-            max-width: 280px;
+        .value-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 50px;
+        }
+        
+        .value-card {
             text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid #f0f0f0;
+            padding: 40px 30px;
+            background: var(--cream);
+            border-radius: 20px;
+            transition: all 0.3s ease;
         }
         
-        .step-box:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        .value-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         
-        .step-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #FF1F7D, #FF6BA9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 28px;
+        .value-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
         }
         
-        .step-box h3 {
-            color: #000;
-            font-size: 17px;
-            margin: 0 0 12px 0;
-            font-weight: 600;
+        .value-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--black);
         }
         
-        .step-box p {
-            color: #666;
-            font-size: 14px;
+        .value-card p {
+            font-size: 16px;
             line-height: 1.6;
-            margin: 0;
+            color: var(--gray-dark);
+            font-weight: 400;
         }
-        
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         
         /* Creators Section */
         .creators-section {
-            max-width: 1200px;
-            margin: 25px auto 60px auto;
-            padding: 0 20px;
+            background: var(--cream);
+            padding: 80px 30px 100px 30px;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
         }
         
-        .header {
-            margin-bottom: 32px;
+        .creators-container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 32px;
+        .section-header {
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        
+        .section-eyebrow {
+            font-size: 13px;
             font-weight: 700;
-            margin-bottom: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--hot-pink);
+            margin-bottom: 15px;
         }
         
-        .header-icon {
-            width: 32px;
-            height: 32px;
-            color: #FF1F7D;
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 48px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--black);
         }
         
-        .header-subtitle {
-            font-size: 16px;
-            color: #6b7280;
+        .section-subtitle {
+            font-size: 18px;
+            color: var(--gray-med);
+            font-weight: 400;
         }
         
-        /* Search Section */
+        /* Search */
         .search-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .search-row {
-            display: flex;
-            gap: 16px;
-            align-items: center;
+            background: var(--white);
+            border-radius: 50px;
+            padding: 8px;
+            margin-bottom: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 50px;
         }
         
         .search-input-wrapper {
-            flex: 1;
             position: relative;
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            width: 20px;
-            height: 20px;
         }
         
         .search-input {
             width: 100%;
-            padding: 14px 16px 14px 48px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
+            padding: 16px 20px 16px 50px;
+            border: none;
+            border-radius: 50px;
             font-size: 15px;
-            transition: all 0.2s;
+            font-weight: 500;
             outline: none;
+            background: transparent;
         }
         
-        .search-input:focus {
-            border-color: #FF1F7D;
-            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-med);
+            width: 18px;
+            height: 18px;
         }
         
-        .creators-grid-landing {
+        /* Creator Cards */
+        .creators-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
         }
         
-        .creator-card-kalshi {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s;
+        .creator-card {
+            background: var(--white);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s;
             cursor: pointer;
             text-decoration: none;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
             color: inherit;
+            display: block;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
         }
         
-        .creator-card-kalshi:hover {
-            border-color: #FF1F7D;
-            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.15);
-            transform: translateY(-2px);
+        .creator-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(255, 0, 107, 0.15);
         }
         
-        .creator-card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .creator-avatar-kalshi {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%);
+        .creator-card-image {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
             overflow: hidden;
-            flex-shrink: 0;
         }
         
-        .creator-avatar-kalshi img {
+        .creator-card-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        .creator-info {
-            flex: 1;
-            min-width: 0;
+        .creator-initial {
+            font-family: 'Playfair Display', serif;
+            font-size: 72px;
+            color: var(--white);
+            font-weight: 700;
         }
         
-        .creator-name-kalshi {
-            font-size: 17px;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .creator-card-content {
+            padding: 25px;
         }
         
-        .creator-handle-kalshi {
+        .creator-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            margin-bottom: 5px;
+            font-weight: 700;
+            color: var(--black);
+        }
+        
+        .creator-handle {
             font-size: 14px;
-            color: #6b7280;
+            color: var(--hot-pink);
+            font-weight: 600;
+            margin-bottom: 15px;
         }
         
         .creator-bio {
             font-size: 14px;
-            color: #6b7280;
-            line-height: 1.5;
-            margin: 12px 0 16px 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            min-height: 42px;
-            max-height: 42px;
+            line-height: 1.6;
+            color: var(--gray-dark);
+            margin-bottom: 20px;
+            min-height: 60px;
+            font-weight: 400;
         }
         
-        .creator-price-section {
+        .creator-footer {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            gap: 15px;
-            padding-top: 16px;
-            margin-top: 16px;
-            border-top: 1px solid #e5e7eb;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-light);
         }
         
         .creator-price {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            padding: 0;
-        }
-        
-        .price-amount {
-            font-size: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 26px;
+            color: var(--black);
             font-weight: 700;
-            color: #111827;
         }
         
         .price-label {
-            font-size: 12px;
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        .fund-topics-btn {
-            padding: 10px 20px;
-            background: #FF1F7D;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 700;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: all 0.2s;
-        }
-        
-        .fund-topics-btn:hover {
-            background: #E01B6F;
-            transform: scale(1.05);
-        }
-        
-        
-        .load-more-container {
-            text-align: center;
-            margin-top: 30px;
-        }
-        
-        .load-more-btn {
-            display: inline-block;
-            padding: 12px 32px;
-            background: #FF1F7D;
-            color: white;
-            border: none;
-            border-radius: 8px;
+            font-size: 11px;
+            color: var(--gray-med);
             font-weight: 600;
+            display: block;
+            margin-top: 2px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .fund-btn {
+            background: var(--hot-pink);
+            color: var(--white);
+            border: none;
+            padding: 10px 24px;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            border-radius: 50px;
         }
         
-        .load-more-btn:hover {
-            background: #E01B6F;
-        }
-        
-        .load-more-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
+        .fund-btn:hover {
+            background: var(--deep-pink);
+            transform: scale(1.05);
         }
         
         /* Footer */
         .footer {
-            background: #333;
-            color: #999;
+            background: var(--black);
+            color: var(--gray-light);
             text-align: center;
-            padding: 20px;
-            margin-top: 0;
+            padding: 50px 30px;
             font-size: 14px;
         }
+        
         .footer a {
-            color: #999;
+            color: var(--hot-pink);
             text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
         }
+        
         .footer a:hover {
-            color: white;
+            color: var(--white);
+        }
+        
+        .footer-links {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .value-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .creators-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
         }
         
         @media (max-width: 768px) {
-            .hero { padding-top: 60px; }
-            .hero h1 { font-size: 40px; }
-            .hero p { font-size: 16px; margin-bottom: 30px; }
-            .creators-grid-landing { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-            .header-title { font-size: 28px; }
-            .header-subtitle { font-size: 16px; }
-            
-            /* Hide nav center links on mobile */
             .nav-center {
                 display: none;
             }
             
-            /* Stack signup steps on mobile */
-            .signup-steps {
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-                margin-top: 35px;
+            .hero {
+                padding: 60px 20px 80px 20px;
             }
             
-            .step-box {
-                max-width: 100%;
-                width: 100%;
+            .hero h1 {
+                font-size: 42px;
+                letter-spacing: -1px;
+            }
+            
+            .hero-subhead {
+                font-size: 18px;
+            }
+            
+            .section-title {
+                font-size: 36px;
+            }
+            
+            .creators-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation - Rizzdem Style -->
+    <!-- Navigation -->
     <nav class="topiclaunch-nav">
         <div class="nav-container">
-            <a href="/" class="nav-logo">TopicLaunch</a>
+            <a href="/" class="nav-logo">Topic<span>Launch</span></a>
             
-            <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/creators/" class="nav-link">Browse Influencers</a>
-                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
+                <a href="/creators/" class="nav-link">Browse Creators</a>
+                <a href="/creators/signup.php" class="nav-link">For Creators</a>
             </div>
             
-            <!-- Right Navigation Buttons -->
             <div class="nav-buttons">
                 <a href="/auth/login.php" class="nav-login-btn">Log In</a>
                 <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
@@ -638,45 +666,53 @@ if ($db_available) {
 
     <!-- Hero Section -->
     <div class="hero">
-        <h1>Get Paid For<br><span class="red">Video Requests</span></h1>
-        <p>Fans request and pay upfront. You deliver. You get paid.</p>
-        <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Short-form Content Only</p>
-        
-        <div style="margin-top: 30px;">
-            <a href="creators/signup.php" class="youtuber-signup-btn">
-                START EARNING
+        <div class="hero-container">
+            <div class="hero-eyebrow">FOR CREATORS WHO RUN IT</div>
+            <h1>
+                Your Content.<br>
+                Your Rules.<br>
+                <span class="pink">Your Money.</span>
+            </h1>
+            <p class="hero-subhead">
+                Set your price, your audience pays upfront, you create on your terms.
+            </p>
+            <a href="creators/signup.php" class="hero-cta">
+                Start Earning
             </a>
         </div>
-        
-        <div class="signup-steps">
-            <div class="step-box">
-                <div class="step-icon">📱</div>
-                <h3>Instagram & TikTok Compatible</h3>
-                <p>Post your content on any platform you choose.</p>
+    </div>
+
+    <!-- Value Props -->
+    <div class="value-props">
+        <div class="value-container">
+            <div class="value-card">
+                <div class="value-icon">ðŸ‘‘</div>
+                <h3>You're the CEO Here</h3>
+                <p>Set your own rates. No negotiating with brands who lowball you. You decide what your content is worth.</p>
             </div>
-            <div class="step-box">
-                <div class="step-icon">💡</div>
-                <h3>Fans Request & Pay</h3>
-                <p>Followers pay upfront for the content they want.</p>
+            <div class="value-card">
+                <div class="value-icon">ðŸ’°</div>
+                <h3>Get Paid First</h3>
+                <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments. Money in your account.</p>
             </div>
-            <div class="step-box">
-                <div class="step-icon">⚡</div>
+            <div class="value-card">
+                <div class="value-icon">âš¡</div>
                 <h3>48-Hour Delivery</h3>
-                <p>Deliver within 48 hours and get 90% of funding, or fans get refunded.</p>
+                <p>Deliver within 48 hours and keep 90% of what you earn. Or everyone gets refunded. Simple as that.</p>
             </div>
         </div>
     </div>
 
-    <div class="creators-section" id="creators">
-        <div class="header">
-            <h2 class="header-title" style="display: block;">
-                Trending Influencers
-            </h2>
-            <p class="header-subtitle">Top influencers growing fast this week.</p>
-        </div>
-        
-        <div class="search-section">
-            <div class="search-row">
+    <!-- Creators Section -->
+    <div class="creators-section">
+        <div class="creators-container">
+            <div class="section-header">
+                <div class="section-eyebrow">RISING STARS</div>
+                <h2 class="section-title">Creators Building Empires</h2>
+                <p class="section-subtitle">Real creators monetizing their influence on their terms</p>
+            </div>
+            
+            <div class="search-section">
                 <div class="search-input-wrapper">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -684,214 +720,93 @@ if ($db_available) {
                     </svg>
                     <input type="text" 
                            id="searchInput"
-                           name="search" 
                            class="search-input" 
-                           placeholder="Search by name, username, or topic..." 
+                           placeholder="Search creators..." 
                            autocomplete="off"
                            value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
                 </div>
             </div>
-        </div>
-        
-        <div class="creators-grid-landing" id="creatorsGrid">
-            <?php foreach ($creators as $creator): ?>
-                <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="creator-card-kalshi">
-                    <div class="creator-card-header">
-                        <div class="creator-avatar-kalshi">
+            
+            <div class="creators-grid" id="creatorsGrid">
+                <?php foreach ($creators as $creator): ?>
+                    <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="creator-card">
+                        <div class="creator-card-image">
                             <?php if ($creator->profile_image): ?>
                                 <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
                                      alt="<?php echo htmlspecialchars($creator->display_name); ?>">
                             <?php else: ?>
-                                <?php echo strtoupper(substr($creator->display_name, 0, 1)); ?>
+                                <div class="creator-initial"><?php echo strtoupper(substr($creator->display_name, 0, 1)); ?></div>
                             <?php endif; ?>
                         </div>
-                        <div class="creator-info">
-                            <div class="creator-name-kalshi">
+                        <div class="creator-card-content">
+                            <div class="creator-name">
                                 <?php echo htmlspecialchars($creator->display_name); ?>
                             </div>
-                            <div class="creator-handle-kalshi">
+                            <div class="creator-handle">
                                 @<?php echo htmlspecialchars($creator->display_name); ?>
                             </div>
+                            <div class="creator-bio">
+                                <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : 'Building my empire, one post at a time'; ?>
+                            </div>
+                            <div class="creator-footer">
+                                <div>
+                                    <div class="creator-price">
+                                        $<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?>
+                                    </div>
+                                    <span class="price-label">per request</span>
+                                </div>
+                                <button class="fund-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
+                                    Support
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="creator-bio">
-                        <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : '&nbsp;'; ?>
-                    </div>
-                    
-                    <div class="creator-price-section">
-                        <div class="creator-price">
-                            <span class="price-amount">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
-                            <span class="price-label">/ PER TOPIC</span>
-                        </div>
-                        
-                        <button class="fund-topics-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
-                            Fund Topics
-                        </button>
-                    </div>
-                </a>
-            <?php endforeach; ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         </div>
-        
-        <?php if (!$search_query && $total_creators_in_db > 24): ?>
-        <div class="load-more-container">
-            <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCreators()">
-                Load More
-            </button>
-        </div>
-        <?php endif; ?>
     </div>
 
+    <!-- Footer -->
     <footer class="footer">
-        <div>
-            <p>&copy; 2025 TopicLaunch. All rights reserved.</p>
-            <p style="margin-top: 10px;">
-                <a href="/terms.php">Terms of Service</a> | 
-                <a href="mailto:report@topiclaunch.com">Report Content</a>
-            </p>
+        <p>&copy; 2025 TopicLaunch. Built for creators who know their worth.</p>
+        <div class="footer-links">
+            <a href="/terms.php">Terms</a>
+            <a href="mailto:report@topiclaunch.com">Report</a>
+            <a href="/creators/signup.php">Start Earning</a>
         </div>
     </footer>
 
     <script>
     const searchInput = document.getElementById('searchInput');
     const creatorsGrid = document.getElementById('creatorsGrid');
-    const loadMoreContainer = document.querySelector('.load-more-container');
     
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim();
+            const query = e.target.value.trim().toLowerCase();
+            const queryNoSpaces = query.replace(/\s+/g, '');
             
-            if (query.length === 0) {
-                const cards = creatorsGrid.querySelectorAll('.creator-card-kalshi');
-                cards.forEach(card => {
-                    card.style.display = 'flex';
-                });
-                if (loadMoreContainer) {
-                    loadMoreContainer.style.display = 'block';
-                }
-            } else {
-                performSearch(query);
-            }
-        });
-    }
-    
-    function performSearch(query) {
-        const searchQuery = query.toLowerCase();
-        const searchQueryNoSpaces = searchQuery.replace(/\s+/g, '');
-        
-        const cards = creatorsGrid.querySelectorAll('.creator-card-kalshi');
-        let visibleCount = 0;
-        
-        cards.forEach(card => {
-            const nameElement = card.querySelector('.creator-name-kalshi');
-            const handleElement = card.querySelector('.creator-handle-kalshi');
+            const cards = creatorsGrid.querySelectorAll('.creator-card');
             
-            if (!nameElement || !handleElement) return;
-            
-            const name = nameElement.textContent.toLowerCase();
-            const handle = handleElement.textContent.replace('@', '').toLowerCase();
-            const nameNoSpaces = name.replace(/\s+/g, '');
-            const handleNoSpaces = handle.replace(/\s+/g, '');
-            
-            const matches = 
-                name.includes(searchQuery) || 
-                nameNoSpaces.includes(searchQueryNoSpaces) ||
-                handle.includes(searchQuery) || 
-                handleNoSpaces.includes(searchQueryNoSpaces);
-            
-            if (matches) {
-                card.style.display = 'flex';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        if (loadMoreContainer) {
-            loadMoreContainer.style.display = 'none';
-        }
-    }
-    
-    let offset = 24;
-    let loading = false;
-
-    function loadMoreCreators() {
-        if (loading) return;
-        loading = true;
-        
-        const btn = document.getElementById('loadMoreBtn');
-        btn.textContent = 'Loading...';
-        btn.disabled = true;
-
-        fetch(`/api/load-more-creators.php?offset=${offset}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.creators && data.creators.length > 0) {
-                    const grid = document.getElementById('creatorsGrid');
-                    
-                    data.creators.forEach(creator => {
-                        const card = createCreatorCard(creator);
-                        grid.insertAdjacentHTML('beforeend', card);
-                    });
-                    
-                    offset += data.creators.length;
-                    
-                    if (data.creators.length < 12) {
-                        btn.textContent = 'No More Creators';
-                        btn.disabled = true;
-                    } else {
-                        btn.textContent = 'Load More';
-                        btn.disabled = false;
-                    }
-                } else {
-                    btn.textContent = 'No More Creators';
-                    btn.disabled = true;
-                }
-                loading = false;
-            })
-            .catch(error => {
-                console.error('Error loading creators:', error);
-                btn.textContent = 'Error - Try Again';
-                btn.disabled = false;
-                loading = false;
+            cards.forEach(card => {
+                const nameElement = card.querySelector('.creator-name');
+                const handleElement = card.querySelector('.creator-handle');
+                
+                if (!nameElement || !handleElement) return;
+                
+                const name = nameElement.textContent.toLowerCase();
+                const handle = handleElement.textContent.replace('@', '').toLowerCase();
+                const nameNoSpaces = name.replace(/\s+/g, '');
+                const handleNoSpaces = handle.replace(/\s+/g, '');
+                
+                const matches = 
+                    name.includes(query) || 
+                    nameNoSpaces.includes(queryNoSpaces) ||
+                    handle.includes(query) || 
+                    handleNoSpaces.includes(queryNoSpaces);
+                
+                card.style.display = matches ? 'block' : 'none';
             });
-    }
-
-    function createCreatorCard(creator) {
-        const initial = creator.display_name.charAt(0).toUpperCase();
-        const profileImage = creator.profile_image 
-            ? `<img src="/uploads/creators/${creator.profile_image}" alt="${creator.display_name}">` 
-            : initial;
-        
-        const bioSection = creator.bio 
-            ? `<div class="creator-bio">${creator.bio}</div>` 
-            : '';
-        
-        const price = creator.minimum_topic_price || 100;
-        
-        return `
-            <a href="/${creator.display_name}" class="creator-card-kalshi">
-                <div class="creator-card-header">
-                    <div class="creator-avatar-kalshi">
-                        ${profileImage}
-                    </div>
-                    <div class="creator-info">
-                        <div class="creator-name-kalshi">${creator.display_name}</div>
-                        <div class="creator-handle-kalshi">@${creator.display_name}</div>
-                    </div>
-                </div>
-                ${bioSection}
-                <div class="creator-price-section">
-                    <div class="creator-price">
-                        <span class="price-amount">$${parseFloat(price).toFixed(2)}</span>
-                        <span class="price-label">/ PER TOPIC</span>
-                    </div>
-                    <button class="fund-topics-btn" onclick="event.preventDefault(); window.location.href='/${creator.display_name}'">
-                        Fund Topics
-                    </button>
-                </div>
-            </a>
-        `;
+        });
     }
     </script>
 </body>
