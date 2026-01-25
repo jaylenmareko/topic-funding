@@ -101,7 +101,7 @@ try {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
 
@@ -121,7 +121,7 @@ try {
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-buttons {
@@ -140,11 +140,11 @@ try {
         }
         
         .nav-login-btn:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-getstarted-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             text-decoration: none;
             font-size: 15px;
@@ -155,7 +155,7 @@ try {
         }
         
         .nav-getstarted-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
         }
         
@@ -194,7 +194,7 @@ try {
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -301,7 +301,7 @@ try {
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%);
             color: white;
             padding: 12px 24px;
             text-decoration: none;
@@ -309,7 +309,7 @@ try {
             font-size: 15px;
             font-weight: 600;
             transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(255,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(255, 31, 125, 0.3);
             white-space: nowrap;
             position: absolute;
             right: 32px;
@@ -321,7 +321,7 @@ try {
         
         .request-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.4);
         }
         
         @media (min-width: 769px) {
@@ -384,7 +384,7 @@ try {
         .topic-card:hover { 
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-color: #FF0000;
+            border-color: #FF1F7D;
         }
         
         .topic-title { 
@@ -495,8 +495,8 @@ try {
             <a href="/" class="nav-logo">TopicLaunch</a>
             
             <div class="nav-center">
-                <a href="/creators/index.php" class="nav-link">Browse YouTubers</a>
-                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+                <a href="/creators/index.php" class="nav-link">Browse Influencers</a>
+                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
             </div>
 
             <div class="nav-buttons">
@@ -548,7 +548,7 @@ try {
                         <h3 class="request-title">Request a Video Topic</h3>
                         <p class="request-text">Get a specific video from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></strong>.</p>
                     </div>
-                    <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn" style="position: static !important; margin-left: 0 !important; flex-shrink: 0 !important; background: #FF0000 !important; color: white !important; display: inline-flex !important; padding: 12px 24px !important;">
+                    <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn" style="position: static !important; margin-left: 0 !important; flex-shrink: 0 !important; background: #FF1F7D !important; color: white !important; display: inline-flex !important; padding: 12px 24px !important;">
                         Create Topic
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -693,7 +693,7 @@ try {
                                     value="10"
                                     style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;"
                                     oninput="validateFundingAmount()"
-                                    onfocus="this.style.borderColor='#FF0000'; this.style.boxShadow='0 0 0 3px rgba(255,0,0,0.1)'"
+                                    onfocus="this.style.borderColor='#FF1F7D'; this.style.boxShadow='0 0 0 3px rgba(255, 31, 125, 0.1)'"
                                     onblur="this.style.borderColor='#e5e7eb'; this.style.boxShadow='none'"
                                 >
                             </div>
@@ -701,8 +701,8 @@ try {
                             <button
                                 id="fundButton"
                                 onclick="submitFunding(${topic.id})"
-                                style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
-                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255,0,0,0.35)'"
+                                style="width: 100%; background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255, 31, 125, 0.35)'"
                                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'"
                             >
                                 Fund This Topic
@@ -727,7 +727,7 @@ try {
                                     
                                 </div>
                                 <div style="height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 12px;">
-                                    <div style="height: 100%; background: linear-gradient(90deg, #FF0000, #CC0000); width: ${progress}%; transition: width 0.3s; border-radius: 999px;"></div>
+                                    <div style="height: 100%; background: linear-gradient(90deg, #FF1F7D, #E01B6F); width: ${progress}%; transition: width 0.3s; border-radius: 999px;"></div>
                                 </div>
                                 <div style="font-size: 18px; font-weight: 600; color: #111827;">
                                     $${parseFloat(topic.current_funding).toFixed(2)} <span style="color: #9ca3af; font-size: 14px; font-weight: 500;">of $${parseFloat(topic.funding_threshold).toFixed(2)}</span>
@@ -838,22 +838,22 @@ function openCreateTopicModal(creatorId, minPrice) {
                 '<form id="createTopicForm" onsubmit="submitCreateTopic(event, ' + creatorId + ', ' + minPrice + ')">' +
                     '<div style="margin-bottom: 18px;">' +
                         '<label style="display: block; font-weight: 500; margin-bottom: 8px; color: #111827; font-size: 14px;">Topic Title</label>' +
-                        '<input type="text" id="topicTitle" placeholder="e.g., How to Start a YouTube Channel" required maxlength="100" style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF0000\'; this.style.boxShadow=\'0 0 0 3px rgba(255,0,0,0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
+                        '<input type="text" id="topicTitle" placeholder="e.g., How to Start a YouTube Channel" required maxlength="100" style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF1F7D\'; this.style.boxShadow=\'0 0 0 3px rgba(255, 31, 125, 0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
                     '</div>' +
                     '<div style="margin-bottom: 18px;">' +
                         '<label style="display: block; font-weight: 500; margin-bottom: 8px; color: #111827; font-size: 14px;">Description</label>' +
-                        '<textarea id="topicDescription" placeholder="Describe what you\'d like to see in this video..." required maxlength="500" rows="4" style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827; resize: vertical; font-family: inherit;" onfocus="this.style.borderColor=\'#FF0000\'; this.style.boxShadow=\'0 0 0 3px rgba(255,0,0,0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'"></textarea>' +
+                        '<textarea id="topicDescription" placeholder="Describe what you\'d like to see in this video..." required maxlength="500" rows="4" style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827; resize: vertical; font-family: inherit;" onfocus="this.style.borderColor=\'#FF1F7D\'; this.style.boxShadow=\'0 0 0 3px rgba(255, 31, 125, 0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'"></textarea>' +
                     '</div>' +
                     '<div style="margin-bottom: 18px;">' +
                         '<label style="display: flex; align-items: center; gap: 7px; font-weight: 500; margin-bottom: 8px; color: #111827; font-size: 14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Set Funding Goal</label>' +
-                        '<input type="number" id="fundingGoal" placeholder="' + minPrice + '" min="' + minPrice + '" max="10000" step="1" value="' + minPrice + '" required style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF0000\'; this.style.boxShadow=\'0 0 0 3px rgba(255,0,0,0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
+                        '<input type="number" id="fundingGoal" placeholder="' + minPrice + '" min="' + minPrice + '" max="10000" step="1" value="' + minPrice + '" required style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF1F7D\'; this.style.boxShadow=\'0 0 0 3px rgba(255, 31, 125, 0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
                         '<div style="font-size: 13px; color: #6b7280; margin-top: 8px;">Minimum: $' + minPrice + '</div>' +
                     '</div>' +
                     '<div style="margin-bottom: 18px;">' +
                         '<label style="display: flex; align-items: center; gap: 7px; font-weight: 500; margin-bottom: 8px; color: #111827; font-size: 14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Your Funding Amount</label>' +
-                        '<input type="number" id="initialAmount" placeholder="10" min="1" max="1000" step="1" value="10" required style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF0000\'; this.style.boxShadow=\'0 0 0 3px rgba(255,0,0,0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
+                        '<input type="number" id="initialAmount" placeholder="10" min="1" max="1000" step="1" value="10" required style="width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.15s; outline: none; background: white; color: #111827;" onfocus="this.style.borderColor=\'#FF1F7D\'; this.style.boxShadow=\'0 0 0 3px rgba(255, 31, 125, 0.1)\'" onblur="this.style.borderColor=\'#e5e7eb\'; this.style.boxShadow=\'none\'">' +
                     '</div>' +
-                    '<button type="submit" id="createTopicButton" style="width: 100%; background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.transform=\'translateY(-1px)\'; this.style.boxShadow=\'0 4px 12px rgba(255,0,0,0.35)\'" onmouseout="this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.05)\'">Create Topic & Fund</button>' +
+                    '<button type="submit" id="createTopicButton" style="width: 100%; background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%); color: white; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.transform=\'translateY(-1px)\'; this.style.boxShadow=\'0 4px 12px rgba(255, 31, 125, 0.35)\'" onmouseout="this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.05)\'">Create Topic & Fund</button>' +
                 '</form>' +
             '</div>' +
         '</div>';
