@@ -625,9 +625,29 @@ foreach ($topics as $topic) {
                 flex-wrap: wrap;
                 gap: 12px;
             }
+            .earnings-section {
+                padding: 20px 16px;
+            }
             .earnings-stats {
-                grid-template-columns: 1fr 1fr !important;
-                gap: 16px !important;
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+            .earnings-stats > div {
+                text-align: center;
+            }
+            .earnings-stats .stat-label {
+                font-size: 12px;
+            }
+            .earnings-stats .stat-value {
+                font-size: 24px;
+            }
+            .payout-wrapper {
+                margin-top: 8px;
+            }
+            .payout-button {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
