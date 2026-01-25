@@ -150,81 +150,116 @@ foreach ($topics as $topic) {
 <head>
     <title>My Topics - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    
     <style>
+        /* Color Variables */
+        :root {
+            --hot-pink: #FF006B;
+            --deep-pink: #E6005F;
+            --black: #000000;
+            --white: #FFFFFF;
+            --gray-dark: #1A1A1A;
+            --gray-med: #666666;
+            --gray-light: #E5E5E5;
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f5f5f5;
             color: #000;
         }
         
-        /* UPDATED: Use consistent pink */
-        :root {
-            --hot-pink: #FF006B;
-            --deep-pink: #E6005F;
+        /* Navigation - Match Landing Page */
+        .topiclaunch-nav {
+            background: var(--white);
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
-        .top-nav {
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 16px 40px;
-        }
-        
-        .top-nav-content {
-            max-width: 1200px;
+        .nav-container {
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 40px;
+            padding: 0 30px;
         }
         
-        .logo {
-            font-size: 20px;
+        .nav-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
             font-weight: 700;
-            color: var(--hot-pink);
+            color: var(--black);
             text-decoration: none;
+            letter-spacing: -0.5px;
         }
         
-        .top-nav-links {
-            display: flex;
-            gap: 32px;
-            align-items: center;
-        }
-        
-        .top-nav-links a {
-            color: #666;
-            text-decoration: none;
-            font-size: 15px;
-        }
-        
-        .top-nav-links a:hover {
+        .nav-logo span {
             color: var(--hot-pink);
         }
         
-        .top-nav-right {
+        .nav-center {
             display: flex;
-            gap: 24px;
+            gap: 30px;
             align-items: center;
         }
         
-        .signout-btn {
-            padding: 8px 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: white;
-            color: #333;
+        .nav-link {
+            color: var(--gray-dark);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: var(--hot-pink);
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-login-btn {
+            color: var(--gray-dark);
+            text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            padding: 0;
+            transition: color 0.2s;
         }
         
-        .signout-btn:hover {
-            border-color: #999;
+        .nav-login-btn:hover {
+            color: var(--hot-pink);
+        }
+        
+        .nav-getstarted-btn {
+            background: var(--hot-pink);
+            color: var(--white);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 50px;
+            transition: all 0.2s;
+        }
+        
+        .nav-getstarted-btn:hover {
+            background: var(--deep-pink);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
         }
         
         .container {
@@ -614,12 +649,14 @@ foreach ($topics as $topic) {
         }
         
         @media (max-width: 768px) {
+            .nav-center {
+                display: none;
+            }
             .container { padding: 20px 30px; }
             .page-header { flex-direction: column; gap: 20px; }
             .header-buttons { width: 100%; }
             .btn { flex: 1; justify-content: center; }
             .topics-grid { grid-template-columns: 1fr; }
-            .signout-btn { display: none; }
             .mobile-logout-btn { display: inline-flex; }
             .page-title-section {
                 flex-wrap: wrap;
@@ -653,17 +690,15 @@ foreach ($topics as $topic) {
     </style>
 </head>
 <body>
-    <nav class="top-nav">
-        <div class="top-nav-content">
-            <a href="/" class="logo">TopicLaunch</a>
+    <!-- Navigation -->
+    <nav class="topiclaunch-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">Topic<span>Launch</span></a>
+            
             <div style="flex: 1;"></div>
-            <div class="top-nav-right">
-                <a href="../auth/logout.php" class="signout-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
-                    </svg>
-                    Log Out
-                </a>
+            
+            <div class="nav-buttons">
+                <a href="../auth/logout.php" class="nav-login-btn">Log Out</a>
             </div>
         </div>
     </nav>
