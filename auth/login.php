@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
             cursor: pointer;
             flex-shrink: 0;
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-buttons {
@@ -136,17 +136,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-login-btn:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-login-btn.active {
-            color: #FF0000;
+            color: #FF1F7D;
             pointer-events: none;
             cursor: default;
         }
         
         .nav-getstarted-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             text-decoration: none;
             font-size: 15px;
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-getstarted-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
         }
         
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-icon {
             width: 64px;
             height: 64px;
-            background: linear-gradient(135deg, #FFE5E5 0%, #FFD1D1 100%);
+            background: linear-gradient(135deg, #FFE5F5 0%, #FFD1EB 100%);
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -185,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-icon svg {
             width: 32px;
             height: 32px;
-            stroke: #FF0000;
+            stroke: #FF1F7D;
         }
         
         .login-title {
@@ -243,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .form-input:focus {
             outline: none;
-            border-color: #FF0000;
+            border-color: #FF1F7D;
         }
         
         .form-input::placeholder {
@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .forgot-password a {
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
@@ -270,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-btn {
             width: 100%;
             padding: 14px;
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 8px;
@@ -281,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .login-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
         }
         
@@ -299,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .signup-link a {
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
             font-weight: 600;
         }
@@ -344,8 +344,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <!-- Center Navigation Links -->
             <div class="nav-center">
-                <a href="/creators/index.php" class="nav-link">Browse YouTubers</a>
-                <a href="/creators/signup.php" class="nav-link">For YouTubers</a>
+                <a href="/creators/index.php" class="nav-link">Browse Influencers</a>
+                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
             </div>
             
             <div class="nav-buttons">
@@ -413,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="divider">───────</div>
             
             <p class="signup-link">
-                New YouTuber? <a href="/creators/signup.php">Sign up here</a>
+                New Influencer? <a href="/creators/signup.php">Sign up here</a>
             </p>
         </div>
     </div>
