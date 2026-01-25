@@ -332,7 +332,7 @@ try {
         
         .fund-topics-btn {
             padding: 10px 20px;
-            background: #10b981;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 50px;
@@ -344,7 +344,7 @@ try {
         }
         
         .fund-topics-btn:hover {
-            background: #059669;
+            background: #E01B6F;
             transform: scale(1.05);
         }
         
