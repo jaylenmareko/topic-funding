@@ -63,10 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Password must be at least 8 characters long';
     } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
         $error = 'Username must be 3-30 characters and contain only letters, numbers, and underscores';
-    } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price < 10) {
-        $error = 'Minimum topic price must be at least $10';
-    } elseif ($minimum_topic_price > 10000) {
-        $error = 'Minimum topic price cannot exceed $10,000';
+    } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price <= 0) {
+        $error = 'Please enter a valid price';
     } else {
         // Validate profile photo
         $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -182,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-logo {
             font-size: 24px;
             font-weight: bold;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
 
@@ -201,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-link:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-buttons {
@@ -220,11 +218,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-login-btn:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .nav-getstarted-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             text-decoration: none;
             font-size: 15px;
@@ -235,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-getstarted-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
         }
         
@@ -304,8 +302,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #FF0000;
-            box-shadow: 0 0 0 3px rgba(255,0,0,0.1);
+            border-color: #FF1F7D;
+            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
         }
         
         .form-group textarea {
@@ -397,8 +395,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .upload-button:hover {
-            border-color: #FF0000;
-            color: #FF0000;
+            border-color: #FF1F7D;
+            color: #FF1F7D;
         }
         
         /* Payout Section */
@@ -466,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .checkbox-label a {
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
         
@@ -489,7 +487,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .submit-btn {
             width: 100%;
             padding: 14px;
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             border: none;
             border-radius: 8px;
@@ -500,9 +498,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .submit-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
         }
         
         /* Responsive */
@@ -525,8 +523,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="/" class="nav-logo">TopicLaunch</a>
             
             <div class="nav-center">
-                <a href="/creators/" class="nav-link">Browse Creators</a>
-                <a href="/creators/signup.php" class="nav-link">For Creators</a>
+                <a href="/creators/" class="nav-link">Browse Influencers</a>
+                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
             </div>
 
             <div class="nav-buttons">
@@ -673,8 +671,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            id="minimum_topic_price" 
                            name="minimum_topic_price" 
                            placeholder="100"
-                           min="10"
-                           max="10000"
                            step="1"
                            value="<?php echo htmlspecialchars($_POST['minimum_topic_price'] ?? ''); ?>"
                            required>
