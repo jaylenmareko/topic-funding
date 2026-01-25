@@ -172,7 +172,7 @@ foreach ($topics as $topic) {
         .logo {
             font-size: 20px;
             font-weight: 700;
-            color: #FF0000;
+            color: #FF1F7D;
             text-decoration: none;
         }
         
@@ -189,7 +189,7 @@ foreach ($topics as $topic) {
         }
         
         .top-nav-links a:hover {
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .top-nav-right {
@@ -262,7 +262,7 @@ foreach ($topics as $topic) {
         .title-icon {
             width: 32px;
             height: 32px;
-            color: #FF0000;
+            color: #FF1F7D;
         }
         
         .page-subtitle {
@@ -325,8 +325,8 @@ foreach ($topics as $topic) {
         }
         
         .browse-btn:hover {
-            border-color: #FF0000;
-            color: #FF0000;
+            border-color: #FF1F7D;
+            color: #FF1F7D;
         }
         
         /* Main Content Box */
@@ -375,7 +375,7 @@ foreach ($topics as $topic) {
         }
         
         .empty-btn {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
             padding: 12px 32px;
             border-radius: 8px;
@@ -387,7 +387,7 @@ foreach ($topics as $topic) {
         }
         
         .empty-btn:hover {
-            background: #CC0000;
+            background: #E01B6F;
         }
         
         /* Topic Tile */
@@ -402,7 +402,7 @@ foreach ($topics as $topic) {
         }
         
         .topic-tile:hover {
-            border-color: #FF0000;
+            border-color: #FF1F7D;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
@@ -490,7 +490,7 @@ foreach ($topics as $topic) {
         
         .progress-bar-fill {
             height: 100%;
-            background: #FF0000;
+            background: #FF1F7D;
             border-radius: 3px;
             transition: width 0.3s;
         }
@@ -518,13 +518,13 @@ foreach ($topics as $topic) {
         }
         
         .tile-btn.primary {
-            background: #FF0000;
+            background: #FF1F7D;
             color: white;
-            border-color: #FF0000;
+            border-color: #FF1F7D;
         }
         
         .tile-btn.primary:hover {
-            background: #CC0000;
+            background: #E01B6F;
         }
         
         .tile-btn.danger {
@@ -656,42 +656,42 @@ foreach ($topics as $topic) {
         </button>
 
         <!-- Earnings & Payout Section -->
-        <div class="earnings-section" style="background: linear-gradient(135deg, #fef3f3 0%, #fdeef0 100%); border-radius: 16px; padding: 32px; margin: 24px 0; border: 1px solid #fecdd3;">
+        <div class="earnings-section" style="background: linear-gradient(135deg, #fef3f8 0%, #fdeef4 100%); border-radius: 16px; padding: 32px; margin: 24px 0; border: 1px solid #fecde0;">
             <div class="earnings-stats" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
                 <!-- Total Earnings -->
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Total Earnings</div>
+                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Total Earnings</div>
                     <div style="font-size: 32px; font-weight: 700; color: #1f2937;">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
                 </div>
                 
                 <!-- Available Balance -->
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Available Balance</div>
-                    <div style="font-size: 32px; font-weight: 700; color: #dc2626;">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
+                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Available Balance</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #dc2670;">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
                 </div>
                 
                 <!-- Pending Payout -->
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Pending Payout</div>
+                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Pending Payout</div>
                     <div style="font-size: 32px; font-weight: 700; color: #f97316;">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
                 </div>
                 
                 <!-- Paid Out -->
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; color: #991b1b; font-weight: 500; margin-bottom: 8px;">Paid Out</div>
+                    <div style="font-size: 13px; color: #991b4d; font-weight: 500; margin-bottom: 8px;">Paid Out</div>
                     <div style="font-size: 32px; font-weight: 700; color: #10b981;">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
                 </div>
                 
                 <!-- Request Payout Button -->
                 <div style="flex-shrink: 0; text-align: right;">
-                    <button onclick="requestPayout()" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(220,38,38,0.3); transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(220,38,38,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(220,38,38,0.3)'">
+                    <button onclick="requestPayout()" style="background: linear-gradient(135deg, #FF1F7D 0%, #E01B6F 100%); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3); transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 31, 125, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 31, 125, 0.3)'">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                             <line x1="1" y1="10" x2="23" y2="10"></line>
                         </svg>
                         Request Payout →
                     </button>
-                    <div style="font-size: 12px; color: #991b1b; margin-top: 8px;">Minimum $50 required</div>
+                    <div style="font-size: 12px; color: #991b4d; margin-top: 8px;">Minimum $50 required</div>
                 </div>
             </div>
         </div>
