@@ -76,7 +76,7 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - For Creators Who Run It</title>
+    <title>TopicLaunch - Turn Attention Into Intentional Income</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <meta name="description" content="For Creators Who Run It. Set your price, get paid upfront, and create on your terms. Built for the next generation of content creators.">
@@ -84,7 +84,7 @@ if ($db_available) {
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - For Creators Who Run It">
+    <meta property="og:title" content="TopicLaunch - Turn Attention Into Intentional Income">
     <meta property="og:description" content="You're the CEO. Set your price, get paid upfront, and create on your terms.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
@@ -709,7 +709,7 @@ if ($db_available) {
             <div class="section-header">
                 <div class="section-eyebrow">RISING STARS</div>
                 <h2 class="section-title">Creators Getting Paid</h2>
-                <p class="section-subtitle">Real creators monetizing their influence on their terms.</p>
+                <p class="section-subtitle">Real people turning attention into income.</p>
             </div>
             
             <div class="search-section">
