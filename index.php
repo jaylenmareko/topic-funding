@@ -79,13 +79,13 @@ if ($db_available) {
     <title>TopicLaunch - For Creators Who Run It</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <meta name="description" content="The platform where women monetize their content on their terms. Set your price, get paid upfront, stay in control. Built for the next generation of female entrepreneurs.">
+    <meta name="description" content="For Creators Who Run It. Set your price, get paid upfront, and create on your terms. Built for the next generation of content creators.">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - Turn Your Influence Into Income">
-    <meta property="og:description" content="The platform where women monetize their content on their terms. Set your price, get paid upfront, stay in control.">
+    <meta property="og:title" content="TopicLaunch - For Creators Who Run It">
+    <meta property="og:description" content="You're the CEO. Set your price, get paid upfront, and create on your terms.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
     <!-- Favicon -->
@@ -686,17 +686,17 @@ if ($db_available) {
     <div class="value-props">
         <div class="value-container">
             <div class="value-card">
-                <div class="value-icon">ðŸ‘‘</div>
+                <div class="value-icon">👑</div>
                 <h3>You're the CEO Here</h3>
                 <p>Set your own rates. No negotiating with brands who lowball you. You decide what your content is worth.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">ðŸ’°</div>
+                <div class="value-icon">💰</div>
                 <h3>Get Paid First</h3>
                 <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">âš¡</div>
+                <div class="value-icon">⚡</div>
                 <h3>48-Hour Delivery</h3>
                 <p>Deliver within 48 hours and keep 90% of what you earn or everyone gets refunded.</p>
             </div>
@@ -708,7 +708,7 @@ if ($db_available) {
         <div class="creators-container">
             <div class="section-header">
                 <div class="section-eyebrow">RISING STARS</div>
-                <h2 class="section-title">Creators Building Empires</h2>
+                <h2 class="section-title">Creators Getting Paid</h2>
                 <p class="section-subtitle">Real creators monetizing their influence on their terms.</p>
             </div>
             
