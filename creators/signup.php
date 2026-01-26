@@ -185,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: sticky;
             top: 0;
             background: var(--white);
-            padding: 16px 30px;
+            padding: 16px 0;
             border-bottom: 1px solid var(--gray-light);
             z-index: 100;
         }
@@ -196,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 30px;
         }
         
         .nav-logo {
