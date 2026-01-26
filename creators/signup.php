@@ -150,90 +150,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Creator Signup - TopicLaunch</title>
+    <title>Creator Signup - TopicLaunch - For Creators Who Run It</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --hot-pink: #FF006B;
+            --deep-pink: #E6005F;
+            --black: #000000;
+            --white: #FFFFFF;
+            --gray-dark: #1A1A1A;
+            --gray-med: #666666;
+            --gray-light: #E5E5E5;
+            --cream: #FAF8F6;
+            --off-white: #F5F5F5;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--cream);
             min-height: 100vh;
         }
         
         /* Navigation */
-        .topiclaunch-nav {
-            background: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-bottom: 1px solid #f0f0f0;
+        .nav {
+            position: sticky;
+            top: 0;
+            background: var(--white);
+            padding: 16px 30px;
+            border-bottom: 1px solid var(--gray-light);
+            z-index: 100;
         }
         
         .nav-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
         }
         
         .nav-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FF1F7D;
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            font-weight: 700;
             text-decoration: none;
+            letter-spacing: -0.5px;
         }
-
+        
+        .nav-logo .topic { color: var(--black); }
+        .nav-logo .launch { color: var(--hot-pink); }
+        
         .nav-center {
             display: flex;
-            gap: 30px;
+            gap: 35px;
             align-items: center;
         }
         
         .nav-link {
-            color: #6b7280;
+            color: var(--gray-dark);
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             transition: color 0.2s;
         }
         
         .nav-link:hover {
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
         
         .nav-buttons {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             align-items: center;
         }
         
         .nav-login-btn {
-            color: #333;
+            color: var(--gray-dark);
             text-decoration: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
-            padding: 8px 16px;
             transition: color 0.2s;
         }
         
         .nav-login-btn:hover {
-            color: #FF1F7D;
+            color: var(--hot-pink);
         }
         
-        .nav-getstarted-btn {
-            background: #FF1F7D;
-            color: white;
+        .nav-cta-btn {
+            background: var(--hot-pink);
+            color: var(--white);
             text-decoration: none;
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             padding: 10px 24px;
             border-radius: 50px;
             transition: all 0.2s;
         }
         
-        .nav-getstarted-btn:hover {
-            background: #E01B6F;
+        .nav-cta-btn:hover {
+            background: var(--deep-pink);
             transform: translateY(-1px);
         }
         
@@ -242,37 +266,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 60px 20px 40px;
+            padding: 80px 30px 80px;
             min-height: calc(100vh - 70px);
         }
         
         .page-header {
             text-align: center;
-            margin-bottom: 40px;
-            max-width: 600px;
+            margin-bottom: 50px;
+            max-width: 700px;
+        }
+        
+        .page-eyebrow {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--hot-pink);
+            margin-bottom: 15px;
         }
         
         .page-title {
-            font-size: 42px;
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
             font-weight: 700;
-            color: #000;
-            margin-bottom: 12px;
+            color: var(--black);
+            margin-bottom: 15px;
+            line-height: 1.1;
         }
         
         .page-subtitle {
-            font-size: 16px;
-            color: #6b7280;
+            font-size: 18px;
+            color: var(--gray-med);
             line-height: 1.6;
+            font-weight: 400;
         }
         
         .signup-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            border: 1px solid #f0f0f0;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             padding: 40px;
             width: 100%;
-            max-width: 520px;
+            max-width: 480px;
         }
         
         /* Form Styles */
@@ -283,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #111827;
+            color: var(--black);
             font-weight: 600;
             font-size: 14px;
         }
@@ -292,33 +327,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group textarea {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid var(--gray-light);
             border-radius: 12px;
             font-size: 15px;
-            font-family: inherit;
+            font-family: 'Inter', sans-serif;
             transition: all 0.2s;
+            background: var(--white);
         }
         
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #FF1F7D;
-            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
+            border-color: var(--hot-pink);
+            box-shadow: 0 0 0 4px rgba(255, 0, 107, 0.1);
         }
         
         .form-group textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 100px;
+            line-height: 1.6;
         }
         
         .form-group small {
             display: block;
-            margin-top: 6px;
-            color: #6b7280;
+            margin-top: 8px;
+            color: var(--gray-med);
             font-size: 13px;
+            font-weight: 400;
         }
         
-        /* Username Field - Rizzdem Style */
+        /* Username Field */
         .username-group {
             margin-bottom: 24px;
         }
@@ -329,24 +367,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .username-prefix {
             position: absolute;
-            left: 16px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6b7280;
+            color: var(--gray-med);
             font-size: 16px;
             font-weight: 500;
             pointer-events: none;
         }
         
         .username-input {
-            padding-left: 38px !important;
+            padding-left: 40px !important;
             font-size: 16px;
+            font-weight: 500;
         }
         
         .username-url-preview {
-            margin-top: 8px;
-            color: #6b7280;
+            margin-top: 10px;
+            color: var(--gray-med);
             font-size: 13px;
+            font-weight: 400;
+        }
+        
+        .username-url-preview .url-domain {
+            color: var(--gray-dark);
+        }
+        
+        .username-url-preview .url-username {
+            color: var(--hot-pink);
+            font-weight: 600;
         }
         
         /* Profile Photo */
@@ -359,12 +408,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .profile-photo-preview {
             width: 100px;
             height: 100px;
-            border: 2px dashed #e5e7eb;
-            border-radius: 12px;
+            border: 2px solid var(--gray-light);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #fafafa;
+            background: var(--cream);
             flex-shrink: 0;
             overflow: hidden;
         }
@@ -382,34 +431,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .upload-button {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             padding: 10px 20px;
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
+            background: var(--white);
+            border: 2px solid var(--gray-light);
+            border-radius: 50px;
             font-size: 14px;
-            font-weight: 600;
-            color: #374151;
+            font-weight: 700;
+            color: var(--gray-dark);
             cursor: pointer;
             transition: all 0.2s;
         }
         
         .upload-button:hover {
-            border-color: #FF1F7D;
-            color: #FF1F7D;
+            border-color: var(--hot-pink);
+            color: var(--hot-pink);
         }
         
         /* Payout Section */
         .payout-section-label {
             display: block;
             margin-bottom: 12px;
-            color: #111827;
+            color: var(--black);
             font-weight: 600;
             font-size: 14px;
         }
         
         .label-note {
-            color: #6b7280;
+            color: var(--gray-med);
             font-weight: 400;
             font-size: 13px;
         }
@@ -420,22 +469,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 16px;
         }
         
+        .payout-field-wrapper label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+            color: var(--gray-dark);
+        }
+        
         .input-with-prefix {
             position: relative;
         }
         
         .input-prefix {
             position: absolute;
-            left: 16px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6b7280;
+            color: var(--gray-med);
             font-size: 15px;
+            font-weight: 500;
             pointer-events: none;
         }
         
         .input-with-prefix-field {
-            padding-left: 32px !important;
+            padding-left: 36px !important;
         }
         
         /* Checkbox */
@@ -446,26 +504,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .checkbox-label {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
+            gap: 12px;
             cursor: pointer;
         }
         
         .checkbox-label input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             margin-top: 2px;
             cursor: pointer;
+            accent-color: var(--hot-pink);
         }
         
         .checkbox-label span {
             flex: 1;
             font-size: 14px;
-            color: #374151;
+            color: var(--gray-dark);
+            line-height: 1.5;
         }
         
         .checkbox-label a {
-            color: #FF1F7D;
+            color: var(--hot-pink);
             text-decoration: none;
+            font-weight: 600;
         }
         
         .checkbox-label a:hover {
@@ -474,70 +535,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         /* Messages */
         .error-message {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            background: #FEF2F2;
+            color: #DC2626;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
             font-size: 14px;
-            border-left: 4px solid #dc2626;
+            border-left: 4px solid #DC2626;
+            font-weight: 500;
         }
         
         /* Submit Button */
         .submit-btn {
             width: 100%;
             padding: 14px;
-            background: #FF1F7D;
-            color: white;
+            background: var(--hot-pink);
+            color: var(--white);
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
         }
         
         .submit-btn:hover {
-            background: #E01B6F;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
+            background: var(--deep-pink);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 0, 107, 0.25);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
         }
         
         /* Responsive */
         @media (max-width: 768px) {
-            .nav-center { display: none; }
-            .signup-container { padding: 30px 20px; }
-            .page-title { font-size: 32px; }
-            .payout-fields { grid-template-columns: 1fr; }
+            .nav-center { 
+                display: none; 
+            }
+            
+            .signup-container { 
+                padding: 30px 25px; 
+            }
+            
+            .page-title { 
+                font-size: 42px; 
+            }
+            
+            .page-wrapper {
+                padding: 60px 20px;
+            }
+            
+            .payout-fields { 
+                grid-template-columns: 1fr; 
+            }
+            
             .profile-photo-container {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+            
+            .profile-photo-preview {
+                width: 100px;
+                height: 100px;
             }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="topiclaunch-nav">
+    <nav class="nav">
         <div class="nav-container">
-            <a href="/" class="nav-logo">TopicLaunch</a>
+            <a href="/" class="nav-logo">
+                <span class="topic">Topic</span><span class="launch">Launch</span>
+            </a>
             
             <div class="nav-center">
-                <a href="/creators/" class="nav-link">Browse Influencers</a>
-                <a href="/creators/signup.php" class="nav-link">For Influencers</a>
+                <a href="/creators/" class="nav-link">Browse Creators</a>
+                <a href="/creators/signup.php" class="nav-link">For Creators</a>
             </div>
 
             <div class="nav-buttons">
                 <a href="/auth/login.php" class="nav-login-btn">Log In</a>
-                <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <a href="/creators/signup.php" class="nav-cta-btn">Get Started</a>
             </div>
         </div>
     </nav>
 
     <div class="page-wrapper">
         <div class="page-header">
-            <h1 class="page-title">Get Started</h1>
-            <p class="page-subtitle">Join TopicLaunch and start earning from your audience</p>
+            <h1 class="page-title">Start Earning Today</h1>
+            <p class="page-subtitle">Set your price. You're the CEO here.</p>
         </div>
         
         <div class="signup-container">
@@ -561,7 +650,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                required>
                     </div>
                     <div class="username-url-preview">
-                        This will be your unique profile URL: topiclaunch.com/<span id="usernamePreview">username</span>
+                        Your profile: <span class="url-domain">topiclaunch.com/</span><span class="url-username" id="usernamePreview">username</span>
                     </div>
                 </div>
                 
@@ -570,7 +659,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="profile_photo">Profile Photo</label>
                     <div class="profile-photo-container">
                         <div class="profile-photo-preview" id="photoPreview">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -600,7 +689,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="bio">Bio (Optional)</label>
                     <textarea id="bio" 
                               name="bio" 
-                              placeholder="Tell your audience about yourself..."><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
+                              placeholder="Tell your audience what you're all about..."><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
                 </div>
                 
                 <!-- Email -->
@@ -620,9 +709,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" 
                            id="password" 
                            name="password" 
-                           placeholder="Create a password"
+                           placeholder="Create a secure password"
                            required>
-                    <small>Must be at least 8 characters long</small>
+                    <small>Minimum 8 characters</small>
                 </div>
                 
                 <!-- Confirm Password -->
@@ -635,13 +724,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            required>
                 </div>
                 
+                <!-- Minimum Topic Price -->
+                <div class="form-group">
+                    <label for="minimum_topic_price">Price per Request ($)</label>
+                    <input type="number" 
+                           id="minimum_topic_price" 
+                           name="minimum_topic_price" 
+                           placeholder="100"
+                           step="1"
+                           min="1"
+                           value="<?php echo htmlspecialchars($_POST['minimum_topic_price'] ?? ''); ?>"
+                           required>
+                    <small>You keep 90% of every request. Set what you're worth.</small>
+                </div>
+                
                 <!-- Payout Methods -->
                 <div class="form-group">
                     <label class="payout-section-label">Payout Method <span class="label-note">(at least one required)</span></label>
                     
                     <div class="payout-fields">
-                        <div>
-                            <label for="paypal_email" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">PayPal Email</label>
+                        <div class="payout-field-wrapper">
+                            <label for="paypal_email">PayPal Email</label>
                             <input type="email" 
                                    id="paypal_email" 
                                    name="paypal_email" 
@@ -649,8 +752,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?php echo htmlspecialchars($_POST['paypal_email'] ?? ''); ?>">
                         </div>
                         
-                        <div>
-                            <label for="venmo_handle" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">Venmo Handle</label>
+                        <div class="payout-field-wrapper">
+                            <label for="venmo_handle">Venmo Handle</label>
                             <div class="input-with-prefix">
                                 <span class="input-prefix">@</span>
                                 <input type="text" 
@@ -662,19 +765,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Minimum Topic Price -->
-                <div class="form-group">
-                    <label for="minimum_topic_price">Minimum Price per Topic ($)</label>
-                    <input type="number" 
-                           id="minimum_topic_price" 
-                           name="minimum_topic_price" 
-                           placeholder="100"
-                           step="1"
-                           value="<?php echo htmlspecialchars($_POST['minimum_topic_price'] ?? ''); ?>"
-                           required>
-                    <small>Set your price per topic. You'll keep 90% of this amount.</small>
                 </div>
                 
                 <!-- Terms Checkbox -->
