@@ -386,7 +386,6 @@ try {
         <!-- Header -->
         <div class="header">
             <div class="header-eyebrow">BROWSE</div>
-            <h1 class="header-title">Creators Building Empires</h1>
             <p class="header-subtitle">Find the perfect creator for what you want to see.</p>
         </div>
 
