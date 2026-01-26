@@ -693,12 +693,12 @@ if ($db_available) {
             <div class="value-card">
                 <div class="value-icon">ðŸ’°</div>
                 <h3>Get Paid First</h3>
-                <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments. Money in your account.</p>
+                <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments.</p>
             </div>
             <div class="value-card">
                 <div class="value-icon">âš¡</div>
                 <h3>48-Hour Delivery</h3>
-                <p>Deliver within 48 hours and keep 90% of what you earn. Or everyone gets refunded. Simple as that.</p>
+                <p>Deliver within 48 hours and keep 90% of what you earn or everyone gets refunded.</p>
             </div>
         </div>
     </div>
@@ -709,7 +709,7 @@ if ($db_available) {
             <div class="section-header">
                 <div class="section-eyebrow">RISING STARS</div>
                 <h2 class="section-title">Creators Building Empires</h2>
-                <p class="section-subtitle">Real creators monetizing their influence on their terms</p>
+                <p class="section-subtitle">Real creators monetizing their influence on their terms.</p>
             </div>
             
             <div class="search-section">
