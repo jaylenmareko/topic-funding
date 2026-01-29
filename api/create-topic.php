@@ -1,12 +1,33 @@
 <?php
 // api/create-topic.php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
 session_start();
 
-require_once '../config/database.php';
+try {
+    require_once '../config/database.php';
+} catch (Exception $e) {
+    echo json_encode(['error' => 'Database config failed: ' . $e->getMessage()]);
+    exit;
+}
 
-// Get JSON input
-$input = json_decode(file_get_contents('php://input'), true);
+$rawInput = file_get_contents('php://input');
+$input = json_decode($rawInput, true);
+
+if (json_last_error() !== JSON_ERROR_NONE) {
+    echo json_encode(['error' => 'Invalid JSON: ' . json_last_error_msg()]);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['error' => 'Invalid request method']);
@@ -105,14 +126,32 @@ try {
     $db->bind(':platform_fee_amount', $platform_fee_amount);
     $db->bind(':creator_payout_amount', $creator_payout_amount);
     
-    $db->execute();
+    if (!$db->execute()) {
+        echo json_encode(['error' => 'Failed to insert topic into database']);
+        exit;
+    }
+    
     $topic_id = $db->lastInsertId();
     
+    if (!$topic_id) {
+        echo json_encode(['error' => 'Topic created but no ID returned']);
+        exit;
+    }
+    
     // Now create Stripe checkout for initial funding
+    if (!file_exists('../vendor/autoload.php')) {
+        echo json_encode(['error' => 'Stripe library not found. Please install Stripe PHP library.']);
+        exit;
+    }
+    
     require_once '../vendor/autoload.php';
     
-    // Load Stripe key
-    $stripe_key = getenv('STRIPE_SECRET_KEY') ?: 'your_stripe_secret_key_here';
+    $stripe_key = getenv('STRIPE_SECRET_KEY');
+    if (!$stripe_key || $stripe_key === 'your_stripe_secret_key_here') {
+        echo json_encode(['error' => 'Stripe API key not configured']);
+        exit;
+    }
+    
     \Stripe\Stripe::setApiKey($stripe_key);
     
     $checkout_session = \Stripe\Checkout\Session::create([
@@ -124,7 +163,7 @@ try {
                     'name' => 'Fund Topic: ' . $title,
                     'description' => 'Contribution towards funding this video topic',
                 ],
-                'unit_amount' => intval($initial_amount * 100), // Convert to cents
+                'unit_amount' => intval($initial_amount * 100),
             ],
             'quantity' => 1,
         ]],
@@ -145,6 +184,9 @@ try {
     ]);
     
 } catch (Exception $e) {
-    error_log('Create topic error: ' . $e->getMessage());
-    echo json_encode(['error' => 'Failed to create topic. Please try again.']);
+    echo json_encode([
+        'error' => 'Exception: ' . $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
 }
