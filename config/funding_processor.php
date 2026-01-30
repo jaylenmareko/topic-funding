@@ -1,5 +1,5 @@
 <?php
-// config/funding_processor.php - FIXED VERSION
+// config/funding_processor.php - UPDATED FOR NEW FLOW
 require_once 'database.php';
 
 class FundingProcessor {
@@ -23,7 +23,8 @@ class FundingProcessor {
             }
             
             // Get payment intent from Stripe
-            \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+            $stripe_key = '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';
+            \Stripe\Stripe::setApiKey($stripe_key);
             $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
             
             error_log("Payment amount: " . ($payment_intent->amount / 100));
@@ -52,7 +53,7 @@ class FundingProcessor {
             $type = $metadata->type ?? '';
             error_log("Payment type: " . $type);
             
-            if ($type === 'topic_funding') {
+            if ($type === 'topic_funding' || $type === 'topic_contribution') {
                 return $this->processTopicFunding($metadata, $payment_intent_id);
             } elseif ($type === 'topic_creation') {
                 return $this->processTopicCreation($metadata, $payment_intent_id);
@@ -72,16 +73,9 @@ class FundingProcessor {
         try {
             $topic_id = $metadata->topic_id;
             $amount = floatval($metadata->amount);
-            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
+            $user_id = !empty($metadata->user_id) ? $metadata->user_id : null;
             
-            // Handle guest vs logged-in user
-            if ($is_guest) {
-                $user_id = $this->handleGuestUser($payment_intent_id, $amount);
-            } else {
-                $user_id = $metadata->user_id;
-            }
-            
-            error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount, Guest: " . ($is_guest ? 'yes' : 'no'));
+            error_log("Processing topic funding - Topic: $topic_id, User: $user_id, Amount: $amount");
             
             // Get topic info BEFORE adding contribution
             $this->db->query('SELECT * FROM topics WHERE id = :topic_id');
@@ -163,36 +157,60 @@ class FundingProcessor {
     private function processTopicCreation($metadata, $payment_intent_id) {
         try {
             $creator_id = $metadata->creator_id;
+            $initiator_user_id = !empty($metadata->initiator_user_id) ? $metadata->initiator_user_id : null;
             $title = $metadata->title;
             $description = $metadata->description;
             $funding_threshold = floatval($metadata->funding_threshold);
-            $initial_contribution = floatval($metadata->initial_contribution);
-            $is_guest = ($metadata->is_guest ?? 'false') === 'true';
+            $initial_amount = floatval($metadata->initial_amount);
+            $platform_fee_percent = floatval($metadata->platform_fee_percent ?? 10.00);
             
-            error_log("Processing topic creation - Creator: $creator_id, Amount: $initial_contribution");
+            error_log("Processing topic creation - Creator: $creator_id, Amount: $initial_amount");
             
-            if ($initial_contribution < 1) {
+            if ($initial_amount < 1) {
                 throw new Exception("Minimum payment of $1 required");
             }
             
-            // Handle guest vs logged-in user
-            if ($is_guest) {
-                $user_id = $this->handleGuestUser($payment_intent_id, $initial_contribution);
-            } else {
-                $user_id = $metadata->user_id;
-            }
+            // Calculate fees
+            $platform_fee_amount = $funding_threshold * ($platform_fee_percent / 100);
+            $creator_payout_amount = $funding_threshold - $platform_fee_amount;
             
             // Create the topic
             $this->db->query('
-                INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold, status, current_funding, created_at) 
-                VALUES (:creator_id, :user_id, :title, :description, :funding_threshold, "active", :initial_funding, NOW())
+                INSERT INTO topics (
+                    creator_id, 
+                    initiator_user_id, 
+                    title, 
+                    description, 
+                    funding_threshold, 
+                    current_funding,
+                    platform_fee_percent,
+                    platform_fee_amount,
+                    creator_payout_amount,
+                    status, 
+                    created_at
+                ) VALUES (
+                    :creator_id, 
+                    :initiator_user_id, 
+                    :title, 
+                    :description, 
+                    :funding_threshold, 
+                    :current_funding,
+                    :platform_fee_percent,
+                    :platform_fee_amount,
+                    :creator_payout_amount,
+                    "active", 
+                    NOW()
+                )
             ');
             $this->db->bind(':creator_id', $creator_id);
-            $this->db->bind(':user_id', $user_id);
+            $this->db->bind(':initiator_user_id', $initiator_user_id);
             $this->db->bind(':title', $title);
             $this->db->bind(':description', $description);
             $this->db->bind(':funding_threshold', $funding_threshold);
-            $this->db->bind(':initial_funding', $initial_contribution);
+            $this->db->bind(':current_funding', $initial_amount);
+            $this->db->bind(':platform_fee_percent', $platform_fee_percent);
+            $this->db->bind(':platform_fee_amount', $platform_fee_amount);
+            $this->db->bind(':creator_payout_amount', $creator_payout_amount);
             $this->db->execute();
             
             $topic_id = $this->db->lastInsertId();
@@ -204,15 +222,15 @@ class FundingProcessor {
                 VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
             ');
             $this->db->bind(':topic_id', $topic_id);
-            $this->db->bind(':user_id', $user_id);
-            $this->db->bind(':amount', $initial_contribution);
+            $this->db->bind(':user_id', $initiator_user_id);
+            $this->db->bind(':amount', $initial_amount);
             $this->db->bind(':payment_id', $payment_intent_id);
             $this->db->execute();
             
             error_log("âœ“ Created initial contribution");
             
             // Check if immediately funded
-            $fully_funded = $initial_contribution >= $funding_threshold;
+            $fully_funded = $initial_amount >= $funding_threshold;
             
             if ($fully_funded) {
                 error_log("ðŸŽ‰ Topic immediately fully funded!");
@@ -238,35 +256,8 @@ class FundingProcessor {
             
         } catch (Exception $e) {
             error_log("ERROR: Topic creation failed: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-    
-    private function handleGuestUser($payment_intent_id, $amount) {
-        try {
-            $guest_email = 'guest_' . time() . '_' . substr($payment_intent_id, -8) . '@temp.topiclaunch.com';
-            $guest_username = 'guest_' . time() . '_' . substr($payment_intent_id, -8);
-            
-            error_log("Creating guest user: " . $guest_username);
-            
-            $this->db->query('
-                INSERT INTO users (username, email, password_hash, full_name, is_active) 
-                VALUES (:username, :email, :password_hash, :full_name, 1)
-            ');
-            $this->db->bind(':username', $guest_username);
-            $this->db->bind(':email', $guest_email);
-            $this->db->bind(':password_hash', password_hash('temp_' . $payment_intent_id, PASSWORD_DEFAULT));
-            $this->db->bind(':full_name', 'Guest User');
-            $this->db->execute();
-            
-            $guest_user_id = $this->db->lastInsertId();
-            error_log("âœ“ Created guest user ID: " . $guest_user_id);
-            
-            return $guest_user_id;
-            
-        } catch (Exception $e) {
-            error_log("ERROR: Failed to create guest user: " . $e->getMessage());
-            throw $e;
         }
     }
     
