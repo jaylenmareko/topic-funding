@@ -1,5 +1,5 @@
 <?php
-// api/create-topic.php
+// api/create-topic.php - FIXED: Only creates topic after payment succeeds
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -51,16 +51,6 @@ if ($initial_amount < 1 || $initial_amount > 1000) {
     exit;
 }
 
-if ($funding_goal < 10 || $funding_goal > 10000) {
-    echo json_encode(['error' => 'Funding goal must be between $10 and $10,000']);
-    exit;
-}
-
-if ($initial_amount > $funding_goal) {
-    echo json_encode(['error' => 'Initial amount cannot exceed funding goal']);
-    exit;
-}
-
 try {
     $db = new Database();
     
@@ -80,65 +70,20 @@ try {
         exit;
     }
     
-    // Calculate platform fee (10%)
-    $platform_fee_percent = 10.00;
-    $platform_fee_amount = $funding_goal * ($platform_fee_percent / 100);
-    $creator_payout_amount = $funding_goal - $platform_fee_amount;
+    if ($funding_goal > 10000) {
+        echo json_encode(['error' => 'Funding goal cannot exceed $10,000']);
+        exit;
+    }
+    
+    if ($initial_amount > $funding_goal) {
+        echo json_encode(['error' => 'Initial amount cannot exceed funding goal']);
+        exit;
+    }
     
     // Get initiator user ID from session (if logged in)
     $initiator_user_id = $_SESSION['user_id'] ?? null;
     
-    // Create the topic
-    $db->query('
-        INSERT INTO topics (
-            creator_id, 
-            initiator_user_id,
-            title, 
-            description, 
-            funding_threshold,
-            current_funding,
-            platform_fee_percent,
-            platform_fee_amount,
-            creator_payout_amount,
-            status,
-            created_at
-        ) VALUES (
-            :creator_id,
-            :initiator_user_id,
-            :title,
-            :description,
-            :funding_threshold,
-            0,
-            :platform_fee_percent,
-            :platform_fee_amount,
-            :creator_payout_amount,
-            "active",
-            NOW()
-        )
-    ');
-    
-    $db->bind(':creator_id', $creator_id);
-    $db->bind(':initiator_user_id', $initiator_user_id);
-    $db->bind(':title', $title);
-    $db->bind(':description', $description);
-    $db->bind(':funding_threshold', $funding_goal);
-    $db->bind(':platform_fee_percent', $platform_fee_percent);
-    $db->bind(':platform_fee_amount', $platform_fee_amount);
-    $db->bind(':creator_payout_amount', $creator_payout_amount);
-    
-    if (!$db->execute()) {
-        echo json_encode(['error' => 'Failed to insert topic into database']);
-        exit;
-    }
-    
-    $topic_id = $db->lastInsertId();
-    
-    if (!$topic_id) {
-        echo json_encode(['error' => 'Topic created but no ID returned']);
-        exit;
-    }
-    
-    // Now create Stripe checkout for initial funding
+    // Load Stripe
     if (!file_exists('../vendor/autoload.php')) {
         echo json_encode(['error' => 'Stripe library not found. Please install Stripe PHP library.']);
         exit;
@@ -146,14 +91,12 @@ try {
     
     require_once '../vendor/autoload.php';
     
-    $stripe_key = getenv('STRIPE_SECRET_KEY');
-    if (!$stripe_key || $stripe_key === 'your_stripe_secret_key_here') {
-        echo json_encode(['error' => 'Stripe API key not configured']);
-        exit;
-    }
+    $stripe_key = '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';
     
     \Stripe\Stripe::setApiKey($stripe_key);
     
+    // Create Stripe checkout FIRST (before creating topic in database)
+    // Pass all topic data in metadata so webhook can create it after payment
     $checkout_session = \Stripe\Checkout\Session::create([
         'payment_method_types' => ['card'],
         'line_items' => [[
@@ -168,18 +111,23 @@ try {
             'quantity' => 1,
         ]],
         'mode' => 'payment',
-        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment-success.php?session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id,
-        'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/' . $creator->display_name . '?topic_id=' . $topic_id,
+        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment-success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
+        'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/' . $creator->display_name,
         'metadata' => [
-            'topic_id' => $topic_id,
+            'type' => 'topic_creation',
             'creator_id' => $creator_id,
-            'type' => 'topic_contribution'
+            'initiator_user_id' => $initiator_user_id ?? '',
+            'title' => $title,
+            'description' => $description,
+            'funding_threshold' => $funding_goal,
+            'initial_amount' => $initial_amount,
+            'platform_fee_percent' => '10.00',
+            'creator_display_name' => $creator->display_name
         ]
     ]);
     
     echo json_encode([
         'success' => true,
-        'topic_id' => $topic_id,
         'checkout_url' => $checkout_session->url
     ]);
     
