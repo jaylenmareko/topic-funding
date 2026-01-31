@@ -123,15 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Load Stripe
-        if (!file_exists('../vendor/autoload.php')) {
-            echo json_encode(['error' => 'Stripe library not found']);
+        try {
+            require_once '../config/stripe.php';
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Stripe configuration error: ' . $e->getMessage()]);
             exit;
         }
-        
-        require_once '../vendor/autoload.php';
-        
-        $stripe_key = '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';
-        \Stripe\Stripe::setApiKey($stripe_key);
 
         // Create metadata for both logged-in and guest users
         $metadata = [
