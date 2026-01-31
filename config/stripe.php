@@ -1,10 +1,31 @@
 <?php
 // config/stripe.php - Stripe Connect Configuration
-require_once __DIR__ . '/../stripe-php/init.php';
 
-// Load Stripe API keys from separate file (not tracked in git)
+// Load Stripe API keys first
 require_once __DIR__ . '/stripe-keys.php';
 
+// Try to load Stripe library from multiple possible locations
+$stripe_paths = [
+    __DIR__ . '/../vendor/lib/stripe/stripe-php/stripe-php-master/init.php',
+    __DIR__ . '/../stripe-php/init.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../vendor/autoload.php',
+];
+
+$stripe_loaded = false;
+foreach ($stripe_paths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $stripe_loaded = true;
+        break;
+    }
+}
+
+if (!$stripe_loaded) {
+    throw new Exception('Stripe PHP library not found. Searched paths: ' . implode(', ', $stripe_paths));
+}
+
+// Set the API key
 \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
 define('STRIPE_CURRENCY', 'usd');
