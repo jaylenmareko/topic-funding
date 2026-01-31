@@ -483,16 +483,17 @@ try {
                 grid-template-columns: 1fr; 
             }
             
-            /* Mobile: Show ONLY first request box */
-            .request-topic-box:first-of-type {
+            /* Mobile: Show mobile-only box after profile */
+            .request-topic-box-mobile {
                 display: flex !important;
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 24px;
+                margin-top: 30px;
             }
             
-            /* Hide desktop box on mobile */
-            .request-topic-box-desktop {
+            /* Hide all other request boxes on mobile */
+            .request-topic-box:not(.request-topic-box-mobile) {
                 display: none !important;
             }
             
@@ -504,6 +505,11 @@ try {
         }
         
         @media (min-width: 769px) {
+            /* Desktop: Hide mobile box, show normal boxes */
+            .request-topic-box-mobile {
+                display: none !important;
+            }
+            
             .request-topic-box:first-of-type:not(.request-topic-box-empty-state) {
                 display: none !important;
             }
@@ -559,6 +565,21 @@ try {
                 <?php echo nl2br(htmlspecialchars($creator->bio)); ?>
             </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Mobile-only request box -->
+        <div class="request-topic-box request-topic-box-mobile" style="display: none;">
+            <div class="request-content">
+                <h3 class="request-title">Request Content</h3>
+                <p class="request-text">Get specific content from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></strong>.</p>
+            </div>
+            <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn">
+                Create Topic
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </a>
         </div>
 
         <div>
@@ -670,9 +691,72 @@ try {
                 <?php endif; ?>
             <?php endif; ?>
         </div>
+        
+        <?php if (!empty($waiting_upload_topics)): ?>
+        <div class="section" style="margin-top: 50px;">
+            <h2>Fully Funded - Awaiting Upload</h2>
+            <div class="topic-grid">
+                <?php foreach ($waiting_upload_topics as $topic): ?>
+                <div class="topic-card" style="border-color: #10b981; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">✅</span>
+                            <span style="font-size: 12px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">Funded</span>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 700; color: #10b981;">
+                            ⏱️ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>">
+                                <?php
+                                $seconds_left = max(0, strtotime($topic->content_deadline) - time());
+                                $hours = floor($seconds_left / 3600);
+                                $minutes = floor(($seconds_left % 3600) / 60);
+                                $seconds = $seconds_left % 60;
+                                echo sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                                ?>
+                            </span>
+                        </div>
+                    </div>
+                    <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                    <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                    
+                    <div style="background: white; padding: 16px; border-radius: 12px; margin-top: 16px;">
+                        <div style="font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Creator Earnings</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #10b981; font-family: 'Playfair Display', serif;">
+                            $<?php echo number_format($topic->funding_threshold * 0.9, 0); ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
+</div>
 
     <script>
+    function updateCountdowns() {
+        document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
+            const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
+            const now = new Date().getTime();
+            const timeLeft = deadline - now;
+            
+            if (timeLeft > 0) {
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                element.textContent = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+            } else {
+                element.textContent = '00:00:00';
+            }
+        });
+    }
+    
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+    
     function openTopicModal(topicId) {
         fetch(`/api/get-topic.php?id=${topicId}`)
             .then(response => response.json())
