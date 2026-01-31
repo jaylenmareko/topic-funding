@@ -1,11 +1,19 @@
 <?php
 // api/get-topic.php - Fetch topic details and process funding
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
 session_start();
 header('Content-Type: application/json');
-require_once '../config/database.php';
-require_once '../config/stripe.php';
-require_once '../config/csrf.php';
-require_once '../config/sanitizer.php';
+
+try {
+    require_once '../config/database.php';
+} catch (Exception $e) {
+    error_log("Failed to load database: " . $e->getMessage());
+    echo json_encode(['error' => 'Configuration error: ' . $e->getMessage()]);
+    exit;
+}
 
 // Handle GET request - Fetch topic details
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -39,17 +47,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($topic);
 
     } catch (Exception $e) {
-        echo json_encode(['error' => 'Failed to fetch topic']);
+        error_log("Failed to fetch topic: " . $e->getMessage());
+        echo json_encode(['error' => 'Failed to fetch topic: ' . $e->getMessage()]);
     }
+    exit;
 }
 
 // Handle POST request - Process funding
-elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
 
-    $topic_id = isset($data['topic_id']) ? InputSanitizer::sanitizeInt($data['topic_id']) : 0;
-    $amount = isset($data['amount']) ? InputSanitizer::sanitizeFloat($data['amount']) : 0;
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo json_encode(['error' => 'Invalid JSON data']);
+        exit;
+    }
+
+    $topic_id = isset($data['topic_id']) ? (int)$data['topic_id'] : 0;
+    $amount = isset($data['amount']) ? floatval($data['amount']) : 0;
 
     if (!$topic_id) {
         echo json_encode(['error' => 'Invalid topic ID']);
@@ -58,14 +73,6 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Allow both logged-in and guest users
     $is_logged_in = isset($_SESSION['user_id']);
-
-    // CSRF Protection - only for logged-in users
-    if ($is_logged_in) {
-        if (!isset($data['csrf_token']) || !CSRFProtection::validateToken($data['csrf_token'])) {
-            echo json_encode(['error' => 'Invalid security token']);
-            exit;
-        }
-    }
 
     // Validate amount
     if ($amount < 1) {
@@ -81,8 +88,15 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Get topic details
-        $helper = new DatabaseHelper();
-        $topic = $helper->getTopicById($topic_id);
+        $db = new Database();
+        $db->query('
+            SELECT t.*, c.display_name as creator_name, c.id as creator_id
+            FROM topics t
+            JOIN creators c ON t.creator_id = c.id
+            WHERE t.id = :topic_id
+        ');
+        $db->bind(':topic_id', $topic_id);
+        $topic = $db->single();
 
         if (!$topic) {
             echo json_encode(['error' => 'Topic not found']);
@@ -97,23 +111,27 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // For logged-in users, check contribution limits
         if ($is_logged_in) {
-            $db = new Database();
             $db->query('SELECT COUNT(*) as count FROM contributions WHERE topic_id = :topic_id AND user_id = :user_id');
             $db->bind(':topic_id', $topic_id);
             $db->bind(':user_id', $_SESSION['user_id']);
-            $existing_contributions = $db->single()->count;
-
-            if ($existing_contributions >= 3) {
+            $existing_contributions = $db->single();
+            
+            if ($existing_contributions && $existing_contributions->count >= 3) {
                 echo json_encode(['error' => 'You can only contribute up to 3 times per topic']);
                 exit;
             }
         }
 
-        // Get creator info for redirect
-        $db = new Database();
-        $db->query('SELECT display_name FROM creators WHERE id = :creator_id');
-        $db->bind(':creator_id', $topic->creator_id);
-        $creator = $db->single();
+        // Load Stripe
+        if (!file_exists('../vendor/autoload.php')) {
+            echo json_encode(['error' => 'Stripe library not found']);
+            exit;
+        }
+        
+        require_once '../vendor/autoload.php';
+        
+        $stripe_key = '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';
+        \Stripe\Stripe::setApiKey($stripe_key);
 
         // Create metadata for both logged-in and guest users
         $metadata = [
@@ -133,23 +151,23 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
         } else {
             // For guests, redirect to creator profile after payment with success message
-            $success_url = 'https://topiclaunch.com/' . ($creator->display_name ?? '') . '?payment=success&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
+            $success_url = 'https://topiclaunch.com/' . ($topic->creator_name ?? '') . '?payment=success&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
         }
 
         // Cancel URL - redirect back to creator profile using vanity URL
-        $cancel_url = 'https://topiclaunch.com/' . ($creator->display_name ?? '') . '?payment=cancelled';
+        $cancel_url = 'https://topiclaunch.com/' . ($topic->creator_name ?? '') . '?payment=cancelled';
 
         // Create Stripe Checkout Session
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
             'line_items' => [[
                 'price_data' => [
-                    'currency' => STRIPE_CURRENCY,
+                    'currency' => 'usd',
                     'product_data' => [
                         'name' => 'Fund Topic: ' . $topic->title,
                         'description' => 'Contribution to fund this topic by ' . $topic->creator_name,
                     ],
-                    'unit_amount' => $amount * 100, // Stripe expects cents
+                    'unit_amount' => intval($amount * 100), // Stripe expects cents
                 ],
                 'quantity' => 1,
             ]],
@@ -163,13 +181,16 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Return the Stripe Checkout URL
         echo json_encode(['checkout_url' => $session->url]);
 
-     } catch (\Stripe\Exception\ApiErrorException $e) {
+    } catch (\Stripe\Exception\ApiErrorException $e) {
         error_log("Stripe error: " . $e->getMessage());
-        // Temporarily show detailed error for debugging
-        echo json_encode(['error' => 'Stripe error: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'Payment error: ' . $e->getMessage()]);
     } catch (Exception $e) {
         error_log("Funding error: " . $e->getMessage());
-        // Temporarily show detailed error for debugging
         echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
     }
+    exit;
 }
+
+// Invalid request method
+echo json_encode(['error' => 'Invalid request method']);
+exit;
