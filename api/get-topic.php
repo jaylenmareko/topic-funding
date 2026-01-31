@@ -123,15 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Load Stripe
-        if (!file_exists('../vendor/autoload.php')) {
-            echo json_encode(['error' => 'Stripe library not found']);
+        try {
+            require_once '../config/stripe.php';
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Stripe configuration error: ' . $e->getMessage()]);
             exit;
         }
-        
-        require_once '../vendor/autoload.php';
-        
-        $stripe_key = '***REMOVED***';
-        \Stripe\Stripe::setApiKey($stripe_key);
 
         // Create metadata for both logged-in and guest users
         $metadata = [
