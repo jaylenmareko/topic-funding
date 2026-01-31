@@ -91,7 +91,7 @@ try {
     
     require_once '../vendor/autoload.php';
     
-    $stripe_key = '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';
+    $stripe_key = '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';
     
     \Stripe\Stripe::setApiKey($stripe_key);
     
