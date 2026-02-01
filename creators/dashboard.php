@@ -265,7 +265,7 @@ foreach ($topics as $topic) {
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 40px 280px;
+            padding: 40px 100px;
         }
         
         .page-header {
@@ -751,6 +751,10 @@ foreach ($topics as $topic) {
             🔗 Copy Profile Link
         </button>
 
+        <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink);">
+            🎯 Create New Topic
+        </button>
+
         <div class="earnings-section">
             <div class="earnings-stats">
                 <div>
@@ -870,6 +874,122 @@ foreach ($topics as $topic) {
     </div>
 
     <script>
+        function openCreateTopicModal() {
+            const minPrice = <?php echo $creator->minimum_topic_price ?? 100; ?>;
+            const creatorId = <?php echo $creator->id; ?>;
+            
+            const modalHTML = `
+                <div id="createTopicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeCreateTopicModal(event)">
+                    <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+                        <button onclick="closeCreateTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
+                        
+                        <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create New Topic</h2>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 28px; font-size: 15px;">List a topic for your fans to fund.</p>
+                        
+                        <div id="createTopicError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>
+                        
+                        <form id="createTopicForm" onsubmit="submitCreatorTopic(event, ${creatorId}, ${minPrice})">
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Topic Title</label>
+                                <input type="text" id="topicTitle" placeholder="e.g., My Morning Routine" required maxlength="100" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'">
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Description</label>
+                                <textarea id="topicDescription" placeholder="Describe what this content will be about..." required maxlength="500" rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; resize: vertical; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'"></textarea>
+                            </div>
+                            
+                            <div style="margin-bottom: 24px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Funding Goal</label>
+                                <input type="number" id="fundingGoal" placeholder="${minPrice}" min="${minPrice}" max="10000" step="1" value="${minPrice}" required style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'">
+                                <div style="font-size: 13px; color: #666; margin-top: 8px;">Minimum: $${minPrice}</div>
+                            </div>
+                            
+                            <button type="submit" id="createTopicButton" style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#E6005F'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 0, 107, 0.3)'" onmouseout="this.style.background='#FF006B'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">Create Topic</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        function closeCreateTopicModal(event) {
+            if (event && event.target.id !== 'createTopicModal') return;
+            const modal = document.getElementById('createTopicModal');
+            if (modal) modal.remove();
+        }
+        
+        function submitCreatorTopic(event, creatorId, minPrice) {
+            event.preventDefault();
+            
+            const title = document.getElementById('topicTitle').value;
+            const description = document.getElementById('topicDescription').value;
+            const fundingGoal = parseFloat(document.getElementById('fundingGoal').value);
+            const errorDiv = document.getElementById('createTopicError');
+            const button = document.getElementById('createTopicButton');
+            
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            
+            if (!title || !description || !fundingGoal) {
+                errorDiv.textContent = 'Please fill in all fields';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (fundingGoal < minPrice || fundingGoal > 10000) {
+                errorDiv.textContent = 'Funding goal must be between $' + minPrice + ' and $10,000';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = 'Creating...';
+            button.style.opacity = '0.6';
+            
+            const requestData = {
+                creator_id: creatorId,
+                title: title,
+                description: description,
+                funding_goal: fundingGoal,
+                creator_initiated: true
+            };
+            
+            fetch('/api/create-creator-topic.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                    button.disabled = false;
+                    button.innerHTML = 'Create Topic';
+                    button.style.opacity = '1';
+                } else if (data.success) {
+                    closeCreateTopicModal();
+                    location.reload();
+                } else {
+                    errorDiv.textContent = 'Unexpected response from server';
+                    errorDiv.style.display = 'block';
+                    button.disabled = false;
+                    button.innerHTML = 'Create Topic';
+                    button.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.style.display = 'block';
+                button.disabled = false;
+                button.innerHTML = 'Create Topic';
+                button.style.opacity = '1';
+            });
+        }
+        
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
                 const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
