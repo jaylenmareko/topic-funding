@@ -31,26 +31,15 @@ if (!in_array($current_script, $allowed_pages)) {
     exit;
 }
 
-function validateContentUrl($url, $creator) {
-    $errors = [];
-    switch ($creator->platform_type) {
-        case 'youtube':
-            if (!(stripos($url, 'youtube.com/watch') !== false || stripos($url, 'youtube.com/shorts') !== false || stripos($url, 'youtu.be/') !== false)) {
-                $errors[] = "Must be a valid YouTube video or Shorts URL";
-            }
-            break;
-        case 'instagram':
-            if (!(stripos($url, 'instagram.com/reel') !== false || stripos($url, 'instagram.com/reels') !== false || stripos($url, 'instagram.com/p/') !== false)) {
-                $errors[] = "Must be an Instagram Reel or Post URL";
-            }
-            break;
-        case 'tiktok':
-            if (!(stripos($url, 'tiktok.com/@') !== false && stripos($url, '/video/') !== false)) {
-                $errors[] = "Must be a TikTok video URL";
-            }
-            break;
+function validateContentUrl($url) {
+    $isYouTube = stripos($url, 'youtube.com/watch') !== false || stripos($url, 'youtube.com/shorts') !== false || stripos($url, 'youtu.be/') !== false;
+    $isInstagram = stripos($url, 'instagram.com/reel') !== false || stripos($url, 'instagram.com/reels') !== false || stripos($url, 'instagram.com/p/') !== false;
+    $isTikTok = stripos($url, 'tiktok.com/@') !== false && stripos($url, '/video/') !== false;
+    
+    if (!$isYouTube && !$isInstagram && !$isTikTok) {
+        return ["Must be a valid YouTube, Instagram, or TikTok URL"];
     }
-    return $errors;
+    return [];
 }
 
 $upload_message = '';
@@ -73,7 +62,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
         $upload_error = "Please enter a valid URL";
         $uploaded_topic_id = $topic_id;
     } else {
-        $validation_errors = validateContentUrl($content_url, $creator);
+        $validation_errors = validateContentUrl($content_url);
         if (!empty($validation_errors)) {
             $upload_error = implode(". ", $validation_errors);
             $uploaded_topic_id = $topic_id;
@@ -347,7 +336,7 @@ foreach ($topics as $topic) {
             font-weight: 600;
             color: #333;
             cursor: pointer;
-            margin-bottom: 32px;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -747,11 +736,14 @@ foreach ($topics as $topic) {
             </div>
         </div>
 
-        <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
-            🔗 Copy Profile Link
-        </button>
+        <div style="margin-bottom: 12px;">
+            <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
+                🔗 Copy Profile Link
+            </button>
+            <p style="font-size: 13px; color: #999; text-align: center; margin-top: 10px;">Share this with your fans to start getting requests</p>
+        </div>
 
-        <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink);">
+        <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink); margin-bottom: 32px;">
             🎯 Create New Topic
         </button>
 
@@ -1063,18 +1055,75 @@ foreach ($topics as $topic) {
         
         function openUploadModal(id) {
             event.stopPropagation();
-            const url = prompt('Enter your video URL:');
-            if (url) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="topic_id" value="${id}">
-                    <input type="hidden" name="content_url" value="${url}">
-                    <input type="hidden" name="upload_content" value="1">
-                `;
-                document.body.appendChild(form);
-                form.submit();
+            
+            const modalHTML = `
+                <div id="uploadModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeUploadModal(event)">
+                    <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+                        <button onclick="closeUploadModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
+                        
+                        <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 8px 0; font-size: 24px; color: #000; font-weight: 700; padding-right: 30px;">Upload Content</h2>
+                        <p style="color: #666; font-size: 15px; margin-bottom: 20px;">Paste your video link below.</p>
+                        
+                        <div style="background: #f8f9fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 16px;">
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; margin-bottom: 4px;">▶️</div>
+                                <div style="font-size: 11px; color: #666; font-weight: 600;">YouTube</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; margin-bottom: 4px;">📸</div>
+                                <div style="font-size: 11px; color: #666; font-weight: 600;">Instagram</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; margin-bottom: 4px;">🎵</div>
+                                <div style="font-size: 11px; color: #666; font-weight: 600;">TikTok</div>
+                            </div>
+                        </div>
+                        
+                        <div id="uploadError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500;"></div>
+                        
+                        <input type="text" id="uploadUrl" placeholder="Paste your video URL here..." autofocus style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; outline: none; font-family: 'Inter', sans-serif; margin-bottom: 16px;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'" onkeydown="if(event.key==='Enter'){event.preventDefault(); submitUpload(${id});}">
+                        
+                        <button id="uploadButton" onclick="submitUpload(${id})" style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer;" onmouseover="this.style.background='#E6005F'" onmouseout="this.style.background='#FF006B'">Upload</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.getElementById('uploadUrl').focus();
+        }
+        
+        function closeUploadModal(event) {
+            if (event && event.target.id !== 'uploadModal') return;
+            const modal = document.getElementById('uploadModal');
+            if (modal) modal.remove();
+        }
+        
+        function submitUpload(id) {
+            const url = document.getElementById('uploadUrl').value.trim();
+            const errorDiv = document.getElementById('uploadError');
+            const button = document.getElementById('uploadButton');
+            
+            errorDiv.style.display = 'none';
+            
+            if (!url) {
+                errorDiv.textContent = 'Please enter a URL';
+                errorDiv.style.display = 'block';
+                return;
             }
+            
+            button.disabled = true;
+            button.textContent = 'Uploading...';
+            button.style.opacity = '0.6';
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="topic_id" value="${id}">
+                <input type="hidden" name="content_url" value="${url}">
+                <input type="hidden" name="upload_content" value="1">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
         
         function declineTopic(id) {
@@ -1091,15 +1140,12 @@ foreach ($topics as $topic) {
         
         function holdTopic(id) {
             event.stopPropagation();
-            const reason = prompt('Reason for hold:', 'Working on other content');
-            if (reason !== null) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'topic_actions.php';
-                form.innerHTML = `<input type="hidden" name="action" value="hold"><input type="hidden" name="topic_id" value="${id}"><input type="hidden" name="hold_reason" value="${reason}">`;
-                document.body.appendChild(form);
-                form.submit();
-            }
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'topic_actions.php';
+            form.innerHTML = `<input type="hidden" name="action" value="hold"><input type="hidden" name="topic_id" value="${id}">`;
+            document.body.appendChild(form);
+            form.submit();
         }
         
         function resumeTopic(id) {
