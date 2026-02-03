@@ -1,7 +1,6 @@
 <?php
 // config/funding_processor.php - UPDATED FOR NEW FLOW
 require_once 'database.php';
-require_once 'stripe-keys.php';
 
 class FundingProcessor {
     private $db;
@@ -24,7 +23,8 @@ class FundingProcessor {
             }
             
             // Get payment intent from Stripe
-            \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+            $stripe_key = '***REMOVED***';
+            \Stripe\Stripe::setApiKey($stripe_key);
             $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
             
             error_log("Payment amount: " . ($payment_intent->amount / 100));
@@ -100,7 +100,7 @@ class FundingProcessor {
             $this->db->execute();
             
             $contribution_id = $this->db->lastInsertId();
-            error_log("Created contribution ID: " . $contribution_id);
+            error_log("âœ“ Created contribution ID: " . $contribution_id);
             
             // Update topic funding
             $this->db->query('UPDATE topics SET current_funding = current_funding + :amount WHERE id = :topic_id');
@@ -108,7 +108,7 @@ class FundingProcessor {
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             
-            error_log("Updated topic funding by $amount");
+            error_log("âœ“ Updated topic funding by $amount");
             
             // Get updated topic info
             $this->db->query('SELECT * FROM topics WHERE id = :topic_id');
@@ -119,7 +119,7 @@ class FundingProcessor {
             
             $fully_funded = false;
             if ($topic_after && $topic_after->current_funding >= $topic_after->funding_threshold) {
-                error_log("TOPIC FULLY FUNDED! Updating status...");
+                error_log("ðŸŽ‰ TOPIC FULLY FUNDED! Updating status...");
                 
                 // Update topic status to funded
                 $this->db->query('
@@ -132,7 +132,7 @@ class FundingProcessor {
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
                 
-                error_log("Topic status updated to FUNDED");
+                error_log("âœ“ Topic status updated to FUNDED");
                 $fully_funded = true;
             }
             
@@ -165,9 +165,6 @@ class FundingProcessor {
             $platform_fee_percent = floatval($metadata->platform_fee_percent ?? 10.00);
             
             error_log("Processing topic creation - Creator: $creator_id, Amount: $initial_amount");
-            error_log("Title: $title");
-            error_log("Description: $description");
-            error_log("Funding threshold: $funding_threshold");
             
             if ($initial_amount < 1) {
                 throw new Exception("Minimum payment of $1 required");
@@ -217,7 +214,7 @@ class FundingProcessor {
             $this->db->execute();
             
             $topic_id = $this->db->lastInsertId();
-            error_log("Created topic ID: " . $topic_id);
+            error_log("âœ“ Created topic ID: " . $topic_id);
             
             // Create initial contribution
             $this->db->query('
@@ -230,13 +227,13 @@ class FundingProcessor {
             $this->db->bind(':payment_id', $payment_intent_id);
             $this->db->execute();
             
-            error_log("Created initial contribution");
+            error_log("âœ“ Created initial contribution");
             
             // Check if immediately funded
             $fully_funded = $initial_amount >= $funding_threshold;
             
             if ($fully_funded) {
-                error_log("Topic immediately fully funded!");
+                error_log("ðŸŽ‰ Topic immediately fully funded!");
                 
                 $this->db->query('
                     UPDATE topics 
