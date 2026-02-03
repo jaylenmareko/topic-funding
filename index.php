@@ -337,6 +337,28 @@ if ($db_available) {
             box-shadow: 0 12px 35px rgba(255, 0, 107, 0.35);
         }
         
+        .platform-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 28px;
+            gap: 8px;
+        }
+        
+        .platform-logos {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .platform-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
         /* Value Props */
         .value-props {
             background: var(--white);
@@ -679,6 +701,17 @@ if ($db_available) {
             <a href="creators/signup.php" class="hero-cta">
                 Start Earning
             </a>
+            <div class="platform-bar">
+                <div class="platform-logos">
+                    <!-- YouTube -->
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 7s-.3-1.7-1-2.4c-1-1-2.1-1-2.6-1.1C17 3 12 3 12 3s-5 0-7.4.5c-.5.1-1.6.1-2.6 1.1C1.3 5.3 1 7 1 7S.7 9 .7 11v1.8c0 2 .3 3.8.3 3.8s.3 1.7 1 2.4c1 1 2.3.9 2.9 1 2.1.2 7.1.3 7.1.3s5 0 7.4-.5c.5-.1 1.6-.1 2.6-1.1.7-.7 1-2.4 1-2.4s.3-1.8.3-3.8V11c0-2-.3-4-.3-4z" fill="rgba(255,255,255,0.7)"/><path d="M9.7 15.5l6.5-3.5-6.5-3.5v7z" fill="rgba(255,255,255,0.95)"/></svg>
+                    <!-- Instagram -->
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="rgba(255,255,255,0.7)"/></svg>
+                    <!-- TikTok -->
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M19.6 4.8c-1.1-.7-1.8-1.8-2-3h-2.9v12.9c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .5 0 .8.1V8.1c-.3 0-.5-.1-.8-.1-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5V9.1c1.1.7 2.4 1.1 3.8 1.1V7.3c-1.4 0-2.6-.7-3.6-1.7" fill="rgba(255,255,255,0.7)"/></svg>
+                </div>
+                <div class="platform-label">Compatible</div>
+            </div>
         </div>
     </div>
 
@@ -686,17 +719,17 @@ if ($db_available) {
     <div class="value-props">
         <div class="value-container">
             <div class="value-card">
-                <div class="value-icon">👑</div>
+                <div class="value-icon">ðŸ‘‘</div>
                 <h3>You're the CEO Here</h3>
                 <p>Set your own rates. No negotiating with brands who lowball you. You decide what your content is worth.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">💰</div>
+                <div class="value-icon">ðŸ’°</div>
                 <h3>Get Paid First</h3>
                 <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">⚡</div>
+                <div class="value-icon">âš¡</div>
                 <h3>48-Hour Delivery</h3>
                 <p>Deliver within 48 hours and keep 90% of what you earn or everyone gets refunded.</p>
             </div>
