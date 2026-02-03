@@ -203,12 +203,12 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
                         <!-- Creator Navigation - Only show Dashboard button when NOT on dashboard -->
                         <?php if ($current_page !== 'dashboard'): ?>
                         <a href="<?php echo $base_path; ?>creators/dashboard.php" class="nav-btn dashboard">
-                            📊 Dashboard
+                            ðŸ“Š Dashboard
                         </a>
                         <?php endif; ?>
                     <?php else: ?>
                         <!-- Fan Navigation - Browse YouTubers link -->
-                        <a href="/creators/index.php" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
+                        <a href="/creators/" class="nav-link <?php echo $current_page === 'browse_creators' ? 'active' : ''; ?>">
                             Browse YouTubers
                         </a>
                     <?php endif; ?>
@@ -238,7 +238,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
                     <?php if (!$is_profile_page): ?>
                         <!-- Only show these buttons when NOT on a profile page -->
                         <a href="<?php echo $base_path; ?>creators/apply.php" class="nav-btn creator">
-                            📺 Join as Creator
+                            ðŸ“º Join as Creator
                         </a>
                         
                         <a href="<?php echo $base_path; ?>auth/login.php" class="nav-btn">
@@ -253,7 +253,7 @@ function renderNavigation($current_page = '', $is_profile_page = false) {
             </div>
             
             <button class="nav-mobile-toggle" onclick="toggleMobileNav()">
-                ☰
+                â˜°
             </button>
         </div>
     </nav>
