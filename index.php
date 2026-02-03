@@ -719,17 +719,17 @@ if ($db_available) {
     <div class="value-props">
         <div class="value-container">
             <div class="value-card">
-                <div class="value-icon">ðŸ‘‘</div>
+                <div class="value-icon">&#128081;</div>
                 <h3>You're the CEO Here</h3>
                 <p>Set your own rates. No negotiating with brands who lowball you. You decide what your content is worth.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">ðŸ’°</div>
+                <div class="value-icon">&#128176;</div>
                 <h3>Get Paid First</h3>
                 <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments.</p>
             </div>
             <div class="value-card">
-                <div class="value-icon">âš¡</div>
+                <div class="value-icon">&#9889;</div>
                 <h3>48-Hour Delivery</h3>
                 <p>Deliver within 48 hours and keep 90% of what you earn or everyone gets refunded.</p>
             </div>
