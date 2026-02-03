@@ -21,13 +21,6 @@ try {
     exit;
 }
 
-try {
-    require_once '../config/stripe.php';
-} catch (Exception $e) {
-    echo json_encode(['error' => 'Stripe config failed: ' . $e->getMessage()]);
-    exit;
-}
-
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true);
 
@@ -90,6 +83,18 @@ try {
     // Get initiator user ID from session (if logged in)
     $initiator_user_id = $_SESSION['user_id'] ?? null;
     
+    // Load Stripe
+    if (!file_exists('../vendor/autoload.php')) {
+        echo json_encode(['error' => 'Stripe library not found. Please install Stripe PHP library.']);
+        exit;
+    }
+    
+    require_once '../vendor/autoload.php';
+    
+    $stripe_key = '***REMOVED***';
+    
+    \Stripe\Stripe::setApiKey($stripe_key);
+    
     // Create Stripe checkout FIRST (before creating topic in database)
     // Pass all topic data in metadata so webhook can create it after payment
     $checkout_session = \Stripe\Checkout\Session::create([
@@ -106,7 +111,7 @@ try {
             'quantity' => 1,
         ]],
         'mode' => 'payment',
-        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/' . $creator->display_name . '?payment=success&type=topic_creation',
+        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment-success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
         'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/' . $creator->display_name,
         'metadata' => [
             'type' => 'topic_creation',
