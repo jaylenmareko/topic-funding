@@ -123,29 +123,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Load Stripe
-        try {
-            require_once '../config/stripe.php';
-        } catch (Exception $e) {
-            echo json_encode(['error' => 'Stripe configuration error: ' . $e->getMessage()]);
+        if (!file_exists('../vendor/autoload.php')) {
+            echo json_encode(['error' => 'Stripe library not found']);
             exit;
         }
+        
+        require_once '../vendor/autoload.php';
+        
+        $stripe_key = '***REMOVED***';
+        \Stripe\Stripe::setApiKey($stripe_key);
 
         // Create metadata for both logged-in and guest users
         $metadata = [
-            'type' => 'topic_funding',
-            'topic_id' => $topic_id,
-            'amount' => $amount,
-            'is_guest' => $is_logged_in ? 'false' : 'true'
+            'type' => 'topic_contribution',
+            'topic_id' => (string)$topic_id,
+            'amount' => (string)$amount,
+            'user_id' => $is_logged_in ? (string)$_SESSION['user_id'] : ''
         ];
-
-        // Add user ID if logged in
-        if ($is_logged_in) {
-            $metadata['user_id'] = $_SESSION['user_id'];
-        }
 
         // Create success URL based on user status
         if ($is_logged_in) {
-            $success_url = 'https://topiclaunch.com/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
+            $success_url = 'https://topiclaunch.com/payment-success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
         } else {
             // For guests, redirect to creator profile after payment with success message
             $success_url = 'https://topiclaunch.com/' . ($topic->creator_name ?? '') . '?payment=success&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
