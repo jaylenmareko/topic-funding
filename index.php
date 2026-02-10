@@ -696,7 +696,7 @@ if ($db_available) {
                 <span class="pink">Your Money.</span>
             </h1>
             <p class="hero-subhead">
-                Your fans request specific content topics and fund them upfront—or you create topics for them to fund. Deliver within 48 hours and keep 90%.
+                You create topics for your fans to fund upfront—or your fans request specific content topics and fund them upfront. Deliver within 48 hours and keep 90%.
             </p>
             <a href="creators/signup.php" class="hero-cta">
                 Start Earning
