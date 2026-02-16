@@ -76,7 +76,7 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Get Paid For Video Requests</title>
+    <title>TopicLaunch - GET PAID to Create Videos Requested by Fans</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <meta name="description" content="Set your price. Fans request custom content and pay upfront. You create it within 48 hours and keep 90%.">
@@ -84,7 +84,7 @@ if ($db_available) {
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - Get Paid For Video Requests">
+    <meta property="og:title" content="TopicLaunch - GET PAID to Create Videos Requested by Fans">
     <meta property="og:description" content="Set your price. Fans request custom content and pay upfront. You create it and keep 90%.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
@@ -776,8 +776,8 @@ if ($db_available) {
         <div class="hero-container">
             <div class="hero-eyebrow">POWERED BY CREATORS</div>
             <h1>
-                Get Paid For<br>
-                <span class="pink">Video Requests.</span>
+                GET PAID to Create<br>
+                <span class="pink">Videos Requested by Fans.</span>
             </h1>
             <p class="hero-subhead">
                 Set your price. Fans request custom content. They pay upfront. You create it within 48 hours and keep 90%.
