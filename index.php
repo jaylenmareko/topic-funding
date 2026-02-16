@@ -1,5 +1,5 @@
 <?php
-// index.php - FOR WOMEN WHO RUN IT
+// index.php - FOR THE NEXT GENERATION
 session_start();
 
 // Try to load database config
@@ -246,7 +246,7 @@ if ($db_available) {
         
         /* Hero Section */
         .hero { 
-            background: var(--black);
+            background: var(--white);
             padding: 80px 30px 100px 30px; 
             text-align: center;
             position: relative;
@@ -261,13 +261,13 @@ if ($db_available) {
             width: 600px;
             height: 600px;
             background: radial-gradient(circle, var(--hot-pink) 0%, transparent 70%);
-            opacity: 0.15;
+            opacity: 0.08;
             animation: pulse 8s ease-in-out infinite;
         }
         
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.15; }
-            50% { transform: scale(1.1); opacity: 0.25; }
+            0%, 100% { transform: scale(1); opacity: 0.08; }
+            50% { transform: scale(1.1); opacity: 0.12; }
         }
         
         .hero-container {
@@ -293,7 +293,7 @@ if ($db_available) {
             font-size: 68px; 
             margin: 0 0 25px 0; 
             font-weight: 700; 
-            color: var(--white); 
+            color: var(--black); 
             line-height: 1.1;
             letter-spacing: -1.5px;
             animation: fadeInUp 0.8s ease-out 0.4s both;
@@ -301,13 +301,12 @@ if ($db_available) {
         
         .hero h1 .pink { 
             color: var(--hot-pink);
-            font-style: italic;
         }
         
         .hero-subhead {
             font-size: 20px;
             font-weight: 400;
-            color: var(--off-white);
+            color: var(--gray-dark);
             max-width: 700px;
             margin: 0 auto 40px auto;
             line-height: 1.6;
@@ -353,7 +352,7 @@ if ($db_available) {
         
         .platform-label {
             font-size: 12px;
-            color: rgba(255,255,255,0.4);
+            color: rgba(0,0,0,0.4);
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 1.5px;
@@ -689,7 +688,7 @@ if ($db_available) {
     <!-- Hero Section -->
     <div class="hero">
         <div class="hero-container">
-            <div class="hero-eyebrow">FOR CREATORS WHO RUN IT</div>
+            <div class="hero-eyebrow">POWERED BY CREATORS</div>
             <h1>
                 Your Content.<br>
                 Your Rules.<br>
@@ -704,11 +703,11 @@ if ($db_available) {
             <div class="platform-bar">
                 <div class="platform-logos">
                     <!-- YouTube -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 7s-.3-1.7-1-2.4c-1-1-2.1-1-2.6-1.1C17 3 12 3 12 3s-5 0-7.4.5c-.5.1-1.6.1-2.6 1.1C1.3 5.3 1 7 1 7S.7 9 .7 11v1.8c0 2 .3 3.8.3 3.8s.3 1.7 1 2.4c1 1 2.3.9 2.9 1 2.1.2 7.1.3 7.1.3s5 0 7.4-.5c.5-.1 1.6-.1 2.6-1.1.7-.7 1-2.4 1-2.4s.3-1.8.3-3.8V11c0-2-.3-4-.3-4z" fill="rgba(255,255,255,0.7)"/><path d="M9.7 15.5l6.5-3.5-6.5-3.5v7z" fill="rgba(255,255,255,0.95)"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 7s-.3-1.7-1-2.4c-1-1-2.1-1-2.6-1.1C17 3 12 3 12 3s-5 0-7.4.5c-.5.1-1.6.1-2.6 1.1C1.3 5.3 1 7 1 7S.7 9 .7 11v1.8c0 2 .3 3.8.3 3.8s.3 1.7 1 2.4c1 1 2.3.9 2.9 1 2.1.2 7.1.3 7.1.3s5 0 7.4-.5c.5-.1 1.6-.1 2.6-1.1.7-.7 1-2.4 1-2.4s.3-1.8.3-3.8V11c0-2-.3-4-.3-4z" fill="rgba(0,0,0,0.5)"/><path d="M9.7 15.5l6.5-3.5-6.5-3.5v7z" fill="rgba(0,0,0,0.7)"/></svg>
                     <!-- Instagram -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="rgba(255,255,255,0.7)"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="4.5" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="rgba(0,0,0,0.5)"/></svg>
                     <!-- TikTok -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M19.6 4.8c-1.1-.7-1.8-1.8-2-3h-2.9v12.9c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .5 0 .8.1V8.1c-.3 0-.5-.1-.8-.1-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5V9.1c1.1.7 2.4 1.1 3.8 1.1V7.3c-1.4 0-2.6-.7-3.6-1.7" fill="rgba(255,255,255,0.7)"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M19.6 4.8c-1.1-.7-1.8-1.8-2-3h-2.9v12.9c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .5 0 .8.1V8.1c-.3 0-.5-.1-.8-.1-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5V9.1c1.1.7 2.4 1.1 3.8 1.1V7.3c-1.4 0-2.6-.7-3.6-1.7" fill="rgba(0,0,0,0.5)"/></svg>
                 </div>
                 <div class="platform-label">Compatible</div>
             </div>
