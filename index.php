@@ -76,16 +76,16 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - Turn Attention Into Intentional Income</title>
+    <title>TopicLaunch - Get Paid For Video Requests</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <meta name="description" content="For Creators Who Run It. Set your price, get paid upfront, and create on your terms. Built for the next generation of content creators.">
+    <meta name="description" content="Set your price. Fans request custom content and pay upfront. You create it within 48 hours and keep 90%.">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - Turn Attention Into Intentional Income">
-    <meta property="og:description" content="You're the CEO. Set your price, get paid upfront, and create on your terms.">
+    <meta property="og:title" content="TopicLaunch - Get Paid For Video Requests">
+    <meta property="og:description" content="Set your price. Fans request custom content and pay upfront. You create it and keep 90%.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
     <!-- Favicon -->
@@ -94,7 +94,7 @@ if ($db_available) {
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -178,7 +178,7 @@ if ($db_available) {
         }
         
         .nav-logo {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 22px;
             font-weight: 700;
             color: var(--black);
@@ -289,13 +289,13 @@ if ($db_available) {
         }
         
         .hero h1 { 
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 68px; 
             margin: 0 0 25px 0; 
-            font-weight: 700; 
+            font-weight: 600; 
             color: var(--black); 
             line-height: 1.1;
-            letter-spacing: -1.5px;
+            letter-spacing: -3px;
             animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
@@ -304,10 +304,10 @@ if ($db_available) {
         }
         
         .hero-subhead {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 400;
             color: var(--gray-dark);
-            max-width: 700px;
+            max-width: 750px;
             margin: 0 auto 40px auto;
             line-height: 1.6;
             animation: fadeInUp 0.8s ease-out 0.5s both;
@@ -356,6 +356,91 @@ if ($db_available) {
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 1.5px;
+        }
+        
+        /* How It Works */
+        .how-it-works {
+            background: var(--off-white);
+            padding: 80px 30px 60px 30px;
+        }
+        
+        .how-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .how-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .how-header h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 48px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--black);
+        }
+        
+        .how-header p {
+            font-size: 18px;
+            color: var(--gray-med);
+        }
+        
+        .how-header p {
+            font-size: 18px;
+            color: var(--gray-med);
+        }
+        
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+        
+        .step-card {
+            text-align: center;
+            position: relative;
+            background: var(--white);
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: var(--hot-pink);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .step-card h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 24px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            color: var(--black);
+        }
+        
+        .step-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--gray-dark);
         }
         
         /* Value Props */
@@ -409,7 +494,7 @@ if ($db_available) {
         /* Creators Section */
         .creators-section {
             background: var(--cream);
-            padding: 80px 30px 100px 30px;
+            padding: 60px 30px 100px 30px;
             animation: fadeInUp 0.8s ease-out 0.5s both;
         }
         
@@ -433,7 +518,7 @@ if ($db_available) {
         }
         
         .section-title {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 48px;
             margin-bottom: 15px;
             font-weight: 700;
@@ -525,7 +610,7 @@ if ($db_available) {
         }
         
         .creator-initial {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 72px;
             color: var(--white);
             font-weight: 700;
@@ -536,7 +621,7 @@ if ($db_available) {
         }
         
         .creator-name {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 22px;
             margin-bottom: 5px;
             font-weight: 700;
@@ -568,7 +653,7 @@ if ($db_available) {
         }
         
         .creator-price {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 26px;
             color: var(--black);
             font-weight: 700;
@@ -629,9 +714,9 @@ if ($db_available) {
         }
         
         @media (max-width: 1024px) {
-            .value-container {
+            .steps-grid {
                 grid-template-columns: 1fr;
-                gap: 30px;
+                gap: 40px;
             }
             
             .creators-grid {
@@ -657,6 +742,7 @@ if ($db_available) {
                 font-size: 18px;
             }
             
+            .how-header h2,
             .section-title {
                 font-size: 36px;
             }
@@ -690,12 +776,11 @@ if ($db_available) {
         <div class="hero-container">
             <div class="hero-eyebrow">POWERED BY CREATORS</div>
             <h1>
-                Your Content.<br>
-                Your Rules.<br>
-                <span class="pink">Your Money.</span>
+                Get Paid For<br>
+                <span class="pink">Video Requests.</span>
             </h1>
             <p class="hero-subhead">
-                You create topics for your fans to fund upfront—or your fans request specific content topics and fund them upfront. Deliver within 48 hours and keep 90%.
+                Set your price. Fans request custom content. They pay upfront. You create it within 48 hours and keep 90%.
             </p>
             <a href="creators/signup.php" class="hero-cta">
                 Start Earning
@@ -709,28 +794,36 @@ if ($db_available) {
                     <!-- TikTok -->
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M19.6 4.8c-1.1-.7-1.8-1.8-2-3h-2.9v12.9c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .5 0 .8.1V8.1c-.3 0-.5-.1-.8-.1-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5V9.1c1.1.7 2.4 1.1 3.8 1.1V7.3c-1.4 0-2.6-.7-3.6-1.7" fill="rgba(0,0,0,0.5)"/></svg>
                 </div>
-                <div class="platform-label">Compatible</div>
+                <div class="platform-label">Works with any platform</div>
             </div>
         </div>
     </div>
 
-    <!-- Value Props -->
-    <div class="value-props">
-        <div class="value-container">
-            <div class="value-card">
-                <div class="value-icon">&#128081;</div>
-                <h3>You're the CEO Here</h3>
-                <p>Set your own rates. No negotiating with brands who lowball you. You decide what your content is worth.</p>
+    <!-- How It Works -->
+    <div class="how-it-works">
+        <div class="how-container">
+            <div class="how-header">
+                <h2>How It Works</h2>
             </div>
-            <div class="value-card">
-                <div class="value-icon">&#128176;</div>
-                <h3>Get Paid First</h3>
-                <p>Your audience pays upfront before you create. No waiting 90 days. No chasing payments.</p>
-            </div>
-            <div class="value-card">
-                <div class="value-icon">&#9889;</div>
-                <h3>48-Hour Delivery</h3>
-                <p>Deliver within 48 hours and keep 90% of what you earn or everyone gets refunded.</p>
+            
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Set Your Price</h3>
+                    <p>Pick what you charge per request. $20? $200? You decide.</p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Get Requests</h3>
+                    <p>Fans send you video requests and pay your price upfront.</p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Create & Get Paid</h3>
+                    <p>Make the content within 48 hours. We send you 90% of the payment.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -739,9 +832,7 @@ if ($db_available) {
     <div class="creators-section">
         <div class="creators-container">
             <div class="section-header">
-                <div class="section-eyebrow">RISING STARS</div>
                 <h2 class="section-title">Creators Getting Paid</h2>
-                <p class="section-subtitle">Real people turning attention into income.</p>
             </div>
             
             <div class="search-section">
