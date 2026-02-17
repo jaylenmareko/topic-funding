@@ -76,7 +76,7 @@ if ($db_available) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TopicLaunch - GET PAID to Create Videos Requested by Fans</title>
+    <title>TopicLaunch - Get Paid to Create Videos Requested by Fans</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <meta name="description" content="Set your price. Fans request custom content and pay upfront. You create it within 48 hours and keep 90%.">
@@ -84,7 +84,7 @@ if ($db_available) {
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://topiclaunch.com/">
-    <meta property="og:title" content="TopicLaunch - GET PAID to Create Videos Requested by Fans">
+    <meta property="og:title" content="TopicLaunch - Get Paid to Create Videos Requested by Fans">
     <meta property="og:description" content="Set your price. Fans request custom content and pay upfront. You create it and keep 90%.">
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
@@ -290,12 +290,12 @@ if ($db_available) {
         
         .hero h1 { 
             font-family: 'Inter', sans-serif;
-            font-size: 68px; 
+            font-size: 52px; 
             margin: 0 0 25px 0; 
             font-weight: 600; 
             color: var(--black); 
-            line-height: 1.1;
-            letter-spacing: -3px;
+            line-height: 1.15;
+            letter-spacing: -2px;
             animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
@@ -311,6 +311,10 @@ if ($db_available) {
             margin: 0 auto 40px auto;
             line-height: 1.6;
             animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+        
+        .desktop-break {
+            display: block;
         }
         
         .hero-cta {
@@ -734,12 +738,16 @@ if ($db_available) {
             }
             
             .hero h1 {
-                font-size: 42px;
+                font-size: 36px;
                 letter-spacing: -1px;
             }
             
             .hero-subhead {
                 font-size: 18px;
+            }
+            
+            .desktop-break {
+                display: inline;
             }
             
             .how-header h2,
@@ -776,11 +784,12 @@ if ($db_available) {
         <div class="hero-container">
             <div class="hero-eyebrow">POWERED BY CREATORS</div>
             <h1>
-                GET PAID to Create<br>
+                Get Paid to Create<br>
                 <span class="pink">Videos Requested by Fans.</span>
             </h1>
             <p class="hero-subhead">
-                Set your price. Fans request custom content. They pay upfront. You create it within 48 hours and keep 90%.
+                Set your price. Take fan requests or post your own topics.<span class="desktop-break"></span>
+                They pay upfront. You create it within 48 hours and keep 90%.
             </p>
             <a href="creators/signup.php" class="hero-cta">
                 Start Earning
@@ -816,13 +825,13 @@ if ($db_available) {
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <h3>Get Requests</h3>
-                    <p>Fans send you video requests and pay your price upfront.</p>
+                    <p>Fans send you video requests—or you post your own topics. They pay upfront.</p>
                 </div>
                 
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <h3>Create & Get Paid</h3>
-                    <p>Make the content within 48 hours. We send you 90% of the payment.</p>
+                    <p>Make the content within 48 hours. Then we send you 90% of the payment.</p>
                 </div>
             </div>
         </div>
