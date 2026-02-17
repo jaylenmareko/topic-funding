@@ -825,7 +825,7 @@ if ($db_available) {
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <h3>Get Requests</h3>
-                    <p>Fans send you video requests—or you post your own topics. They pay upfront.</p>
+                    <p>Fans send you video requests—or you post your own video requests. They pay upfront.</p>
                 </div>
                 
                 <div class="step-card">
