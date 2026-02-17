@@ -98,7 +98,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --hot-pink: #FF006B;
@@ -142,7 +142,7 @@ try {
         }
         
         .nav-logo {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 22px;
             font-weight: 700;
             text-decoration: none;
@@ -242,7 +242,7 @@ try {
             align-items: center;
             justify-content: center;
             color: var(--white);
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 48px;
             font-weight: 700;
             overflow: hidden;
@@ -256,7 +256,7 @@ try {
         }
         
         .profile-name {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 28px;
             font-weight: 700;
             color: var(--black);
@@ -280,7 +280,7 @@ try {
         }
         
         .profile-price-amount {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 32px;
             font-weight: 700;
             color: var(--black);
@@ -323,7 +323,7 @@ try {
         }
         
         .request-title {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 24px;
             font-weight: 700;
             color: var(--black);
@@ -370,7 +370,7 @@ try {
         }
         
         .section h2 { 
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             margin-top: 0; 
             color: var(--black);
             font-size: 32px;
@@ -400,7 +400,7 @@ try {
         }
         
         .topic-title { 
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-weight: 700;
             font-size: 20px;
             margin-bottom: 12px;
@@ -451,7 +451,7 @@ try {
         }
         
         .empty-state h3 {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             color: var(--black);
             margin-bottom: 12px;
             font-size: 22px;
@@ -516,16 +516,6 @@ try {
             
             .request-topic-box-desktop {
                 display: flex !important;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .request-topic-box:first-of-type:not(.request-topic-box-empty-state) {
-                display: none;
-            }
-            
-            .request-topic-box-desktop {
-                display: flex;
             }
         }
     </style>
@@ -730,7 +720,7 @@ try {
                     
                     <div style="background: white; padding: 16px; border-radius: 12px; margin-top: 16px;">
                         <div style="font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Creator Earnings</div>
-                        <div style="font-size: 24px; font-weight: 700; color: #10b981; font-family: 'Playfair Display', serif;">
+                        <div style="font-size: 24px; font-weight: 700; color: #10b981; font-family: 'Inter', sans-serif;">
                             $<?php echo number_format($topic->funding_threshold * 0.9, 0); ?>
                         </div>
                     </div>
@@ -822,7 +812,7 @@ try {
                         <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
                             <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
 
-                            <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">${topic.title}</h2>
+                            <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">${topic.title}</h2>
 
                             <p style="color: #666; line-height: 1.6; margin-bottom: 24px; font-size: 15px;">${topic.description}</p>
 
@@ -833,7 +823,7 @@ try {
                                 <div style="height: 8px; background: #E5E5E5; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
                                     <div style="height: 100%; background: linear-gradient(90deg, #FF006B, #E6005F); width: ${progress}%; transition: width 0.3s; border-radius: 4px;"></div>
                                 </div>
-                                <div style="font-size: 20px; font-weight: 700; color: #000; font-family: 'Playfair Display', serif;">
+                                <div style="font-size: 20px; font-weight: 700; color: #000; font-family: 'Inter', sans-serif;">
                                     $${parseFloat(topic.current_funding).toFixed(0)} <span style="color: #666; font-size: 15px; font-weight: 500; font-family: 'Inter', sans-serif;">of $${parseFloat(topic.funding_threshold).toFixed(0)}</span>
                                 </div>
                             </div>
@@ -935,7 +925,7 @@ function openCreateTopicModal(creatorId, minPrice) {
         '<div id="createTopicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeCreateTopicModal(event)">' +
             '<div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">'+
                 '<button onclick="closeCreateTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color=\'#000\'" onmouseout="this.style.color=\'#666\'">×</button>' +
-                '<h2 style="font-family: \'Playfair Display\', serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create a Topic</h2>' +
+                '<h2 style="font-family: \'Inter\', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create a Topic</h2>' +
                 '<p style="color: #666; line-height: 1.6; margin-bottom: 28px; font-size: 15px;">Suggest a topic you\'d like to see covered.</p>' +
                 '<div id="createTopicError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>' +
                 '<form id="createTopicForm" onsubmit="submitCreateTopic(event, ' + creatorId + ', ' + minPrice + ')">' +
