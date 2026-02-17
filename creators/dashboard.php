@@ -143,7 +143,7 @@ foreach ($topics as $topic) {
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         /* Color Variables */
@@ -185,7 +185,7 @@ foreach ($topics as $topic) {
         }
         
         .nav-logo {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 22px;
             font-weight: 700;
             color: var(--black);
@@ -875,7 +875,7 @@ foreach ($topics as $topic) {
                     <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
                         <button onclick="closeCreateTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
                         
-                        <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create New Topic</h2>
+                        <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create New Topic</h2>
                         <p style="color: #666; line-height: 1.6; margin-bottom: 28px; font-size: 15px;">List a topic for your fans to fund.</p>
                         
                         <div id="createTopicError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>
@@ -1061,7 +1061,7 @@ foreach ($topics as $topic) {
                     <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
                         <button onclick="closeUploadModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
                         
-                        <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 8px 0; font-size: 24px; color: #000; font-weight: 700; padding-right: 30px;">Upload Content</h2>
+                        <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 8px 0; font-size: 24px; color: #000; font-weight: 700; padding-right: 30px;">Upload Content</h2>
                         <p style="color: #666; font-size: 15px; margin-bottom: 20px;">Paste your video link below.</p>
                         
                         <div style="background: #f8f9fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 16px;">
