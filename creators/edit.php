@@ -159,10 +159,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <title>Edit Profile - TopicLaunch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: white;
             min-height: 100vh;
         }
@@ -184,9 +187,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .nav-logo {
+            font-family: 'Inter', sans-serif;
             font-size: 20px;
             font-weight: 700;
-            color: #FF1F7D;
+            color: #FF006B;
             text-decoration: none;
         }
         
@@ -232,6 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .page-title {
+            font-family: 'Inter', sans-serif;
             font-size: 42px;
             font-weight: 700;
             color: #000;
@@ -280,8 +285,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #FF1F7D;
-            box-shadow: 0 0 0 3px rgba(255, 31, 125, 0.1);
+            border-color: #FF006B;
+            box-shadow: 0 0 0 3px rgba(255, 0, 107, 0.1);
         }
         
         .form-group textarea {
@@ -362,8 +367,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .upload-button:hover {
-            border-color: #FF1F7D;
-            color: #FF1F7D;
+            border-color: #FF006B;
+            color: #FF006B;
         }
         
         /* Payout Section */
@@ -400,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .submit-btn {
             width: 100%;
             padding: 14px;
-            background: #FF1F7D;
+            background: #FF006B;
             color: white;
             border: none;
             border-radius: 8px;
@@ -412,9 +417,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .submit-btn:hover {
-            background: #E01B6F;
+            background: #E6005F;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 31, 125, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
         }
         
         /* Messages */
