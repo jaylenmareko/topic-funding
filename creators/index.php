@@ -41,7 +41,7 @@ try {
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -84,7 +84,7 @@ try {
         }
         
         .nav-logo {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 22px;
             font-weight: 700;
             color: var(--black);
@@ -176,7 +176,7 @@ try {
         }
         
         .header-title {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 48px;
             margin-bottom: 15px;
             font-weight: 700;
@@ -268,7 +268,7 @@ try {
         }
         
         .creator-initial {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 64px;
             color: var(--white);
             font-weight: 700;
@@ -279,7 +279,7 @@ try {
         }
         
         .creator-name-kalshi {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 20px;
             margin-bottom: 5px;
             font-weight: 700;
@@ -311,7 +311,7 @@ try {
         }
         
         .creator-price {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 24px;
             color: var(--black);
             font-weight: 700;
