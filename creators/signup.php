@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paypal_email = trim($_POST['paypal_email'] ?? '');
     $venmo_handle = trim($_POST['venmo_handle'] ?? '');
     $agree_terms = isset($_POST['agree_terms']);
+    $video_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
     
     // Validation
     if (empty($username) || empty($email) || empty($password) || empty($confirm_password) || empty($minimum_topic_price)) {
@@ -105,16 +106,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $profile_path = $upload_dir . $profile_filename;
                         
                         if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $profile_path)) {
-                            $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, 1, NOW())');
-                            $db->bind(':user_id', $user_id);
-                            $db->bind(':username', $username);
-                            $db->bind(':display_name', $username);
-                            $db->bind(':profile_image', $profile_filename);
-                            $db->bind(':bio', $bio);
-                            $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
-                            $db->bind(':paypal_email', $paypal_email);
-                            $db->bind(':venmo_handle', $venmo_handle);
-                            $db->execute();
+                            $video_topics_json = json_encode($video_topics);
+                            try {
+                                $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
+                                $db->bind(':user_id', $user_id);
+                                $db->bind(':username', $username);
+                                $db->bind(':display_name', $username);
+                                $db->bind(':profile_image', $profile_filename);
+                                $db->bind(':bio', $bio);
+                                $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                                $db->bind(':paypal_email', $paypal_email);
+                                $db->bind(':venmo_handle', $venmo_handle);
+                                $db->bind(':video_topics', $video_topics_json);
+                                $db->execute();
+                            } catch (Exception $e) {
+                                // Fallback: insert without video_topics if column doesn't exist yet
+                                $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, 1, NOW())');
+                                $db->bind(':user_id', $user_id);
+                                $db->bind(':username', $username);
+                                $db->bind(':display_name', $username);
+                                $db->bind(':profile_image', $profile_filename);
+                                $db->bind(':bio', $bio);
+                                $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                                $db->bind(':paypal_email', $paypal_email);
+                                $db->bind(':venmo_handle', $venmo_handle);
+                                $db->execute();
+                            }
                             
                             $_SESSION['user_id'] = $user_id;
                             $_SESSION['email'] = $email;
@@ -132,6 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$all_topics = ['Fitness', 'Health', 'Motivation', 'Therapy', 'Dating', 'Business', 'Money', 'Psychology', 'Career', 'Cosmetics', 'Family', 'Technology & AI'];
+$selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
 ?>
 <!DOCTYPE html>
 <html>
@@ -198,9 +218,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .input-with-prefix { position: relative; }
         .input-prefix { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--gray-med); font-size: 15px; font-weight: 500; pointer-events: none; }
         .input-with-prefix-field { padding-left: 36px !important; }
+
+        /* Videos About Section */
+        .videos-about-section { margin-bottom: 24px; }
+        .videos-about-label { display: block; margin-bottom: 4px; color: var(--black); font-weight: 600; font-size: 14px; }
+        .videos-about-sublabel { display: block; margin-bottom: 14px; color: var(--gray-med); font-size: 13px; }
+        .topics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .topic-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .topic-checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--gray-light);
+            border-radius: 50%;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.2s;
+            accent-color: unset;
+        }
+        .topic-checkbox-item input[type="checkbox"]:checked {
+            background: var(--hot-pink);
+            border-color: var(--hot-pink);
+        }
+        .topic-checkbox-item input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 5px;
+            height: 9px;
+            border: 2px solid white;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+        }
+        .topic-checkbox-item span {
+            font-size: 14px;
+            color: var(--gray-dark);
+            font-weight: 500;
+        }
+
         .checkbox-group { margin-bottom: 24px; }
         .checkbox-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
-        .checkbox-label input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; cursor: pointer; accent-color: var(--hot-pink); }
+        .checkbox-label > input[type="checkbox"] { 
+            width: 20px; 
+            height: 20px; 
+            margin-top: 2px; 
+            cursor: pointer; 
+            accent-color: var(--hot-pink);
+            appearance: auto;
+            -webkit-appearance: checkbox;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
         .checkbox-label span { flex: 1; font-size: 14px; color: var(--gray-dark); line-height: 1.5; }
         .checkbox-label a { color: var(--hot-pink); text-decoration: none; font-weight: 600; }
         .checkbox-label a:hover { text-decoration: underline; }
@@ -251,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                 Upload Photo
                             </label>
-                            <input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/jpg,image/webp" style="display: none;" required>
+                            <input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/jpg,image/webp" style="display: none;">
                             <small>JPG, PNG or WebP. Max 10MB.</small>
                         </div>
                     </div>
@@ -261,6 +342,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" placeholder="Create a secure password" required><small>Minimum 8 characters</small></div>
                 <div class="form-group"><label for="confirm_password">Confirm Password</label><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required></div>
                 <div class="form-group"><label for="minimum_topic_price">Price per Request ($)</label><input type="number" id="minimum_topic_price" name="minimum_topic_price" placeholder="100" step="1" min="1" value="<?php echo htmlspecialchars($_POST['minimum_topic_price'] ?? ''); ?>" required><small>You keep 90% of every request. Set what you're worth.</small></div>
+
+                <!-- Videos About -->
+                <div class="videos-about-section">
+                    <label class="videos-about-label">Videos About</label>
+                    <span class="videos-about-sublabel">Select all topics you do videos on.</span>
+                    <div class="topics-grid">
+                        <?php foreach ($all_topics as $topic): ?>
+                            <label class="topic-checkbox-item">
+                                <input type="checkbox" name="video_topics[]" value="<?php echo htmlspecialchars($topic); ?>"
+                                    <?php echo in_array($topic, $selected_topics) ? 'checked' : ''; ?>>
+                                <span><?php echo htmlspecialchars($topic); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="payout-section-label">Payout Method <span class="label-note">(at least one required)</span></label>
                     <div class="payout-fields">
