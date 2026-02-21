@@ -40,6 +40,15 @@ try {
     $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
     $db->bind(':creator_id', $creator_id);
     $completed_topics = $db->resultSet();
+
+    // Parse video topics
+    $video_topics = [];
+    if (!empty($creator->video_topics)) {
+        $decoded = json_decode($creator->video_topics, true);
+        if (is_array($decoded)) {
+            $video_topics = $decoded;
+        }
+    }
 ?>
 <!DOCTYPE html>
 <html>
@@ -77,6 +86,24 @@ try {
         .profile-price-amount { font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; color: var(--black); }
         .profile-price-label { font-size: 11px; color: var(--gray-med); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
         .profile-bio { text-align: left; font-size: 15px; color: var(--gray-dark); line-height: 1.6; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--gray-light); }
+
+        /* Videos About */
+        .videos-about { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--gray-light); }
+        .videos-about-title { font-size: 13px; font-weight: 700; color: var(--black); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .topic-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .topic-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 0, 107, 0.07);
+            color: var(--hot-pink);
+            border: 1px solid rgba(255, 0, 107, 0.2);
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .request-topic-box { background: var(--white); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 32px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
         .request-content { flex: 1; }
         .request-title { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 700; color: var(--black); margin-bottom: 8px; }
@@ -122,8 +149,23 @@ try {
                 <div class="profile-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
                 <div class="profile-price"><span class="profile-price-amount">$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></span><span class="profile-price-label">per request</span></div>
             </div>
-            <?php if (!empty($creator->bio)): ?><div class="profile-bio"><?php echo nl2br(htmlspecialchars($creator->bio)); ?></div><?php endif; ?>
+
+            <?php if (!empty($creator->bio)): ?>
+                <div class="profile-bio"><?php echo nl2br(htmlspecialchars($creator->bio)); ?></div>
+            <?php endif; ?>
+
+            <?php if (!empty($video_topics)): ?>
+                <div class="videos-about">
+                    <div class="videos-about-title">Videos About</div>
+                    <div class="topic-tags">
+                        <?php foreach ($video_topics as $tag): ?>
+                            <span class="topic-tag"><?php echo htmlspecialchars($tag); ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
+
         <div class="request-topic-box request-topic-box-mobile" style="display: none;">
             <div class="request-content"><h3 class="request-title">Request Content</h3><p class="request-text">Get specific content from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></strong>.</p></div>
             <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn">Create Topic <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>
