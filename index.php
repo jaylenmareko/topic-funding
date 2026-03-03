@@ -45,7 +45,6 @@ if ($db_available) {
         $total_creators_in_db = $count_result->total ?? 0;
         
         if ($search_query) {
-            // Remove spaces from search query for flexible matching
             $search_no_spaces = str_replace(' ', '', $search_query);
             
             $db->query('
@@ -127,34 +126,18 @@ if ($db_available) {
         }
         
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
         
         /* Navigation */
@@ -186,9 +169,7 @@ if ($db_available) {
             letter-spacing: -0.5px;
         }
         
-        .nav-logo span {
-            color: var(--hot-pink);
-        }
+        .nav-logo span { color: var(--hot-pink); }
 
         .nav-center {
             display: flex;
@@ -204,9 +185,7 @@ if ($db_available) {
             transition: color 0.2s;
         }
         
-        .nav-link:hover {
-            color: var(--hot-pink);
-        }
+        .nav-link:hover { color: var(--hot-pink); }
 
         .nav-buttons {
             display: flex;
@@ -223,9 +202,7 @@ if ($db_available) {
             transition: color 0.2s;
         }
         
-        .nav-login-btn:hover {
-            color: var(--hot-pink);
-        }
+        .nav-login-btn:hover { color: var(--hot-pink); }
         
         .nav-getstarted-btn {
             background: var(--hot-pink);
@@ -247,7 +224,7 @@ if ($db_available) {
         /* Hero Section */
         .hero { 
             background: var(--white);
-            padding: 80px 30px 100px 30px; 
+            padding: 80px 30px 60px 30px; 
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -299,9 +276,7 @@ if ($db_available) {
             animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
-        .hero h1 .pink { 
-            color: var(--hot-pink);
-        }
+        .hero h1 .pink { color: var(--hot-pink); }
         
         .hero-subhead {
             font-size: 22px;
@@ -313,9 +288,7 @@ if ($db_available) {
             animation: fadeInUp 0.8s ease-out 0.5s both;
         }
         
-        .desktop-break {
-            display: block;
-        }
+        .desktop-break { display: block; }
         
         .hero-cta {
             display: inline-flex;
@@ -346,6 +319,99 @@ if ($db_available) {
             align-items: center;
             margin-top: 28px;
             gap: 8px;
+        }
+
+        /* Hero Step Cards */
+        .hero-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 50px;
+            margin-bottom: 10px;
+            max-width: 860px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-step-card {
+            background: var(--off-white);
+            border: 1px solid var(--gray-light);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .hero-step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(255, 0, 107, 0.1);
+            border-color: rgba(255, 0, 107, 0.2);
+        }
+
+        .hero-step-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 0, 107, 0.08);
+            border-radius: 50%;
+            color: var(--hot-pink);
+            margin-bottom: 14px;
+        }
+
+        .hero-step-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 8px;
+        }
+
+        .step-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--hot-pink);
+            margin-bottom: 6px;
+        }
+
+        .hero-step-card p {
+            font-size: 13px;
+            color: var(--gray-dark);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+            .hero-steps {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mobile-browse-link {
+            display: block;
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--black);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+            padding-bottom: 2px;
+            transition: border-color 0.2s, color 0.2s;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .mobile-browse-link:hover {
+            color: var(--gray-dark);
+            border-color: var(--gray-dark);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-browse-link {
+                display: block;
+            }
         }
         
         .platform-logos {
@@ -384,11 +450,6 @@ if ($db_available) {
             margin-bottom: 15px;
             font-weight: 700;
             color: var(--black);
-        }
-        
-        .how-header p {
-            font-size: 18px;
-            color: var(--gray-med);
         }
         
         .how-header p {
@@ -475,13 +536,9 @@ if ($db_available) {
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         
-        .value-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
+        .value-icon { font-size: 48px; margin-bottom: 20px; }
         
         .value-card h3 {
-            font-family: 'Playfair Display', serif;
             font-size: 24px;
             margin-bottom: 15px;
             font-weight: 700;
@@ -497,7 +554,7 @@ if ($db_available) {
         
         /* Creators Section */
         .creators-section {
-            background: var(--cream);
+            background: var(--white);
             padding: 60px 30px 100px 30px;
             animation: fadeInUp 0.8s ease-out 0.5s both;
         }
@@ -523,7 +580,7 @@ if ($db_available) {
         
         .section-title {
             font-family: 'Inter', sans-serif;
-            font-size: 48px;
+            font-size: 28px;
             margin-bottom: 15px;
             font-weight: 700;
             color: var(--black);
@@ -536,158 +593,163 @@ if ($db_available) {
         }
         
         /* Search */
-        .search-section {
-            background: var(--white);
-            border-radius: 50px;
-            padding: 8px;
-            margin-bottom: 50px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            margin-bottom: 50px;
-        }
-        
-        .search-input-wrapper {
-            position: relative;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 16px 20px 16px 50px;
-            border: none;
-            border-radius: 50px;
-            font-size: 15px;
-            font-weight: 500;
-            outline: none;
-            background: transparent;
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-med);
-            width: 18px;
-            height: 18px;
-        }
+        .search-section { margin: 0 auto 40px auto; max-width: 700px; }
+        .search-bar { background: var(--white); border-radius: 50px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 16px; border: 1.5px solid transparent; transition: border-color 0.2s; }
+        .search-bar:focus-within { border-color: rgba(255,0,107,0.3); }
+        .search-input-wrapper { position: relative; }
+        .search-input { width: 100%; padding: 14px 20px 14px 50px; border: none; border-radius: 50px; font-size: 15px; font-weight: 500; outline: none; background: transparent; }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--gray-med); width: 18px; height: 18px; }
+        .topic-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .topic-filter-btn { padding: 7px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; border: 1.5px solid var(--gray-light); background: var(--white); color: var(--gray-dark); cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+        .topic-filter-btn:hover { border-color: var(--hot-pink); color: var(--hot-pink); }
+        .topic-filter-btn.active { background: var(--hot-pink); border-color: var(--hot-pink); color: var(--white); }
         
         /* Creator Cards */
         .creators-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 16px;
         }
-        
+
         .creator-card {
             background: var(--white);
-            border-radius: 20px;
-            overflow: hidden;
-            transition: all 0.3s;
+            border-radius: 16px;
+            border: 1px solid var(--gray-light);
+            padding: 24px;
+            transition: all 0.25s;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            display: block;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
-        
+
         .creator-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 30px rgba(255, 0, 107, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(255, 0, 107, 0.12);
+            border-color: rgba(255, 0, 107, 0.3);
         }
-        
+
+        .creator-card-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
         .creator-card-image {
-            width: 100%;
-            aspect-ratio: 1;
+            width: 72px;
+            height: 72px;
+            flex-shrink: 0;
+            border-radius: 50%;
             background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
         }
-        
+
         .creator-card-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .creator-initial {
-            font-family: 'Inter', sans-serif;
-            font-size: 72px;
+            font-size: 28px;
             color: var(--white);
             font-weight: 700;
         }
-        
-        .creator-card-content {
-            padding: 25px;
-        }
-        
+
+        .creator-card-identity { flex: 1; min-width: 0; }
+
         .creator-name {
-            font-family: 'Inter', sans-serif;
-            font-size: 22px;
-            margin-bottom: 5px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--black);
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        
+
         .creator-handle {
-            font-size: 14px;
-            color: var(--hot-pink);
-            font-weight: 600;
-            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--gray-med);
+            font-weight: 500;
         }
-        
+
         .creator-bio {
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--gray-dark);
-            margin-bottom: 20px;
-            min-height: 60px;
-            font-weight: 400;
+            font-size: 13px;
+            line-height: 1.55;
+            color: #4B5563;
+            margin-bottom: 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        
+
+        .creator-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+
+        .creator-topic-tag {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 13px;
+            border-radius: 50px;
+            background: transparent;
+            color: var(--gray-dark);
+            border: 1.5px solid var(--gray-light);
+        }
+
         .creator-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 20px;
+            padding-top: 16px;
             border-top: 1px solid var(--gray-light);
+            margin-top: auto;
         }
-        
+
         .creator-price {
-            font-family: 'Inter', sans-serif;
-            font-size: 26px;
+            font-size: 20px;
             color: var(--black);
             font-weight: 700;
+            display: inline;
         }
-        
+
         .price-label {
             font-size: 11px;
             color: var(--gray-med);
-            font-weight: 600;
-            display: block;
-            margin-top: 2px;
-            letter-spacing: 1px;
+            font-weight: 500;
+            margin-left: 6px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
+
         .fund-btn {
             background: var(--hot-pink);
             color: var(--white);
             border: none;
-            padding: 10px 24px;
+            padding: 10px 22px;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
+
         .fund-btn:hover {
             background: var(--deep-pink);
-            transform: scale(1.05);
+            transform: scale(1.03);
         }
         
         /* Footer */
@@ -706,9 +768,7 @@ if ($db_available) {
             transition: color 0.2s;
         }
         
-        .footer a:hover {
-            color: var(--white);
-        }
+        .footer a:hover { color: var(--white); }
         
         .footer-links {
             margin-top: 20px;
@@ -718,46 +778,18 @@ if ($db_available) {
         }
         
         @media (max-width: 1024px) {
-            .steps-grid {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-            
-            .creators-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            }
+            .steps-grid { grid-template-columns: 1fr; gap: 40px; }
+            .creators-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
         }
         
         @media (max-width: 768px) {
-            .nav-center {
-                display: none;
-            }
-            
-            .hero {
-                padding: 60px 20px 80px 20px;
-            }
-            
-            .hero h1 {
-                font-size: 36px;
-                letter-spacing: -1px;
-            }
-            
-            .hero-subhead {
-                font-size: 18px;
-            }
-            
-            .desktop-break {
-                display: inline;
-            }
-            
-            .how-header h2,
-            .section-title {
-                font-size: 36px;
-            }
-            
-            .creators-grid {
-                grid-template-columns: 1fr;
-            }
+            .nav-center { display: none; }
+            .hero { padding: 60px 20px 80px 20px; }
+            .hero h1 { font-size: 36px; letter-spacing: -1px; }
+            .hero-subhead { font-size: 18px; }
+            .desktop-break { display: inline; }
+            .how-header h2, .section-title { font-size: 22px; }
+            .creators-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -782,18 +814,48 @@ if ($db_available) {
     <!-- Hero Section -->
     <div class="hero">
         <div class="hero-container">
-            <div class="hero-eyebrow">POWERED BY CREATORS</div>
+            <div class="hero-eyebrow">Closing the Gap Between Creators and Fans</div>
             <h1>
-                Get Paid to Create<br>
-                <span class="pink">Videos Requested by Fans.</span>
+                Creators Get Paid.<br>
+                <span class="pink">Fans Send Ideas.</span>
             </h1>
             <p class="hero-subhead">
-                Set your price. Take fan requests or post your own topics.<span class="desktop-break"></span>
-                They pay upfront. You create it within 48 hours and keep 90%.
+                Send a topic request to the creator of your choice, pay their price, and get a guaranteed video made.
             </p>
             <a href="creators/signup.php" class="hero-cta">
                 Start Earning
             </a>
+
+            <a href="creators/index.php" class="mobile-browse-link">Browse Creators</a>
+
+
+            <div class="hero-steps">
+                <div class="hero-step-card">
+                    <div class="hero-step-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </div>
+                    <div class="step-label">Step 1</div>
+                    <h3>Fan Sends a Request</h3>
+                    <p>Pick a creator, submit your topic idea, and pay their price upfront.</p>
+                </div>
+                <div class="hero-step-card">
+                    <div class="hero-step-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    </div>
+                    <div class="step-label">Step 2</div>
+                    <h3>Creator Makes Content</h3>
+                    <p>The creator films and delivers the video within 48 hours.</p>
+                </div>
+                <div class="hero-step-card">
+                    <div class="hero-step-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </div>
+                    <div class="step-label">Step 3</div>
+                    <h3>Creator Gets Paid</h3>
+                    <p>We send 90% of the payment straight to the creator. No waiting.</p>
+                </div>
+            </div>
+
             <div class="platform-bar">
                 <div class="platform-logos">
                     <!-- YouTube -->
@@ -805,92 +867,78 @@ if ($db_available) {
                 </div>
                 <div class="platform-label">Works with any platform</div>
             </div>
+
         </div>
     </div>
 
-    <!-- How It Works -->
-    <div class="how-it-works">
-        <div class="how-container">
-            <div class="how-header">
-                <h2>How It Works</h2>
-            </div>
-            
-            <div class="steps-grid">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <h3>Set Your Price</h3>
-                    <p>Pick what you charge per request. $20? $200? You decide.</p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <h3>Get Requests</h3>
-                    <p>Fans send you video requests—or you post your own video requests. They pay upfront.</p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <h3>Create & Get Paid</h3>
-                    <p>Make the content within 48 hours. Then we send you 90% of the payment.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Creators Section -->
     <div class="creators-section">
         <div class="creators-container">
             <div class="section-header">
-                <h2 class="section-title">Creators Getting Paid</h2>
+                <h2 class="section-title">Browse Creators & Send a Request</h2>
             </div>
             
             <div class="search-section">
-                <div class="search-input-wrapper">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" 
-                           id="searchInput"
-                           class="search-input" 
-                           placeholder="Search creators..." 
-                           autocomplete="off"
-                           value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search creators by name or topic..." autocomplete="off" value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
+                    </div>
+                </div>
+                <div class="topic-filters" id="topicFilters">
+                    <button class="topic-filter-btn active" data-topic="all">All</button>
+                    <?php foreach (['Fitness', 'Health', 'Motivation', 'Therapy', 'Dating', 'Business', 'Money', 'Psychology', 'Career', 'Family', 'Technology & AI', 'Beauty', 'History', 'Cooking', 'Travel', 'Sports', 'Faith & Spirituality', 'Entertainment', 'Self-Improvement', 'Communication'] as $t): ?>
+                    <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+                    <?php endforeach; ?>
                 </div>
             </div>
             
             <div class="creators-grid" id="creatorsGrid">
                 <?php foreach ($creators as $creator): ?>
                     <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="creator-card">
-                        <div class="creator-card-image">
-                            <?php if ($creator->profile_image): ?>
-                                <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
-                                     alt="<?php echo htmlspecialchars($creator->display_name); ?>">
-                            <?php else: ?>
-                                <div class="creator-initial"><?php echo strtoupper(substr($creator->display_name, 0, 1)); ?></div>
-                            <?php endif; ?>
+                        <div class="creator-card-top">
+                            <div class="creator-card-image">
+                                <?php if ($creator->profile_image): ?>
+                                    <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
+                                         alt="<?php echo htmlspecialchars($creator->display_name); ?>">
+                                <?php else: ?>
+                                    <div class="creator-initial"><?php echo strtoupper(substr($creator->display_name, 0, 1)); ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="creator-card-identity">
+                                <div class="creator-name"><?php echo htmlspecialchars($creator->display_name); ?></div>
+                                <div class="creator-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
+                            </div>
                         </div>
-                        <div class="creator-card-content">
-                            <div class="creator-name">
-                                <?php echo htmlspecialchars($creator->display_name); ?>
+                        <div class="creator-bio">
+                            <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : 'Building my empire, one post at a time'; ?>
+                        </div>
+                        <?php
+                        $topics = [];
+                        if (!empty($creator->video_topics)) {
+                            $decoded = json_decode($creator->video_topics, true);
+                            if (is_array($decoded)) $topics = $decoded;
+                        }
+                        if (!empty($topics)): ?>
+                        <div class="creator-topics">
+                            <?php foreach (array_slice($topics, 0, 5) as $tag): ?>
+                                <span class="creator-topic-tag"><?php echo htmlspecialchars($tag); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                        <div class="creator-footer">
+                            <div>
+                                <span class="creator-price">$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></span>
+                                <span class="price-label">/ per request</span>
                             </div>
-                            <div class="creator-handle">
-                                @<?php echo htmlspecialchars($creator->display_name); ?>
-                            </div>
-                            <div class="creator-bio">
-                                <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : 'Building my empire, one post at a time'; ?>
-                            </div>
-                            <div class="creator-footer">
-                                <div>
-                                    <div class="creator-price">
-                                        $<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?>
-                                    </div>
-                                    <span class="price-label">per request</span>
-                                </div>
-                                <button class="fund-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
-                                    Support
-                                </button>
-                            </div>
+                            <button class="fund-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
+                                Send Request
+                            </button>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -911,35 +959,32 @@ if ($db_available) {
     <script>
     const searchInput = document.getElementById('searchInput');
     const creatorsGrid = document.getElementById('creatorsGrid');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim().toLowerCase();
-            const queryNoSpaces = query.replace(/\s+/g, '');
-            
-            const cards = creatorsGrid.querySelectorAll('.creator-card');
-            
-            cards.forEach(card => {
-                const nameElement = card.querySelector('.creator-name');
-                const handleElement = card.querySelector('.creator-handle');
-                
-                if (!nameElement || !handleElement) return;
-                
-                const name = nameElement.textContent.toLowerCase();
-                const handle = handleElement.textContent.replace('@', '').toLowerCase();
-                const nameNoSpaces = name.replace(/\s+/g, '');
-                const handleNoSpaces = handle.replace(/\s+/g, '');
-                
-                const matches = 
-                    name.includes(query) || 
-                    nameNoSpaces.includes(queryNoSpaces) ||
-                    handle.includes(query) || 
-                    handleNoSpaces.includes(queryNoSpaces);
-                
-                card.style.display = matches ? 'block' : 'none';
-            });
+    const filterBtns = document.querySelectorAll('.topic-filter-btn');
+    let activeTopic = 'all';
+
+    function filterCards() {
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const cards = creatorsGrid.querySelectorAll('.creator-card');
+        cards.forEach(card => {
+            const name = (card.querySelector('.creator-name')?.textContent || '').toLowerCase();
+            const handle = (card.querySelector('.creator-handle')?.textContent || '').replace('@','').toLowerCase();
+            const tags = Array.from(card.querySelectorAll('.creator-topic-tag')).map(t => t.textContent.trim().toLowerCase());
+            const matchesSearch = !query || name.includes(query) || handle.includes(query) || tags.some(t => t.includes(query));
+            const matchesTopic = activeTopic === 'all' || tags.includes(activeTopic.toLowerCase());
+            card.style.display = (matchesSearch && matchesTopic) ? 'flex' : 'none';
         });
     }
+
+    if (searchInput) searchInput.addEventListener('input', filterCards);
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTopic = btn.dataset.topic;
+            filterCards();
+        });
+    });
     </script>
 </body>
 </html>
