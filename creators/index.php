@@ -92,6 +92,39 @@ try {
             margin: 0 auto;
         }
 
+        /* Topic filter chips */
+        .topic-filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 28px;
+        }
+        .topic-filter-btn {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            border: 1px solid var(--tl-border);
+            background: var(--white);
+            color: var(--tl-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
+        .active-filter-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--tl-pink);
+            font-weight: 500;
+            margin-top: 10px;
+            min-height: 16px;
+        }
+
         /* Strip section */
         .strip-section {
             background: var(--tl-off);
@@ -400,6 +433,15 @@ try {
         <div class="hero-eyebrow">Discover</div>
         <h1 class="hero-title">Browse <span>Creators</span></h1>
         <p class="hero-subtitle">Pick a creator, describe your idea, and fund the video you want to see.</p>
+
+        <div class="topic-filter-row" id="topicFilterRow">
+            <?php
+            $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
+            foreach ($all_topics as $t): ?>
+            <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+            <?php endforeach; ?>
+        </div>
+        <div class="active-filter-note" id="activeFilterNote"></div>
     </div>
 
     <!-- Creator strip -->
@@ -439,8 +481,19 @@ try {
                 <input type="text" id="creatorSearch" placeholder="Search creators…">
             </div>
             <div class="creator-picker-grid" id="creatorPickerGrid">
-                <?php foreach ($creators as $c): ?>
-                <button class="creator-picker-item" data-name="<?php echo htmlspecialchars($c->display_name); ?>" data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>" data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>">
+                <?php foreach ($creators as $c):
+                    $c_topics = [];
+                    if (!empty($c->video_topics)) {
+                        $decoded = json_decode($c->video_topics, true);
+                        if (is_array($decoded)) $c_topics = array_map('strtolower', $decoded);
+                    }
+                    $c_topics_json = htmlspecialchars(json_encode($c_topics), ENT_QUOTES);
+                ?>
+                <button class="creator-picker-item"
+                    data-name="<?php echo htmlspecialchars($c->display_name); ?>"
+                    data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
+                    data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
+                    data-topics="<?php echo $c_topics_json; ?>">
                     <div class="picker-avatar" style="background:linear-gradient(135deg,#E8305A,#B01F3F)">
                         <?php if ($c->profile_image): ?>
                             <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
@@ -511,24 +564,59 @@ try {
         const minPriceHint  = document.getElementById('minPriceHint');
         const topicDesc     = document.getElementById('topicDesc');
         const topicSubmit   = document.getElementById('topicSubmit');
+        const activeFilterNote = document.getElementById('activeFilterNote');
 
         let selectedCreator = null;
+        let activeTopics    = new Set(); // selected filter chips
+
+        /* ── Topic filter chips ── */
+        document.querySelectorAll('.topic-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const t = btn.dataset.topic.toLowerCase();
+                if (activeTopics.has(t)) {
+                    activeTopics.delete(t);
+                    btn.classList.remove('active');
+                } else {
+                    activeTopics.add(t);
+                    btn.classList.add('active');
+                }
+                updateFilterNote();
+            });
+        });
+
+        function updateFilterNote() {
+            if (activeTopics.size === 0) {
+                activeFilterNote.textContent = '';
+            } else {
+                activeFilterNote.textContent = `Showing creators for: ${[...activeTopics].join(', ')} — click the avatar to pick one`;
+            }
+        }
 
         /* Open / close creator picker */
         stripAvatar.addEventListener('click', () => {
             pickerOverlay.classList.add('open');
+            applyPickerFilter('');
+            creatorSearch.value = '';
             creatorSearch.focus();
         });
         closePickerBtn.addEventListener('click', closePicker);
         pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
-        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; filterPicker(''); }
+        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; applyPickerFilter(''); }
 
         /* Creator search inside picker */
-        creatorSearch.addEventListener('input', () => filterPicker(creatorSearch.value.trim().toLowerCase()));
-        function filterPicker(q) {
+        creatorSearch.addEventListener('input', () => applyPickerFilter(creatorSearch.value.trim().toLowerCase()));
+
+        function applyPickerFilter(q) {
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
-                const n = btn.dataset.name.toLowerCase();
-                btn.classList.toggle('hidden', q.length > 0 && !n.includes(q));
+                const name   = btn.dataset.name.toLowerCase();
+                let   topics = [];
+                try { topics = JSON.parse(btn.dataset.topics || '[]'); } catch(e) {}
+
+                const matchesSearch = !q || name.includes(q);
+                const matchesTopic  = activeTopics.size === 0 ||
+                    [...activeTopics].some(t => topics.includes(t));
+
+                btn.classList.toggle('hidden', !matchesSearch || !matchesTopic);
             });
         }
 
