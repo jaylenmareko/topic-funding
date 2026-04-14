@@ -64,23 +64,19 @@ try {
         /* Page layout */
         .container { max-width: 1200px; margin: 0 auto; padding: 64px 30px 100px; }
 
-        .header { margin-bottom: 44px; text-align: center; }
-        .header-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: var(--tl-muted); margin-bottom: 12px; }
-        .header-title { font-size: 40px; font-weight: 600; color: var(--text-dark); letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 10px; }
-        .header-subtitle { font-size: 15px; color: var(--tl-muted); font-weight: 400; line-height: 1.5; }
+        .header { margin-bottom: 36px; text-align: left; }
+        .header-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: var(--tl-muted); margin-bottom: 10px; }
+        .header-title { font-size: 36px; font-weight: 600; color: var(--text-dark); letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 8px; }
+        .header-subtitle { font-size: 14px; color: var(--tl-muted); font-weight: 400; line-height: 1.5; }
 
-        /* Search + filters */
-        .search-section { margin: 0 auto 40px auto; max-width: 660px; }
-        .search-bar { background: var(--white); border-radius: 12px; padding: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 14px; border: 1px solid var(--tl-border); transition: border-color 0.2s, box-shadow 0.2s; }
+        /* Search */
+        .search-section { margin: 0 0 36px 0; max-width: 520px; }
+        .search-bar { background: var(--white); border-radius: 12px; padding: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid var(--tl-border); transition: border-color 0.2s, box-shadow 0.2s; }
         .search-bar:focus-within { border-color: var(--tl-pink); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
         .search-input-wrapper { position: relative; }
         .search-input { width: 100%; padding: 12px 18px 12px 46px; border: none; border-radius: 10px; font-size: 14px; font-weight: 400; outline: none; background: transparent; color: var(--text-dark); font-family: inherit; }
         .search-input::placeholder { color: var(--tl-muted); }
         .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--tl-muted); width: 16px; height: 16px; }
-        .topic-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .topic-filter-btn { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 500; letter-spacing: 0.4px; border: 1px solid var(--tl-border); background: var(--white); color: var(--text-dark); cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit; }
-        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
-        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
 
         /* Creator grid */
         .creators-grid-landing { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
@@ -146,9 +142,9 @@ try {
 
     <div class="container">
         <div class="header">
-            <div class="header-eyebrow">Discover</div>
-            <h1 class="header-title">Browse Creators</h1>
-            <p class="header-subtitle">Find the perfect creator for what you want to see.</p>
+            <div class="header-eyebrow">Trending</div>
+            <h1 class="header-title">Trending Creators</h1>
+            <p class="header-subtitle">Top voices growing fast this week.</p>
         </div>
 
         <div class="search-section">
@@ -160,14 +156,6 @@ try {
                     </svg>
                     <input type="text" id="searchInput" class="search-input" placeholder="Search creators by name or topic..." autocomplete="off">
                 </div>
-            </div>
-            <div class="topic-filters" id="topicFilters">
-                <button class="topic-filter-btn active" data-topic="all">All</button>
-                <?php
-                $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
-                foreach ($all_topics as $t): ?>
-                <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
-                <?php endforeach; ?>
             </div>
         </div>
 
@@ -219,9 +207,7 @@ try {
     <script>
         const searchInput = document.getElementById('searchInput');
         const creatorCards = document.querySelectorAll('.creator-card-kalshi');
-        const filterBtns = document.querySelectorAll('.topic-filter-btn');
         const noResults = document.getElementById('noResults');
-        let activeTopic = 'all';
 
         function filterCards() {
             const searchTerm = searchInput.value.toLowerCase();
@@ -231,9 +217,7 @@ try {
                 const username = card.querySelector('.creator-handle-kalshi').textContent.toLowerCase();
                 const bio = card.querySelector('.creator-bio')?.textContent.toLowerCase() || '';
                 const tags = Array.from(card.querySelectorAll('.creator-topic-tag')).map(t => t.textContent.trim().toLowerCase());
-                const matchesSearch = !searchTerm || name.includes(searchTerm) || username.includes(searchTerm) || bio.includes(searchTerm) || tags.some(t => t.includes(searchTerm));
-                const matchesTopic = activeTopic === 'all' || tags.includes(activeTopic.toLowerCase());
-                const show = matchesSearch && matchesTopic;
+                const show = !searchTerm || name.includes(searchTerm) || username.includes(searchTerm) || bio.includes(searchTerm) || tags.some(t => t.includes(searchTerm));
                 card.style.display = show ? 'flex' : 'none';
                 if (show) visible++;
             });
@@ -241,15 +225,6 @@ try {
         }
 
         searchInput.addEventListener('input', filterCards);
-
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTopic = btn.dataset.topic;
-                filterCards();
-            });
-        });
     </script>
 </body>
 </html>
