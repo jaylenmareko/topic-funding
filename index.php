@@ -293,6 +293,7 @@ if ($db_available) {
         .hero-stat { flex: 1; text-align: center; max-width: 150px; }
         .hero-stat-n { font-size: 26px; font-weight: 600; color: var(--white); }
         .hero-stat-n span { color: var(--tl-pink); }
+        .hero-stat-n--sm { font-size: 17px; }
         .hero-stat-label { font-size: 11px; color: #555; margin-top: 4px; }
         .hero-stat-divider { width: 1px; background: #222; align-self: stretch; margin: 0 10px; }
 
@@ -815,38 +816,8 @@ if ($db_available) {
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
-                    <div class="hero-stat-n">Any<span> topic</span></div>
+                    <div class="hero-stat-n hero-stat-n--sm">Set Your<span> Price</span></div>
                     <div class="hero-stat-label">You set the terms</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Why TopicLaunch Cards -->
-    <div class="why-section">
-        <div class="why-container">
-            <div class="why-label">WHY TOPICLAUNCH</div>
-            <div class="why-cards">
-                <div class="why-card">
-                    <div class="why-card-icon">
-                        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="#E8305A"/></svg>
-                    </div>
-                    <div class="why-card-title">Fan-driven</div>
-                    <div class="why-card-desc">Fans request topics, you deliver. Demand before you create.</div>
-                </div>
-                <div class="why-card">
-                    <div class="why-card-icon">
-                        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" fill="#E8305A"/><path d="M5 8h6M8 5v6" stroke="#fff" stroke-width="1.5"/></svg>
-                    </div>
-                    <div class="why-card-title">Set your price</div>
-                    <div class="why-card-desc">You control what you charge. No platform minimums.</div>
-                </div>
-                <div class="why-card">
-                    <div class="why-card-icon">
-                        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#E8305A"/><path d="M6 8l1.5 1.5L10 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    </div>
-                    <div class="why-card-title">Keep 90%</div>
-                    <div class="why-card-desc">The highest payout in the creator economy.</div>
                 </div>
             </div>
         </div>
