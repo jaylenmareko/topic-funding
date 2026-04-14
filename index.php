@@ -269,18 +269,19 @@ if ($db_available) {
         .hero-cta:hover { background: var(--tl-pink-dark); }
 
         .hero-cta-ghost {
-            background: transparent;
-            color: var(--tl-muted);
+            background: #ffffff;
+            color: var(--text-dark);
             padding: 12px 22px;
             border-radius: 10px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             text-decoration: none;
-            border: 1px solid var(--tl-border);
-            transition: border-color 0.2s, color 0.2s;
+            border: 1.5px solid #CCCCCC;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            transition: border-color 0.2s, box-shadow 0.2s;
             display: inline-block;
         }
-        .hero-cta-ghost:hover { border-color: #aaa; color: var(--text-dark); }
+        .hero-cta-ghost:hover { border-color: var(--tl-pink); box-shadow: 0 2px 8px rgba(232,48,90,0.12); color: var(--tl-pink); }
 
         /* stat row */
         .hero-stat-row {
