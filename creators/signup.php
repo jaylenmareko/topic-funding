@@ -208,59 +208,59 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
         .page-subtitle { font-size: 15px; color: var(--gray-med); line-height: 1.6; }
 
         /* Card */
-        .signup-container { background: var(--tl-card); border: 1px solid var(--tl-border); border-radius: 16px; padding: 36px; width: 100%; max-width: 480px; }
+        .signup-container { background: var(--white); border: 1px solid #E5E5E5; border-radius: 16px; padding: 36px; width: 100%; max-width: 480px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
 
         /* Form fields */
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 7px; color: var(--tl-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .form-group label { display: block; margin-bottom: 7px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
         .form-group input, .form-group textarea {
-            width: 100%; padding: 11px 14px; border: 1px solid var(--tl-border); border-radius: 8px;
+            width: 100%; padding: 11px 14px; border: 1px solid #E5E5E5; border-radius: 8px;
             font-size: 14px; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
-            background: #111; color: var(--white);
+            background: var(--white); color: var(--black);
         }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: rgba(232,48,90,0.5); }
-        .form-group input::placeholder, .form-group textarea::placeholder { color: #444; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--tl-pink); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: #bbb; }
         .form-group textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
-        .form-group small { display: block; margin-top: 6px; color: #555; font-size: 12px; }
+        .form-group small { display: block; margin-top: 6px; color: var(--gray-med); font-size: 12px; }
 
         /* Username */
         .username-group { margin-bottom: 20px; }
         .username-input-wrapper { position: relative; }
-        .username-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--tl-muted); font-size: 15px; font-weight: 500; pointer-events: none; }
+        .username-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray-med); font-size: 15px; font-weight: 500; pointer-events: none; }
         .username-input { padding-left: 30px !important; font-size: 14px; font-weight: 500; }
-        .username-url-preview { margin-top: 8px; color: #888; font-size: 12px; }
-        .username-url-preview .url-domain { color: #666; }
+        .username-url-preview { margin-top: 8px; color: var(--gray-med); font-size: 12px; }
+        .username-url-preview .url-domain { color: var(--gray-dark); }
         .username-url-preview .url-username { color: var(--tl-pink); font-weight: 500; }
 
         /* Profile photo */
         .profile-photo-container { display: flex; gap: 16px; align-items: center; }
-        .profile-photo-preview { width: 80px; height: 80px; border: 1px solid var(--tl-border); border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #111; flex-shrink: 0; overflow: hidden; }
+        .profile-photo-preview { width: 80px; height: 80px; border: 1px solid #E5E5E5; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--cream); flex-shrink: 0; overflow: hidden; }
         .profile-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         .profile-photo-upload { flex: 1; }
-        .upload-button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; background: transparent; border: 1px solid var(--tl-border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--tl-muted); cursor: pointer; transition: all 0.2s; }
+        .upload-button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; background: var(--white); border: 1px solid #E5E5E5; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--gray-dark); cursor: pointer; transition: all 0.2s; }
         .upload-button:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
 
         /* Payout */
-        .payout-section-label { display: block; margin-bottom: 10px; color: var(--tl-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .label-note { color: #555; font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; }
+        .payout-section-label { display: block; margin-bottom: 10px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .label-note { color: var(--gray-med); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; }
         .payout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .payout-field-wrapper label { font-size: 11px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--tl-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .payout-field-wrapper label { font-size: 11px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--gray-med); text-transform: uppercase; letter-spacing: 0.4px; }
         .input-with-prefix { position: relative; }
-        .input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--tl-muted); font-size: 14px; font-weight: 500; pointer-events: none; }
+        .input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray-med); font-size: 14px; font-weight: 500; pointer-events: none; }
         .input-with-prefix-field { padding-left: 30px !important; }
 
         /* Topics */
         .videos-about-section { margin-bottom: 20px; }
-        .videos-about-label { display: block; margin-bottom: 4px; color: var(--tl-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .videos-about-sublabel { display: block; margin-bottom: 12px; color: #555; font-size: 12px; }
+        .videos-about-label { display: block; margin-bottom: 4px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .videos-about-sublabel { display: block; margin-bottom: 12px; color: var(--gray-med); font-size: 12px; }
         .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .topic-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .topic-checkbox-item input[type="checkbox"] {
             width: 16px; height: 16px;
-            border: 1px solid var(--tl-border); border-radius: 50%;
+            border: 1px solid #E5E5E5; border-radius: 50%;
             appearance: none; -webkit-appearance: none;
             cursor: pointer; flex-shrink: 0; position: relative;
-            transition: all 0.2s; background: #111; accent-color: unset;
+            transition: all 0.2s; background: var(--white); accent-color: unset;
         }
         .topic-checkbox-item input[type="checkbox"]:checked { background: var(--tl-pink); border-color: var(--tl-pink); }
         .topic-checkbox-item input[type="checkbox"]:checked::after {
@@ -268,18 +268,18 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
             width: 4px; height: 8px; border: 2px solid white;
             border-top: none; border-left: none; transform: rotate(45deg);
         }
-        .topic-checkbox-item span { font-size: 13px; color: #aaa; font-weight: 400; }
+        .topic-checkbox-item span { font-size: 13px; color: var(--gray-dark); font-weight: 400; }
 
         /* Terms checkbox */
         .checkbox-group { margin-bottom: 20px; }
         .checkbox-label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
         .checkbox-label > input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--tl-pink); flex-shrink: 0; }
-        .checkbox-label span { flex: 1; font-size: 13px; color: #888; line-height: 1.5; }
+        .checkbox-label span { flex: 1; font-size: 13px; color: var(--gray-dark); line-height: 1.5; }
         .checkbox-label a { color: var(--tl-pink); text-decoration: none; font-weight: 500; }
         .checkbox-label a:hover { text-decoration: underline; }
 
         /* Error & submit */
-        .error-message { background: rgba(220,38,38,0.1); color: #f87171; padding: 12px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 3px solid #DC2626; }
+        .error-message { background: #FEF2F2; color: #DC2626; padding: 12px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 3px solid #DC2626; }
         .submit-btn { width: 100%; padding: 13px; background: var(--tl-pink); color: var(--white); border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; font-family: 'Inter', sans-serif; }
         .submit-btn:hover { background: var(--tl-pink-dark); }
 

@@ -197,12 +197,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-container {
-            background: var(--tl-card);
-            border: 1px solid var(--tl-border);
+            background: var(--white);
+            border: 1px solid #E5E5E5;
             border-radius: 16px;
             padding: 36px;
             width: 100%;
             max-width: 440px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
 
         .form-group { margin-bottom: 20px; }
@@ -211,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: block;
             font-size: 11px;
             font-weight: 500;
-            color: var(--tl-muted);
+            color: var(--gray-med);
             text-transform: uppercase;
             letter-spacing: 0.4px;
             margin-bottom: 8px;
@@ -220,19 +221,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-input {
             width: 100%;
             padding: 11px 14px;
-            border: 1px solid var(--tl-border);
+            border: 1px solid #E5E5E5;
             border-radius: 8px;
             font-size: 14px;
             font-family: 'Inter', sans-serif;
             transition: border-color 0.2s;
-            background: #111;
-            color: var(--white);
+            background: var(--white);
+            color: var(--black);
         }
         .form-input:focus {
             outline: none;
-            border-color: rgba(232,48,90,0.5);
+            border-color: var(--tl-pink);
+            box-shadow: 0 0 0 3px rgba(232,48,90,0.08);
         }
-        .form-input::placeholder { color: #444; }
+        .form-input::placeholder { color: #bbb; }
 
         .forgot-password {
             text-align: right;
@@ -265,13 +267,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .divider {
             text-align: center;
             margin: 24px 0;
-            color: var(--tl-border);
+            color: #E5E5E5;
             font-size: 13px;
         }
 
         .signup-link {
             text-align: center;
-            color: var(--tl-muted);
+            color: var(--gray-med);
             font-size: 14px;
         }
         .signup-link a {
@@ -282,8 +284,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .signup-link a:hover { text-decoration: underline; }
 
         .error-message {
-            background: rgba(220,38,38,0.1);
-            color: #f87171;
+            background: #FEF2F2;
+            color: #DC2626;
             padding: 12px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
