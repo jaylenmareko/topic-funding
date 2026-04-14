@@ -571,11 +571,11 @@ if ($db_available) {
         .select-creator-hint {
             position: absolute;
             bottom: calc(100% + 10px);
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            transform: none;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             gap: 2px;
             pointer-events: none;
             white-space: nowrap;
