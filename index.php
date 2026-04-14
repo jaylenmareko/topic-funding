@@ -290,8 +290,8 @@ if ($db_available) {
             border-top: 1px solid #222;
             padding-top: 32px;
         }
-        .hero-stat { flex: 1; text-align: center; max-width: 150px; }
-        .hero-stat-n { font-size: 26px; font-weight: 600; color: var(--white); }
+        .hero-stat { flex: 1; text-align: center; max-width: 150px; display: flex; flex-direction: column; align-items: center; }
+        .hero-stat-n { font-size: 26px; font-weight: 600; color: var(--white); min-height: 38px; display: flex; align-items: center; justify-content: center; }
         .hero-stat-n span { color: var(--tl-pink); }
         .hero-stat-n--sm { font-size: 17px; }
         .hero-stat-label { font-size: 11px; color: #555; margin-top: 4px; }
@@ -837,7 +837,7 @@ if ($db_available) {
             <div class="hero-stat-row">
                 <div class="hero-stat">
                     <div class="hero-stat-n">90<span>%</span></div>
-                    <div class="hero-stat-label">Revenue to creator</div>
+                    <div class="hero-stat-label">Creator Keeps</div>
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
@@ -846,8 +846,8 @@ if ($db_available) {
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
-                    <div class="hero-stat-n hero-stat-n--sm">Set Your<span> Price</span></div>
-                    <div class="hero-stat-label">You set the terms</div>
+                    <div class="hero-stat-n hero-stat-n--sm">Your<span> Price</span></div>
+                    <div class="hero-stat-label">Your Terms</div>
                 </div>
             </div>
         </div>
