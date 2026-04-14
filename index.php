@@ -677,8 +677,8 @@ if ($db_available) {
         .strip-creator-card-name { font-weight: 600; font-size: 13px; color: #111; }
         .strip-creator-card-topics { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .strip-creator-card-price { background: #FFF0F3; color: var(--tl-pink); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
-        .strip-creator-card-change { font-size: 11px; color: #aaa; cursor: pointer; flex-shrink: 0; text-decoration: underline; text-underline-offset: 2px; }
-        .strip-creator-card-change:hover { color: var(--tl-pink); }
+        .strip-creator-card-x { background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; flex-shrink: 0; transition: color 0.15s; }
+        .strip-creator-card-x:hover { color: var(--tl-pink); }
 
         /* ── Modals ── */
         .tl-overlay {
@@ -936,6 +936,7 @@ if ($db_available) {
                 <div class="strip-creator-card-topics" id="stripCreatorCardTopics"></div>
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
+            <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
         </div>
     </div>
 
@@ -1060,6 +1061,7 @@ if ($db_available) {
         const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
         const stripCreatorCardTopics = document.getElementById('stripCreatorCardTopics');
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
+        const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
 
         /* ── Select a creator ── */
         pickerGrid.addEventListener('click', e => {
@@ -1107,6 +1109,16 @@ if ($db_available) {
             closePicker();
         });
 
+
+        /* X button — remove selected creator */
+        stripCreatorCardX.addEventListener('click', () => {
+            stripCreatorCard.classList.remove('visible');
+            selectedCreator = null;
+            stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+            selectHint.classList.remove('hidden');
+            topicInput.placeholder = 'Type your topic idea…';
+            stripSend.disabled = true;
+        });
 
         /* ── Enable/disable send based on input ── */
         const topicInputCount = document.getElementById('topicInputCount');
