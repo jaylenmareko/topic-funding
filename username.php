@@ -71,14 +71,14 @@ try {
     $db->query("
         SELECT t.*, 
                EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp,
-               EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours_since_funded,
-               (48 - EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600)) as hours_remaining,
-               EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600) as hours_past_deadline
+               EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600 as hours_since_funded,
+               (48 - EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours_remaining,
+               EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600 as hours_past_deadline
         FROM topics t 
         WHERE t.creator_id = :creator_id 
         AND t.status = 'funded' 
         AND (t.content_url IS NULL OR t.content_url = '')
-        AND EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600) <= 2
+        AND EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600 <= 2
         ORDER BY t.funded_at ASC
     ");
     $db->bind(':creator_id', $creator_id);

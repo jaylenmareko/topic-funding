@@ -169,3 +169,6 @@ LINE 1: SELECT id FROM creators WHERE username = $1
 [14-Apr-2026 16:06:55 UTC] Vanity URL error: SQLSTATE[42601]: Syntax error: 7 ERROR:  syntax error at or near ")"
 LINE 4: ...    EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours...
                                                              ^
+[14-Apr-2026 16:07:33 UTC] Vanity URL error: SQLSTATE[42601]: Syntax error: 7 ERROR:  syntax error at or near ")"
+LINE 4: ...    EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours...
+                                                             ^
