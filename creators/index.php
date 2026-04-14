@@ -368,6 +368,12 @@ try {
         .tl-input::placeholder { color: #bbb; }
 
         .tl-hint { font-size: 11px; color: var(--tl-muted); }
+        .tl-char-count {
+            font-size: 11px;
+            color: var(--tl-muted);
+            text-align: right;
+            margin-top: -6px;
+        }
 
         .tl-textarea {
             background: var(--white);
@@ -527,6 +533,7 @@ try {
                 <div class="tl-field">
                     <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
                     <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3" maxlength="350"></textarea>
+                    <div class="tl-char-count" id="topicDescCount">0/350</div>
                 </div>
                 <div class="tl-field">
                     <label class="tl-label">Your offer amount</label>
@@ -562,6 +569,7 @@ try {
         const topicDesc     = document.getElementById('topicDesc');
         const topicSubmit   = document.getElementById('topicSubmit');
         const activeFilterNote = document.getElementById('activeFilterNote');
+        const topicDescCount = document.getElementById('topicDescCount');
 
         let selectedCreator = null;
         let activeTopics    = new Set(); // selected filter chips
@@ -650,6 +658,10 @@ try {
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
         });
 
+        topicDesc.addEventListener('input', () => {
+            topicDescCount.textContent = `${topicDesc.value.length}/350`;
+        });
+
         /* Open topic details modal */
         stripSend.addEventListener('click', () => {
             if (!selectedCreator || !topicInput.value.trim()) return;
@@ -664,6 +676,7 @@ try {
             }
             topicAmount.value = '';
             topicDesc.value = '';
+            topicDescCount.textContent = '0/350';
             topicOverlay.classList.add('open');
             topicDesc.focus();
         });
