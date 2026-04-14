@@ -936,7 +936,6 @@ if ($db_available) {
                 <div class="strip-creator-card-topics" id="stripCreatorCardTopics"></div>
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
-            <span class="strip-creator-card-change" id="stripCreatorCardChange">Change</span>
         </div>
     </div>
 
@@ -1061,7 +1060,6 @@ if ($db_available) {
         const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
         const stripCreatorCardTopics = document.getElementById('stripCreatorCardTopics');
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
-        const stripCreatorCardChange = document.getElementById('stripCreatorCardChange');
 
         /* ── Select a creator ── */
         pickerGrid.addEventListener('click', e => {
@@ -1109,19 +1107,6 @@ if ($db_available) {
             closePicker();
         });
 
-        /* "Change" link reopens picker */
-        stripCreatorCardChange.addEventListener('click', () => {
-            stripCreatorCard.classList.remove('visible');
-            selectedCreator = null;
-            stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
-            selectHint.classList.remove('hidden');
-            topicInput.placeholder = 'Type your topic idea…';
-            stripSend.disabled = true;
-            pickerOverlay.classList.add('open');
-            filterPicker('');
-            creatorSearch.value = '';
-            creatorSearch.focus();
-        });
 
         /* ── Enable/disable send based on input ── */
         const topicInputCount = document.getElementById('topicInputCount');

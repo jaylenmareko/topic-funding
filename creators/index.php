@@ -512,7 +512,6 @@ try {
                 <div class="strip-creator-card-topics" id="stripCreatorCardTopics"></div>
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
-            <span class="strip-creator-card-change" id="stripCreatorCardChange">Change</span>
         </div>
 
         <div class="strip-hint-row">
@@ -626,7 +625,6 @@ try {
         const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
         const stripCreatorCardTopics = document.getElementById('stripCreatorCardTopics');
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
-        const stripCreatorCardChange = document.getElementById('stripCreatorCardChange');
         const stripStep1 = document.getElementById('stripStep1');
 
         let selectedCreator = null;
@@ -727,20 +725,6 @@ try {
             closePicker();
         });
 
-        /* "Change" link reopens picker and resets state */
-        stripCreatorCardChange.addEventListener('click', () => {
-            stripCreatorCard.classList.remove('visible');
-            stripStep1.style.display = '';
-            selectedCreator = null;
-            stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
-            selectHint.classList.remove('hidden');
-            topicInput.placeholder = 'Type your topic idea…';
-            stripSend.disabled = true;
-            pickerOverlay.classList.add('open');
-            applyPickerFilter('');
-            creatorSearch.value = '';
-            creatorSearch.focus();
-        });
 
         /* Enable send only when input has text + live counter */
         topicInput.addEventListener('input', () => {
