@@ -345,8 +345,9 @@ if ($db_available) {
             display: flex;
             align-items: center;
             gap: 14px;
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         /* ── Creators browse section ── */
