@@ -630,7 +630,6 @@ if ($db_available) {
             </p>
             <div class="hero-cta-row">
                 <a href="creators/signup.php" class="hero-cta">Launch your page</a>
-                <a href="creators/index.php" class="hero-cta-ghost">See how it works</a>
             </div>
 
             <div class="hero-stat-row">
@@ -693,78 +692,6 @@ if ($db_available) {
         </div>
     </div>
 
-    <!-- Creators Section -->
-    <div class="creators-section">
-        <div class="creators-container">
-            <div class="section-header">
-                <h2 class="section-title">Browse Creators & Send a Request</h2>
-            </div>
-            
-            <div class="search-section">
-                <div class="search-bar">
-                    <div class="search-input-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search creators by name or topic..." autocomplete="off" value="<?php echo htmlspecialchars($search_query ?? ''); ?>">
-                    </div>
-                </div>
-                <div class="topic-filters" id="topicFilters">
-                    <button class="topic-filter-btn active" data-topic="all">All</button>
-                    <?php foreach (['Fitness', 'Health', 'Motivation', 'Therapy', 'Dating', 'Business', 'Money', 'Psychology', 'Career', 'Family', 'Technology & AI', 'Beauty', 'History', 'Cooking', 'Travel', 'Sports', 'Faith & Spirituality', 'Entertainment', 'Self-Improvement', 'Communication'] as $t): ?>
-                    <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            
-            <div class="creators-grid" id="creatorsGrid">
-                <?php foreach ($creators as $creator): ?>
-                    <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="creator-card">
-                        <div class="creator-card-top">
-                            <div class="creator-card-image">
-                                <?php if ($creator->profile_image): ?>
-                                    <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" 
-                                         alt="<?php echo htmlspecialchars($creator->display_name); ?>">
-                                <?php else: ?>
-                                    <div class="creator-initial"><?php echo strtoupper(substr($creator->display_name, 0, 1)); ?></div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="creator-card-identity">
-                                <div class="creator-name"><?php echo htmlspecialchars($creator->display_name); ?></div>
-                                <div class="creator-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
-                            </div>
-                        </div>
-                        <div class="creator-bio">
-                            <?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : 'Building my empire, one post at a time'; ?>
-                        </div>
-                        <?php
-                        $topics = [];
-                        if (!empty($creator->video_topics)) {
-                            $decoded = json_decode($creator->video_topics, true);
-                            if (is_array($decoded)) $topics = $decoded;
-                        }
-                        if (!empty($topics)): ?>
-                        <div class="creator-topics">
-                            <?php foreach (array_slice($topics, 0, 5) as $tag): ?>
-                                <span class="creator-topic-tag"><?php echo htmlspecialchars($tag); ?></span>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                        <div class="creator-footer">
-                            <div>
-                                <span class="creator-price">$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></span>
-                                <span class="price-label">/ per request</span>
-                            </div>
-                            <button class="fund-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
-                                Send Request
-                            </button>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -776,35 +703,5 @@ if ($db_available) {
         </div>
     </footer>
 
-    <script>
-    const searchInput = document.getElementById('searchInput');
-    const creatorsGrid = document.getElementById('creatorsGrid');
-    const filterBtns = document.querySelectorAll('.topic-filter-btn');
-    let activeTopic = 'all';
-
-    function filterCards() {
-        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        const cards = creatorsGrid.querySelectorAll('.creator-card');
-        cards.forEach(card => {
-            const name = (card.querySelector('.creator-name')?.textContent || '').toLowerCase();
-            const handle = (card.querySelector('.creator-handle')?.textContent || '').replace('@','').toLowerCase();
-            const tags = Array.from(card.querySelectorAll('.creator-topic-tag')).map(t => t.textContent.trim().toLowerCase());
-            const matchesSearch = !query || name.includes(query) || handle.includes(query) || tags.some(t => t.includes(query));
-            const matchesTopic = activeTopic === 'all' || tags.includes(activeTopic.toLowerCase());
-            card.style.display = (matchesSearch && matchesTopic) ? 'flex' : 'none';
-        });
-    }
-
-    if (searchInput) searchInput.addEventListener('input', filterCards);
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeTopic = btn.dataset.topic;
-            filterCards();
-        });
-    });
-    </script>
 </body>
 </html>
