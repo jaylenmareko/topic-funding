@@ -526,7 +526,7 @@ try {
                 </div>
                 <div class="tl-field">
                     <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
-                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3"></textarea>
+                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3" maxlength="350"></textarea>
                 </div>
                 <div class="tl-field">
                     <label class="tl-label">Your offer amount</label>
