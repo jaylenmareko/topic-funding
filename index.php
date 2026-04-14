@@ -340,7 +340,7 @@ if ($db_available) {
         /* ── Creator input strip ── */
         .creator-strip {
             background: var(--tl-black);
-            padding: 20px 30px;
+            padding: 20px 0;
             border-top: 1px solid #1e1e1e;
             display: flex;
             align-items: center;
@@ -349,6 +349,9 @@ if ($db_available) {
             max-width: none;
             margin: 0;
         }
+        .creator-strip .strip-avatar-wrap { margin-left: 30px; }
+        .creator-strip .strip-input-field { max-width: none; }
+        .creator-strip .strip-send { margin-right: 30px; }
 
         /* ── Creators browse section ── */
         .creators-section {
