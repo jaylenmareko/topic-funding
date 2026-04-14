@@ -870,34 +870,30 @@ foreach ($topics as $topic) {
             const minPrice = <?php echo $creator->minimum_topic_price ?? 100; ?>;
             const creatorId = <?php echo $creator->id; ?>;
             
+            const INP = 'width:100%;padding:11px 14px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;outline:none;background:#fff;font-family:Inter,sans-serif;transition:border-color 0.2s,box-shadow 0.2s;';
+            const LBL = 'display:block;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;';
             const modalHTML = `
-                <div id="createTopicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeCreateTopicModal(event)">
-                    <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
-                        <button onclick="closeCreateTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
-                        
-                        <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create New Topic</h2>
-                        <p style="color: #666; line-height: 1.6; margin-bottom: 28px; font-size: 15px;">List a topic for your fans to fund.</p>
-                        
-                        <div id="createTopicError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>
-                        
+                <div id="createTopicModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeCreateTopicModal(event)">
+                    <div style="background:#fff;border-radius:16px;border:1px solid #E5E5E5;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:32px 28px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.10);" onclick="event.stopPropagation()">
+                        <button onclick="closeCreateTopicModal()" style="position:absolute;top:18px;right:18px;background:transparent;border:none;width:28px;height:28px;font-size:22px;cursor:pointer;color:#aaa;padding:0;line-height:1;" onmouseover="this.style.color='#111'" onmouseout="this.style.color='#aaa'">×</button>
+                        <h2 style="margin:0 0 6px 0;font-size:20px;color:#111010;font-weight:600;letter-spacing:-0.3px;padding-right:28px;">Create New Topic</h2>
+                        <p style="color:#888;line-height:1.5;margin-bottom:24px;font-size:14px;">List a topic for your fans to fund.</p>
+                        <div id="createTopicError" style="display:none;color:#DC2626;background:#FEF2F2;border-left:3px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;font-weight:500;"></div>
                         <form id="createTopicForm" onsubmit="submitCreatorTopic(event, ${creatorId}, ${minPrice})">
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Topic Title</label>
-                                <input type="text" id="topicTitle" placeholder="e.g., My Morning Routine" required maxlength="100" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'">
+                            <div style="margin-bottom:18px;">
+                                <label style="${LBL}">Topic Title</label>
+                                <input type="text" id="topicTitle" placeholder="e.g., My Morning Routine" required maxlength="100" style="${INP}" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'">
                             </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Description</label>
-                                <textarea id="topicDescription" placeholder="Describe what this content will be about..." required maxlength="500" rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; resize: vertical; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'"></textarea>
+                            <div style="margin-bottom:18px;">
+                                <label style="${LBL}">Description</label>
+                                <textarea id="topicDescription" placeholder="Describe what this content will be about..." required maxlength="500" rows="4" style="${INP}resize:vertical;" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'"></textarea>
                             </div>
-                            
-                            <div style="margin-bottom: 24px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Funding Goal</label>
-                                <input type="number" id="fundingGoal" placeholder="${minPrice}" min="${minPrice}" max="10000" step="1" value="${minPrice}" required style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: 'Inter', sans-serif;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'">
-                                <div style="font-size: 13px; color: #666; margin-top: 8px;">Minimum: $${minPrice}</div>
+                            <div style="margin-bottom:24px;">
+                                <label style="${LBL}">Funding Goal</label>
+                                <input type="number" id="fundingGoal" placeholder="${minPrice}" min="${minPrice}" max="10000" step="1" value="${minPrice}" required style="${INP}" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'">
+                                <div style="font-size:12px;color:#aaa;margin-top:6px;">Minimum: $${minPrice}</div>
                             </div>
-                            
-                            <button type="submit" id="createTopicButton" style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#E6005F'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 0, 107, 0.3)'" onmouseout="this.style.background='#FF006B'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">Create Topic</button>
+                            <button type="submit" id="createTopicButton" style="width:100%;background:#E8305A;color:#fff;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='#B01F3F'" onmouseout="this.style.background='#E8305A'">Create Topic</button>
                         </form>
                     </div>
                 </div>
@@ -1057,33 +1053,33 @@ foreach ($topics as $topic) {
             event.stopPropagation();
             
             const modalHTML = `
-                <div id="uploadModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeUploadModal(event)">
-                    <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
-                        <button onclick="closeUploadModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
-                        
-                        <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 8px 0; font-size: 24px; color: #000; font-weight: 700; padding-right: 30px;">Upload Content</h2>
-                        <p style="color: #666; font-size: 15px; margin-bottom: 20px;">Paste your video link below.</p>
-                        
-                        <div style="background: #f8f9fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 16px;">
-                            <div style="flex: 1; text-align: center;">
-                                <div style="font-size: 20px; margin-bottom: 4px;">▶️</div>
-                                <div style="font-size: 11px; color: #666; font-weight: 600;">YouTube</div>
+                <div id="uploadModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeUploadModal(event)">
+                    <div style="background:#fff;border-radius:16px;border:1px solid #E5E5E5;max-width:480px;width:100%;padding:32px 28px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.10);" onclick="event.stopPropagation()">
+                        <button onclick="closeUploadModal()" style="position:absolute;top:18px;right:18px;background:transparent;border:none;width:28px;height:28px;font-size:22px;cursor:pointer;color:#aaa;padding:0;line-height:1;" onmouseover="this.style.color='#111'" onmouseout="this.style.color='#aaa'">×</button>
+                        <h2 style="margin:0 0 6px 0;font-size:20px;color:#111010;font-weight:600;letter-spacing:-0.3px;padding-right:28px;">Upload Content</h2>
+                        <p style="color:#888;font-size:14px;margin-bottom:20px;">Paste your video link below.</p>
+                        <div style="background:#FAF8F6;border:1px solid #E5E5E5;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:0;">
+                            <div style="flex:1;text-align:center;padding:6px 0;">
+                                <div style="font-size:18px;margin-bottom:4px;">▶️</div>
+                                <div style="font-size:11px;color:#888;font-weight:500;letter-spacing:0.3px;text-transform:uppercase;">YouTube</div>
                             </div>
-                            <div style="flex: 1; text-align: center;">
-                                <div style="font-size: 20px; margin-bottom: 4px;">📸</div>
-                                <div style="font-size: 11px; color: #666; font-weight: 600;">Instagram</div>
+                            <div style="width:1px;background:#E5E5E5;margin:4px 0;"></div>
+                            <div style="flex:1;text-align:center;padding:6px 0;">
+                                <div style="font-size:18px;margin-bottom:4px;">📸</div>
+                                <div style="font-size:11px;color:#888;font-weight:500;letter-spacing:0.3px;text-transform:uppercase;">Instagram</div>
                             </div>
-                            <div style="flex: 1; text-align: center;">
-                                <div style="font-size: 20px; margin-bottom: 4px;">🎵</div>
-                                <div style="font-size: 11px; color: #666; font-weight: 600;">TikTok</div>
+                            <div style="width:1px;background:#E5E5E5;margin:4px 0;"></div>
+                            <div style="flex:1;text-align:center;padding:6px 0;">
+                                <div style="font-size:18px;margin-bottom:4px;">🎵</div>
+                                <div style="font-size:11px;color:#888;font-weight:500;letter-spacing:0.3px;text-transform:uppercase;">TikTok</div>
                             </div>
                         </div>
-                        
-                        <div id="uploadError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500;"></div>
-                        
-                        <input type="text" id="uploadUrl" placeholder="Paste your video URL here..." autofocus style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; outline: none; font-family: 'Inter', sans-serif; margin-bottom: 16px;" onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'" onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'" onkeydown="if(event.key==='Enter'){event.preventDefault(); submitUpload(${id});}">
-                        
-                        <button id="uploadButton" onclick="submitUpload(${id})" style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer;" onmouseover="this.style.background='#E6005F'" onmouseout="this.style.background='#FF006B'">Upload</button>
+                        <div id="uploadError" style="display:none;color:#DC2626;background:#FEF2F2;border-left:3px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:500;"></div>
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Content URL</label>
+                            <input type="text" id="uploadUrl" placeholder="Paste your video URL here..." autofocus style="width:100%;padding:11px 14px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;outline:none;background:#fff;font-family:Inter,sans-serif;transition:border-color 0.2s,box-shadow 0.2s;" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'" onkeydown="if(event.key==='Enter'){event.preventDefault();submitUpload(${id});}">
+                        </div>
+                        <button id="uploadButton" onclick="submitUpload(${id})" style="width:100%;background:#E8305A;color:#fff;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='#B01F3F'" onmouseout="this.style.background='#E8305A'">Upload Content</button>
                     </div>
                 </div>
             `;

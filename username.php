@@ -578,10 +578,9 @@ try {
                 } else if (topic.status === 'active') {
                     actionHTML = `
                         <div id="fundingFormContainer">
-                            <div id="errorMessage" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>
-
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Amount</label>
+                            <div id="errorMessage" style="display:none;color:#DC2626;background:#FEF2F2;border-left:3px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:500;"></div>
+                            <div style="margin-bottom:18px;">
+                                <label style="display:block;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Your Contribution</label>
                                 <input
                                     type="number"
                                     id="fundingAmount"
@@ -590,48 +589,38 @@ try {
                                     max="1000"
                                     step="1"
                                     value="10"
-                                    style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: 'Inter', sans-serif;"
+                                    style="width:100%;padding:11px 14px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;outline:none;background:#fff;font-family:Inter,sans-serif;transition:border-color 0.2s,box-shadow 0.2s;"
                                     oninput="validateFundingAmount()"
-                                    onfocus="this.style.borderColor='#FF006B'; this.style.boxShadow='0 0 0 4px rgba(255, 0, 107, 0.1)'"
-                                    onblur="this.style.borderColor='#E5E5E5'; this.style.boxShadow='none'"
+                                    onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'"
+                                    onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'"
                                 >
                             </div>
-
                             <button
                                 id="fundButton"
                                 onclick="submitFunding(${topic.id})"
-                                style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;"
-                                onmouseover="this.style.background='#E6005F'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 0, 107, 0.3)'"
-                                onmouseout="this.style.background='#FF006B'; this.style.transform='translateY(0)'; this.style.boxShadow='none'"
-                            >
-                                Fund This Topic
-                            </button>
-
+                                style="width:100%;background:#E8305A;color:#fff;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;"
+                                onmouseover="this.style.background='#B01F3F'"
+                                onmouseout="this.style.background='#E8305A'"
+                            >Fund This Topic</button>
                         </div>
                     `;
                 }
 
                 const modalHTML = `
-                    <div id="topicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeTopicModal(event)">
-                        <div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
-                            <button onclick="closeTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#666'">×</button>
-
-                            <h2 style="font-family: 'Inter', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">${topic.title}</h2>
-
-                            <p style="color: #666; line-height: 1.6; margin-bottom: 24px; font-size: 15px;">${topic.description}</p>
-
-                            <div style="background: #FAF8F6; padding: 20px; border-radius: 16px; margin-bottom: 28px;">
-                                <div style="display: flex; margin-bottom: 10px; align-items: center; justify-content: space-between;">
-                                    <span style="font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Funding Progress</span>
+                    <div id="topicModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeTopicModal(event)">
+                        <div style="background:#fff;border-radius:16px;border:1px solid #E5E5E5;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:32px 28px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.10);" onclick="event.stopPropagation()">
+                            <button onclick="closeTopicModal()" style="position:absolute;top:18px;right:18px;background:transparent;border:none;width:28px;height:28px;font-size:22px;cursor:pointer;color:#aaa;padding:0;line-height:1;" onmouseover="this.style.color='#111'" onmouseout="this.style.color='#aaa'">×</button>
+                            <h2 style="margin:0 0 8px 0;font-size:20px;color:#111010;font-weight:600;letter-spacing:-0.3px;padding-right:28px;line-height:1.3;">${topic.title}</h2>
+                            <p style="color:#888;line-height:1.6;margin-bottom:22px;font-size:14px;">${topic.description}</p>
+                            <div style="background:#FAF8F6;border:1px solid #E5E5E5;padding:18px;border-radius:12px;margin-bottom:24px;">
+                                <div style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">Funding Progress</div>
+                                <div style="height:6px;background:#E5E5E5;border-radius:3px;overflow:hidden;margin-bottom:12px;">
+                                    <div style="height:100%;background:linear-gradient(90deg,#E8305A,#B01F3F);width:${progress}%;border-radius:3px;"></div>
                                 </div>
-                                <div style="height: 8px; background: #E5E5E5; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
-                                    <div style="height: 100%; background: linear-gradient(90deg, #FF006B, #E6005F); width: ${progress}%; transition: width 0.3s; border-radius: 4px;"></div>
-                                </div>
-                                <div style="font-size: 20px; font-weight: 700; color: #000; font-family: 'Inter', sans-serif;">
-                                    $${parseFloat(topic.current_funding).toFixed(0)} <span style="color: #666; font-size: 15px; font-weight: 500; font-family: 'Inter', sans-serif;">of $${parseFloat(topic.funding_threshold).toFixed(0)}</span>
+                                <div style="font-size:18px;font-weight:600;color:#111010;">
+                                    $${parseFloat(topic.current_funding).toFixed(0)} <span style="color:#888;font-size:13px;font-weight:400;">of $${parseFloat(topic.funding_threshold).toFixed(0)}</span>
                                 </div>
                             </div>
-
                             ${actionHTML}
                         </div>
                     </div>
@@ -725,36 +714,37 @@ try {
     }
 
 function openCreateTopicModal(creatorId, minPrice) {
-    const modalHTML = 
-        '<div id="createTopicModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);" onclick="closeCreateTopicModal(event)">' +
-            '<div style="background: white; border-radius: 20px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">'+
-                '<button onclick="closeCreateTopicModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; width: 32px; height: 32px; font-size: 28px; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; line-height: 1; font-weight: 300;" onmouseover="this.style.color=\'#000\'" onmouseout="this.style.color=\'#666\'">×</button>' +
-                '<h2 style="font-family: \'Inter\', sans-serif; margin: 0 0 12px 0; font-size: 24px; color: #000; font-weight: 700; line-height: 1.3; padding-right: 30px;">Create a Topic</h2>' +
-                '<p style="color: #666; line-height: 1.6; margin-bottom: 28px; font-size: 15px;">Suggest a topic you\'d like to see covered.</p>' +
-                '<div id="createTopicError" style="display: none; color: #DC2626; background: #FEF2F2; border-left: 4px solid #DC2626; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;"></div>' +
-                '<form id="createTopicForm" onsubmit="submitCreateTopic(event, ' + creatorId + ', ' + minPrice + ')">' +
-                    '<div style="margin-bottom: 20px;">' +
-                        '<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Topic Title</label>' +
-                        '<input type="text" id="topicTitle" placeholder="e.g., How to Start a YouTube Channel" required maxlength="100" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: \'Inter\', sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'; this.style.boxShadow=\'0 0 0 4px rgba(255, 0, 107, 0.1)\'" onblur="this.style.borderColor=\'#E5E5E5\'; this.style.boxShadow=\'none\'">' +
+    const INP = 'width:100%;padding:11px 14px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;outline:none;background:#fff;font-family:Inter,sans-serif;transition:border-color 0.2s,box-shadow 0.2s;';
+    const LBL = 'display:block;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;';
+    const modalHTML =
+        '<div id="createTopicModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeCreateTopicModal(event)">' +
+            '<div style="background:#fff;border-radius:16px;border:1px solid #E5E5E5;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:32px 28px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.10);" onclick="event.stopPropagation()">' +
+                '<button onclick="closeCreateTopicModal()" style="position:absolute;top:18px;right:18px;background:transparent;border:none;width:28px;height:28px;font-size:22px;cursor:pointer;color:#aaa;padding:0;line-height:1;" onmouseover="this.style.color=\'#111\'" onmouseout="this.style.color=\'#aaa\'">×</button>' +
+                '<h2 style="margin:0 0 6px 0;font-size:20px;color:#111010;font-weight:600;letter-spacing:-0.3px;padding-right:28px;">Create a Topic</h2>' +
+                '<p style="color:#888;line-height:1.5;margin-bottom:24px;font-size:14px;">Suggest a topic you\'d like to see covered.</p>' +
+                '<div id="createTopicError" style="display:none;color:#DC2626;background:#FEF2F2;border-left:3px solid #DC2626;padding:12px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;font-weight:500;"></div>' +
+                '<form id="createTopicForm" onsubmit="submitCreateTopic(event,' + creatorId + ',' + minPrice + ')">' +
+                    '<div style="margin-bottom:18px;">' +
+                        '<label style="' + LBL + '">Topic Title</label>' +
+                        '<input type="text" id="topicTitle" placeholder="e.g., How to Start a YouTube Channel" required maxlength="100" style="' + INP + '" onfocus="this.style.borderColor=\'#E8305A\';this.style.boxShadow=\'0 0 0 3px rgba(232,48,90,0.08)\'" onblur="this.style.borderColor=\'#E5E5E5\';this.style.boxShadow=\'none\'">' +
                     '</div>' +
-                    '<div style="margin-bottom: 20px;">' +
-                        '<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Description</label>' +
-                        '<textarea id="topicDescription" placeholder="Describe what you\'d like to see in this content..." required maxlength="500" rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; resize: vertical; font-family: \'Inter\', sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'; this.style.boxShadow=\'0 0 0 4px rgba(255, 0, 107, 0.1)\'" onblur="this.style.borderColor=\'#E5E5E5\'; this.style.boxShadow=\'none\'"></textarea>' +
+                    '<div style="margin-bottom:18px;">' +
+                        '<label style="' + LBL + '">Description</label>' +
+                        '<textarea id="topicDescription" placeholder="Describe what you\'d like to see in this content..." required maxlength="500" rows="4" style="' + INP + 'resize:vertical;" onfocus="this.style.borderColor=\'#E8305A\';this.style.boxShadow=\'0 0 0 3px rgba(232,48,90,0.08)\'" onblur="this.style.borderColor=\'#E5E5E5\';this.style.boxShadow=\'none\'"></textarea>' +
                     '</div>' +
-                    '<div style="margin-bottom: 20px;">' +
-                        '<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Set Funding Goal</label>' +
-                        '<input type="number" id="fundingGoal" placeholder="' + minPrice + '" min="' + minPrice + '" max="10000" step="1" value="' + minPrice + '" required style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: \'Inter\', sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'; this.style.boxShadow=\'0 0 0 4px rgba(255, 0, 107, 0.1)\'" onblur="this.style.borderColor=\'#E5E5E5\'; this.style.boxShadow=\'none\'">' +
-                        '<div style="font-size: 13px; color: #666; margin-top: 8px;">Minimum: $' + minPrice + '</div>' +
+                    '<div style="margin-bottom:18px;">' +
+                        '<label style="' + LBL + '">Funding Goal</label>' +
+                        '<input type="number" id="fundingGoal" placeholder="' + minPrice + '" min="' + minPrice + '" max="10000" step="1" value="' + minPrice + '" required style="' + INP + '" onfocus="this.style.borderColor=\'#E8305A\';this.style.boxShadow=\'0 0 0 3px rgba(232,48,90,0.08)\'" onblur="this.style.borderColor=\'#E5E5E5\';this.style.boxShadow=\'none\'">' +
+                        '<div style="font-size:12px;color:#aaa;margin-top:6px;">Minimum: $' + minPrice + '</div>' +
                     '</div>' +
-                    '<div style="margin-bottom: 24px;">' +
-                        '<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #000; font-size: 14px;">Your Funding Amount</label>' +
-                        '<input type="number" id="initialAmount" placeholder="10" min="1" max="1000" step="1" value="10" required style="width: 100%; padding: 12px 16px; border: 2px solid #E5E5E5; border-radius: 12px; font-size: 15px; transition: all 0.2s; outline: none; background: white; font-family: \'Inter\', sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'; this.style.boxShadow=\'0 0 0 4px rgba(255, 0, 107, 0.1)\'" onblur="this.style.borderColor=\'#E5E5E5\'; this.style.boxShadow=\'none\'">' +
+                    '<div style="margin-bottom:24px;">' +
+                        '<label style="' + LBL + '">Your Contribution</label>' +
+                        '<input type="number" id="initialAmount" placeholder="10" min="1" max="1000" step="1" value="10" required style="' + INP + '" onfocus="this.style.borderColor=\'#E8305A\';this.style.boxShadow=\'0 0 0 3px rgba(232,48,90,0.08)\'" onblur="this.style.borderColor=\'#E5E5E5\';this.style.boxShadow=\'none\'">' +
                     '</div>' +
-                    '<button type="submit" id="createTopicButton" style="width: 100%; background: #FF006B; color: white; padding: 14px; border: none; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background=\'#E6005F\'; this.style.transform=\'translateY(-2px)\'; this.style.boxShadow=\'0 6px 16px rgba(255, 0, 107, 0.3)\'" onmouseout="this.style.background=\'#FF006B\'; this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'none\'">Create Topic & Fund</button>' +
+                    '<button type="submit" id="createTopicButton" style="width:100%;background:#E8305A;color:#fff;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background=\'#B01F3F\'" onmouseout="this.style.background=\'#E8305A\'">Create Topic & Fund</button>' +
                 '</form>' +
             '</div>' +
         '</div>';
-    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
