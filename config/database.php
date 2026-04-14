@@ -94,9 +94,15 @@ class Database {
         return $this->stmt->rowCount();
     }
 
-    // Get last insert ID
-    public function lastInsertId() {
-        return $this->dbh->lastInsertId();
+    // Get last insert ID — pass sequence name for PostgreSQL, or use RETURNING id
+    public function lastInsertId($sequence = null) {
+        return $this->dbh->lastInsertId($sequence);
+    }
+
+    // Fetch the first column of the first row of the last executed statement
+    // Use this after INSERT ... RETURNING id
+    public function fetchColumn() {
+        return $this->stmt->fetchColumn();
     }
 
     // Begin transaction

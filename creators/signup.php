@@ -105,12 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     } else {
                         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                        $db->query('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, 1, NOW(), NOW())');
+                        $db->query('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, 1, NOW(), NOW()) RETURNING id');
                         $db->bind(':username', $username);
                         $db->bind(':email', $email);
                         $db->bind(':password_hash', $password_hash);
-                        $db->execute();
-                        $user_id = $db->lastInsertId();
+                        $new_user = $db->single();
+                        $user_id = $new_user ? $new_user->id : null;
                     }
                     
                     if ($user_id !== null && empty($error)) {
