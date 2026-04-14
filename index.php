@@ -864,7 +864,7 @@ if ($db_available) {
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
-                    <span>Select a creator</span>
+                    <span>Click to Select Creator</span>
                     <svg class="hint-arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 C4 14, 12 18, 11 20" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M8 17 L11 21 L14 17" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
                 </div>
             <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
