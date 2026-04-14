@@ -315,99 +315,36 @@ try {
         .creator-picker-grid {
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
             padding: 16px;
         }
         .creator-picker-item {
-            background: var(--white);
-            border-radius: 16px;
+            background: var(--tl-off);
             border: 1px solid var(--tl-border);
-            padding: 24px;
-            transition: all 0.22s;
+            border-radius: 12px;
+            padding: 16px 12px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
             cursor: pointer;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: border-color 0.15s, background 0.15s;
+            text-align: center;
         }
-        .creator-picker-item:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(232,48,90,0.10); border-color: rgba(232,48,90,0.25); background: var(--white); }
-        .creator-picker-item.selected { border-color: rgba(232,48,90,0.25); box-shadow: 0 8px 24px rgba(232,48,90,0.10); }
+        .creator-picker-item:hover { border-color: var(--tl-pink); background: rgba(232,48,90,0.04); }
+        .creator-picker-item.selected { border-color: var(--tl-pink); background: rgba(232,48,90,0.08); }
         .creator-picker-item.hidden { display: none; }
 
-        .creator-card-top {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 14px;
-        }
         .picker-avatar {
-            width: 56px;
-            height: 56px;
-            flex-shrink: 0;
+            width: 52px; height: 52px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--tl-pink) 0%, var(--tl-pink-dark) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .picker-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .picker-avatar span { font-size: 22px; color: var(--white); font-weight: 600; }
-        .picker-name { font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .picker-price { font-size: 12px; color: var(--tl-muted); font-weight: 400; }
-
-        .picker-bio {
-            font-size: 13px;
-            line-height: 1.6;
-            color: #555;
-            margin-bottom: 14px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            font-weight: 400;
-        }
-
-        .picker-topics {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 18px;
-        }
-        .picker-topic-tag {
-            font-size: 11px;
-            font-weight: 500;
-            padding: 4px 11px;
-            border-radius: 20px;
-            background: var(--tl-bg);
-            color: var(--tl-muted);
-            border: 1px solid var(--tl-border);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .picker-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid var(--tl-border);
-            margin-top: auto;
-        }
-        .picker-action-btn {
-            background: var(--tl-pink);
-            color: var(--white);
-            border: none;
-            padding: 9px 20px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-            border-radius: 8px;
-            font-family: inherit;
-        }
-        .picker-action-btn:hover { background: var(--tl-pink-dark); }
+        .picker-avatar span { font-size: 20px; font-weight: 600; color: var(--white); }
+        .picker-name { font-size: 12px; font-weight: 500; color: var(--text-dark); line-height: 1.3; }
+        .picker-price { font-size: 10px; color: var(--tl-muted); }
 
         /* Topic details modal body */
         .tl-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
@@ -561,31 +498,15 @@ try {
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
                     data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
                     data-topics="<?php echo $c_topics_json; ?>">
-                    <div class="creator-card-top">
-                        <div class="picker-avatar">
-                            <?php if ($c->profile_image): ?>
-                                <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
-                            <?php else: ?>
-                                <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="creator-card-identity">
-                            <div class="picker-name"><?php echo htmlspecialchars($c->display_name); ?></div>
-                            <div class="picker-price">from $<?php echo (int)($c->minimum_topic_price ?? 100); ?></div>
-                        </div>
+                    <div class="picker-avatar">
+                        <?php if ($c->profile_image): ?>
+                            <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
+                        <?php else: ?>
+                            <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
+                        <?php endif; ?>
                     </div>
-                    <div class="picker-bio"><?php echo !empty($c->bio) ? htmlspecialchars($c->bio) : 'Building my empire, one post at a time'; ?></div>
-                    <?php if (!empty($c_topics)): ?>
-                    <div class="picker-topics">
-                        <?php foreach (array_slice($c_topics, 0, 5) as $tag): ?>
-                            <span class="picker-topic-tag"><?php echo htmlspecialchars($tag); ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-                    <div class="picker-footer">
-                        <div></div>
-                        <button class="picker-action-btn">Send Request</button>
-                    </div>
+                    <div class="picker-name"><?php echo htmlspecialchars($c->display_name); ?></div>
+                    <div class="picker-price">from $<?php echo (int)($c->minimum_topic_price ?? 100); ?></div>
                 </button>
                 <?php endforeach; ?>
                 <?php if (empty($creators)): ?>
