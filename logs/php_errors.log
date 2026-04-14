@@ -160,3 +160,6 @@ Stack trace:
                 TopicLaunch Team
             
 [21-Jun-2025 04:13:07 Europe/Berlin] Failed to log notification: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'category' in 'field list'
+[14-Apr-2026 15:00:32 UTC] Signup error: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "username" does not exist
+LINE 1: SELECT id FROM creators WHERE username = $1
+                                      ^

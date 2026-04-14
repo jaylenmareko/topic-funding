@@ -77,8 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = new Database();
-                $db->query('SELECT id FROM creators WHERE username = :username');
+                $db->query('SELECT id FROM creators WHERE handle = :username OR username = :username2');
                 $db->bind(':username', $username);
+                $db->bind(':username2', $username);
                 $existing_username = $db->single();
                 
                 if ($existing_username) {
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error = 'Email already registered';
                     } else {
                         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                        $db->query('INSERT INTO users (username, email, password_hash, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, NOW(), NOW())');
+                        $db->query('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, 1, NOW(), NOW())');
                         $db->bind(':username', $username);
                         $db->bind(':email', $email);
                         $db->bind(':password_hash', $password_hash);
@@ -107,31 +108,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $profile_path)) {
                             $video_topics_json = json_encode($video_topics);
-                            try {
-                                $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
-                                $db->bind(':user_id', $user_id);
-                                $db->bind(':username', $username);
-                                $db->bind(':display_name', $username);
-                                $db->bind(':profile_image', $profile_filename);
-                                $db->bind(':bio', $bio);
-                                $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
-                                $db->bind(':paypal_email', $paypal_email);
-                                $db->bind(':venmo_handle', $venmo_handle);
-                                $db->bind(':video_topics', $video_topics_json);
-                                $db->execute();
-                            } catch (Exception $e) {
-                                // Fallback: insert without video_topics if column doesn't exist yet
-                                $db->query('INSERT INTO creators (applicant_user_id, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, is_active, created_at) VALUES (:user_id, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, 1, NOW())');
-                                $db->bind(':user_id', $user_id);
-                                $db->bind(':username', $username);
-                                $db->bind(':display_name', $username);
-                                $db->bind(':profile_image', $profile_filename);
-                                $db->bind(':bio', $bio);
-                                $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
-                                $db->bind(':paypal_email', $paypal_email);
-                                $db->bind(':venmo_handle', $venmo_handle);
-                                $db->execute();
-                            }
+                            $db->query('INSERT INTO creators (applicant_user_id, handle, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :handle, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
+                            $db->bind(':user_id', $user_id);
+                            $db->bind(':handle', $username);
+                            $db->bind(':username', $username);
+                            $db->bind(':display_name', $username);
+                            $db->bind(':profile_image', $profile_filename);
+                            $db->bind(':bio', $bio);
+                            $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                            $db->bind(':paypal_email', $paypal_email);
+                            $db->bind(':venmo_handle', $venmo_handle);
+                            $db->bind(':video_topics', $video_topics_json);
+                            $db->execute();
                             
                             $_SESSION['user_id'] = $user_id;
                             $_SESSION['email'] = $email;
