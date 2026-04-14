@@ -221,8 +221,9 @@ try {
         /* Step hint below strip */
         .strip-hint-row {
             display: flex;
-            justify-content: center;
-            gap: 28px;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
             margin-top: 20px;
             padding: 0 30px;
         }
@@ -233,6 +234,7 @@ try {
             font-size: 12px;
             color: var(--tl-muted);
             font-weight: 400;
+            justify-content: center;
         }
         .strip-hint-step strong {
             display: inline-flex;
