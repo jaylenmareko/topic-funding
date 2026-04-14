@@ -82,6 +82,10 @@ try {
             line-height: 1.1;
             margin-bottom: 14px;
         }
+        .hero-title em {
+            color: var(--tl-pink);
+            font-style: normal;
+        }
         .hero-title span { color: var(--tl-pink); }
         .hero-subtitle {
             font-size: 16px;
@@ -440,7 +444,7 @@ try {
 
     <!-- Hero -->
     <div class="hero-section">
-        <h1 class="hero-title">Browse <span>Creators</span></h1>
+        <h1 class="hero-title">Browse <em>Creators</em></h1>
         <div class="topic-filter-row" id="topicFilterRow">
             <?php
             $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
