@@ -148,20 +148,21 @@ foreach ($topics as $topic) {
     <style>
         /* Color Variables */
         :root {
-            --hot-pink: #FF006B;
-            --deep-pink: #E6005F;
-            --black: #000000;
+            --hot-pink: #E8305A;
+            --deep-pink: #B01F3F;
+            --black: #111010;
             --white: #FFFFFF;
-            --gray-dark: #1A1A1A;
-            --gray-med: #666666;
+            --gray-dark: #111010;
+            --gray-med: #888888;
             --gray-light: #E5E5E5;
+            --bg: #FAF8F6;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            color: #000;
+            background: var(--bg);
+            color: var(--black);
         }
         
         /* Navigation - Match Landing Page */
@@ -172,11 +173,11 @@ foreach ($topics as $topic) {
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
         
         .nav-container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -186,11 +187,11 @@ foreach ($topics as $topic) {
         
         .nav-logo {
             font-family: 'Inter', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 500;
             color: var(--black);
             text-decoration: none;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.3px;
         }
         
         .nav-logo span {
@@ -199,14 +200,14 @@ foreach ($topics as $topic) {
         
         .nav-center {
             display: flex;
-            gap: 30px;
+            gap: 28px;
             align-items: center;
         }
         
         .nav-link {
             color: var(--gray-dark);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: color 0.2s;
         }
@@ -224,8 +225,8 @@ foreach ($topics as $topic) {
         .nav-login-btn {
             color: var(--gray-dark);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 500;
             padding: 0;
             transition: color 0.2s;
         }
@@ -238,10 +239,10 @@ foreach ($topics as $topic) {
             background: var(--hot-pink);
             color: var(--white);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 9px 20px;
+            border-radius: 8px;
             transition: all 0.2s;
         }
         
@@ -252,30 +253,30 @@ foreach ($topics as $topic) {
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 100px;
+            padding: 40px 30px 80px;
         }
         
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
         
         .page-title-section {
             flex: 1;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 18px;
         }
         
         .page-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: #000;
-            margin-bottom: 8px;
+            font-size: 30px;
+            font-weight: 600;
+            color: #111010;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -288,8 +289,8 @@ foreach ($topics as $topic) {
         }
         
         .page-subtitle {
-            font-size: 16px;
-            color: #666;
+            font-size: 15px;
+            color: #888;
         }
         
         .header-buttons {
@@ -298,23 +299,24 @@ foreach ($topics as $topic) {
         }
         
         .btn {
-            padding: 10px 20px;
+            padding: 9px 18px;
             border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #E5E5E5;
             background: white;
-            color: #333;
+            color: #111010;
             transition: all 0.2s;
         }
         
         .btn:hover {
-            border-color: #999;
+            border-color: var(--hot-pink);
+            color: var(--hot-pink);
         }
         
         .btn svg {
@@ -330,11 +332,11 @@ foreach ($topics as $topic) {
             width: 100%;
             padding: 16px;
             background: white;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #E5E5E5;
             border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            color: #111010;
             cursor: pointer;
             margin-bottom: 0;
             display: flex;
@@ -351,7 +353,7 @@ foreach ($topics as $topic) {
         
         .content-box {
             background: white;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #E5E5E5;
             border-radius: 16px;
             padding: 40px;
             min-height: 500px;
