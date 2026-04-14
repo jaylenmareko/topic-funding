@@ -6,16 +6,24 @@ session_start();
 if (isset($_SESSION['user_id'])) {
     require_once __DIR__ . '/../config/database.php';
     $db = new Database();
-    $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    // First verify the user still exists in the database
+    $db->query('SELECT id FROM users WHERE id = :user_id');
     $db->bind(':user_id', $_SESSION['user_id']);
-    $creator = $db->single();
-    
-    if ($creator) {
-        header('Location: /creators/dashboard.php');
+    $user_exists = $db->single();
+    if (!$user_exists) {
+        // Stale session — clear it and show the login form
+        session_destroy();
     } else {
-        header('Location: /creators/signup.php');
+        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $creator = $db->single();
+        if ($creator) {
+            header('Location: /creators/dashboard.php');
+        } else {
+            header('Location: /creators/signup.php');
+        }
+        exit;
     }
-    exit;
 }
 
 $error = '';
