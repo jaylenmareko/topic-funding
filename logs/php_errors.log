@@ -166,3 +166,6 @@ LINE 1: SELECT id FROM creators WHERE username = $1
 [14-Apr-2026 15:04:47 UTC] PHP Warning:  mkdir(): File exists in /home/runner/workspace/creators/signup.php on line 104
 [14-Apr-2026 15:04:47 UTC] PHP Warning:  move_uploaded_file(../uploads/creators/creator_1_1776179087.png): Failed to open stream: No such file or directory in /home/runner/workspace/creators/signup.php on line 109
 [14-Apr-2026 15:04:47 UTC] PHP Warning:  move_uploaded_file(): Unable to move &quot;/tmp/php9yzqlQ&quot; to &quot;../uploads/creators/creator_1_1776179087.png&quot; in /home/runner/workspace/creators/signup.php on line 109
+[14-Apr-2026 16:06:55 UTC] Vanity URL error: SQLSTATE[42601]: Syntax error: 7 ERROR:  syntax error at or near ")"
+LINE 4: ...    EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours...
+                                                             ^
