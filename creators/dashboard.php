@@ -260,9 +260,11 @@ foreach ($topics as $topic) {
         
         .page-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: flex-start;
+            gap: 18px;
             margin-bottom: 28px;
+            flex-wrap: wrap;
         }
         
         .page-title-section {
@@ -270,6 +272,7 @@ foreach ($topics as $topic) {
             display: flex;
             align-items: center;
             gap: 18px;
+            flex-wrap: wrap;
         }
         
         .page-title {
@@ -296,6 +299,7 @@ foreach ($topics as $topic) {
         .header-buttons {
             display: flex;
             gap: 12px;
+            margin-left: auto;
         }
         
         .btn {
@@ -312,11 +316,13 @@ foreach ($topics as $topic) {
             background: white;
             color: #111010;
             transition: all 0.2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
         .btn:hover {
             border-color: var(--hot-pink);
             color: var(--hot-pink);
+            transform: translateY(-1px);
         }
         
         .btn svg {
@@ -344,6 +350,7 @@ foreach ($topics as $topic) {
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
         .browse-btn:hover {
@@ -357,6 +364,7 @@ foreach ($topics as $topic) {
             border-radius: 16px;
             padding: 40px;
             min-height: 500px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
         .topics-grid {
