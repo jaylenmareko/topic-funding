@@ -367,7 +367,7 @@ foreach ($topics as $topic) {
         
         .empty-state {
             text-align: center;
-            max-width: 600px;
+            max-width: 640px;
             margin: 0 auto;
             padding: 40px 0;
         }
@@ -375,20 +375,20 @@ foreach ($topics as $topic) {
         .empty-icon {
             width: 80px;
             height: 80px;
-            color: #d0d0d0;
+            color: #D9D9D9;
             margin: 0 auto 24px;
         }
         
         .empty-title {
             font-size: 24px;
-            font-weight: 700;
-            color: #000;
+            font-weight: 600;
+            color: #111010;
             margin-bottom: 12px;
         }
         
         .empty-text {
-            font-size: 16px;
-            color: #666;
+            font-size: 15px;
+            color: #888;
             line-height: 1.6;
             margin-bottom: 32px;
         }
@@ -396,10 +396,10 @@ foreach ($topics as $topic) {
         .empty-btn {
             background: var(--hot-pink);
             color: white;
-            padding: 12px 32px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
             border: none;
             cursor: pointer;
             display: inline-block;
@@ -411,17 +411,19 @@ foreach ($topics as $topic) {
         
         .topic-tile {
             background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
+            border: 1px solid #E5E5E5;
+            border-radius: 14px;
             padding: 16px;
             transition: all 0.2s;
             cursor: pointer;
             position: relative;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
         .topic-tile:hover {
-            border-color: var(--hot-pink);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: rgba(232,48,90,0.25);
+            box-shadow: 0 8px 24px rgba(232,48,90,0.10);
+            transform: translateY(-2px);
         }
         
         .topic-tile-header {
@@ -430,29 +432,34 @@ foreach ($topics as $topic) {
         
         .topic-status-badge {
             display: inline-block;
-            background: #f0f0f0;
-            color: #666;
+            background: #FAF8F6;
+            color: #888;
             padding: 4px 12px;
-            border-radius: 12px;
+            border-radius: 20px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 500;
             margin-bottom: 10px;
+            border: 1px solid #E5E5E5;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
         
         .topic-status-badge.funded {
-            background: #d4edda;
-            color: #155724;
+            background: #F0FDF4;
+            color: #166534;
+            border-color: #BBF7D0;
         }
         
         .topic-status-badge.on-hold {
-            background: #fff3cd;
-            color: #856404;
+            background: #FFF7ED;
+            color: #9A3412;
+            border-color: #FED7AA;
         }
         
         .topic-tile-title {
             font-size: 15px;
-            font-weight: 700;
-            color: #000;
+            font-weight: 600;
+            color: #111010;
             margin-bottom: 6px;
             line-height: 1.3;
             display: -webkit-box;
@@ -463,7 +470,7 @@ foreach ($topics as $topic) {
         
         .topic-tile-subtitle {
             font-size: 12px;
-            color: #999;
+            color: #888;
             margin-bottom: 12px;
         }
         
@@ -473,19 +480,22 @@ foreach ($topics as $topic) {
             justify-content: space-between;
             margin-bottom: 12px;
             padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            background: #FAF8F6;
+            border-radius: 10px;
+            border: 1px solid #E5E5E5;
         }
         
         .earnings-amount {
             font-size: 20px;
-            font-weight: 700;
-            color: #28a745;
+            font-weight: 600;
+            color: #111010;
         }
         
         .earnings-label {
             font-size: 11px;
-            color: #666;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
         
         .topic-tile-progress {
@@ -501,7 +511,7 @@ foreach ($topics as $topic) {
         
         .progress-bar-container {
             height: 6px;
-            background: #e0e0e0;
+            background: #E5E5E5;
             border-radius: 3px;
             overflow: hidden;
         }
@@ -521,18 +531,19 @@ foreach ($topics as $topic) {
         .tile-btn {
             flex: 1;
             padding: 8px 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
+            border: 1px solid #E5E5E5;
+            border-radius: 8px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             background: white;
-            color: #333;
+            color: #111010;
             transition: all 0.2s;
         }
         
         .tile-btn:hover {
-            border-color: #999;
+            border-color: var(--hot-pink);
+            color: var(--hot-pink);
         }
         
         .tile-btn.primary {
@@ -546,28 +557,31 @@ foreach ($topics as $topic) {
         }
         
         .tile-btn.danger {
-            color: #dc3545;
-            border-color: #dc3545;
+            color: #DC2626;
+            border-color: #DC2626;
         }
         
         .tile-btn.danger:hover {
-            background: #dc3545;
+            background: #DC2626;
             color: white;
         }
         
         .countdown-timer {
             font-size: 10px;
-            font-weight: 600;
-            color: #28a745;
+            font-weight: 500;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
         
         /* UPDATED: Earnings section with consistent pink */
         .earnings-section {
-            background: linear-gradient(135deg, #fef3f8 0%, #fdeef4 100%);
+            background: #fff;
             border-radius: 16px;
             padding: 32px;
             margin: 24px 0;
-            border: 1px solid #fecde0;
+            border: 1px solid #E5E5E5;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
         .earnings-stats {
@@ -583,27 +597,29 @@ foreach ($topics as $topic) {
         
         .earnings-stats .stat-label {
             font-size: 13px;
-            color: #991b4d;
+            color: #888;
             font-weight: 500;
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
         
         .earnings-stats .stat-value {
             font-size: 32px;
             font-weight: 700;
-            color: #1f2937;
+            color: #111010;
         }
         
         .earnings-stats .stat-value.balance {
-            color: var(--deep-pink);
+            color: var(--hot-pink);
         }
         
         .earnings-stats .stat-value.pending {
-            color: #f97316;
+            color: #B45309;
         }
         
         .earnings-stats .stat-value.paid {
-            color: #10b981;
+            color: #15803D;
         }
         
         .payout-wrapper {
@@ -615,12 +631,12 @@ foreach ($topics as $topic) {
             background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
             color: white;
             border: none;
-            padding: 14px 28px;
-            border-radius: 50px;
+            padding: 13px 24px;
+            border-radius: 10px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
+            box-shadow: none;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
@@ -629,13 +645,12 @@ foreach ($topics as $topic) {
         }
         
         .payout-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255, 0, 107, 0.4);
+            background: var(--deep-pink);
         }
         
         .payout-note {
             font-size: 11px;
-            color: #991b4d;
+            color: #888;
             margin-top: 6px;
         }
         
@@ -643,7 +658,7 @@ foreach ($topics as $topic) {
             .nav-center {
                 display: none;
             }
-            .container { padding: 20px 30px; }
+            .container { padding: 24px 16px 48px; }
             .page-header { flex-direction: column; gap: 20px; }
             .header-buttons { width: 100%; }
             .btn { flex: 1; justify-content: center; }
@@ -708,16 +723,16 @@ foreach ($topics as $topic) {
                     <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>! You have <?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
                 
-                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Your Price</div>
-                    <div style="font-size: 24px; font-weight: 700; color: #111827;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
-                    <div style="font-size: 11px; color: #9ca3af;">per video topic</div>
+                <div style="background: white; border: 1px solid #E5E5E5; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                    <div style="font-size: 11px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px;">Your Price</div>
+                    <div style="font-size: 24px; font-weight: 600; color: #111010;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
+                    <div style="font-size: 11px; color: #aaa;">per video topic</div>
                 </div>
                 
-                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 12px; color: #6b7280; font-weight: 500;">Completed Videos</div>
-                    <div style="font-size: 24px; font-weight: 700; color: #111827;"><?php echo $completed_count; ?></div>
-                    <div style="font-size: 11px; color: #9ca3af;">videos delivered</div>
+                <div style="background: white; border: 1px solid #E5E5E5; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                    <div style="font-size: 11px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px;">Completed Videos</div>
+                    <div style="font-size: 24px; font-weight: 600; color: #111010;"><?php echo $completed_count; ?></div>
+                    <div style="font-size: 11px; color: #aaa;">videos delivered</div>
                 </div>
             </div>
             
@@ -742,7 +757,7 @@ foreach ($topics as $topic) {
             <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
                 🔗 Copy Profile Link
             </button>
-            <p style="font-size: 13px; color: #999; text-align: center; margin-top: 10px;">Share this with your fans to start getting requests</p>
+            <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 10px;">Share this with your fans to start getting requests</p>
         </div>
 
         <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink); margin-bottom: 32px;">
@@ -850,7 +865,7 @@ foreach ($topics as $topic) {
                             <div class="topic-tile-actions" onclick="event.stopPropagation();">
                                 <?php if ($topic->status === 'funded'): ?>
                                     <button class="tile-btn primary" onclick="openUploadModal(<?php echo $topic->id; ?>)">Upload</button>
-                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #ffc107; color: #000; border-color: #ffc107;">Hold</button>
+                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
                                     <button class="tile-btn primary" onclick="resumeTopic(<?php echo $topic->id; ?>)">Resume</button>
