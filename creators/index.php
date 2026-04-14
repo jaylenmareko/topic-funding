@@ -47,7 +47,7 @@ try {
         }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--tl-bg); color: var(--text-dark); }
 
-        /* Nav — matches landing page exactly */
+        /* Nav */
         .topiclaunch-nav { background: var(--white); padding: 16px 0; border-bottom: 1px solid var(--tl-border); position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
         .nav-logo { font-size: 20px; font-weight: 500; color: var(--text-dark); text-decoration: none; letter-spacing: -0.3px; }
@@ -61,72 +61,319 @@ try {
         .nav-getstarted-btn { background: var(--tl-pink); color: var(--white); text-decoration: none; font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: 8px; transition: background 0.2s; }
         .nav-getstarted-btn:hover { background: var(--tl-pink-dark); }
 
-        /* Page layout */
-        .container { max-width: 1200px; margin: 0 auto; padding: 64px 30px 100px; }
-
-        .header { margin-bottom: 44px; text-align: center; }
-        .header-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: var(--tl-muted); margin-bottom: 12px; }
-        .header-title { font-size: 40px; font-weight: 600; color: var(--text-dark); letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 10px; }
-        .header-subtitle { font-size: 15px; color: var(--tl-muted); font-weight: 400; line-height: 1.5; }
-
-        /* Search + filters */
-        .search-section { margin: 0 auto 40px auto; max-width: 660px; }
-        .search-bar { background: var(--white); border-radius: 12px; padding: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 14px; border: 1px solid var(--tl-border); transition: border-color 0.2s, box-shadow 0.2s; }
-        .search-bar:focus-within { border-color: var(--tl-pink); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
-        .search-input-wrapper { position: relative; }
-        .search-input { width: 100%; padding: 12px 18px 12px 46px; border: none; border-radius: 10px; font-size: 14px; font-weight: 400; outline: none; background: transparent; color: var(--text-dark); font-family: inherit; }
-        .search-input::placeholder { color: var(--tl-muted); }
-        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--tl-muted); width: 16px; height: 16px; }
-        .topic-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .topic-filter-btn { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 500; letter-spacing: 0.4px; border: 1px solid var(--tl-border); background: var(--white); color: var(--text-dark); cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit; }
-        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
-        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
-
-        /* Creator grid */
-        .creators-grid-landing { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
-        .creator-card-kalshi {
-            background: var(--white); border-radius: 16px; border: 1px solid var(--tl-border);
-            padding: 24px; transition: all 0.22s; cursor: pointer; text-decoration: none; color: inherit;
-            display: flex; flex-direction: column; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        /* Hero section */
+        .hero-section {
+            text-align: center;
+            padding: 80px 30px 56px;
         }
-        .creator-card-kalshi:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(232,48,90,0.10); border-color: rgba(232,48,90,0.25); }
-
-        .creator-card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-        .creator-avatar-kalshi {
-            width: 56px; height: 56px; flex-shrink: 0; border-radius: 50%;
-            background: linear-gradient(135deg, var(--tl-pink) 0%, var(--tl-pink-dark) 100%);
-            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        .hero-eyebrow {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--tl-muted);
+            margin-bottom: 14px;
         }
-        .creator-avatar-kalshi img { width: 100%; height: 100%; object-fit: cover; }
-        .creator-initial { font-size: 22px; color: var(--white); font-weight: 600; }
-        .creator-card-identity { flex: 1; min-width: 0; }
-        .creator-name-kalshi { font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .creator-handle-kalshi { font-size: 12px; color: var(--tl-muted); font-weight: 400; }
-
-        .creator-bio { font-size: 13px; line-height: 1.6; color: #555; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 400; }
-
-        .creator-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-        .creator-topic-tag {
-            font-size: 11px; font-weight: 500; padding: 4px 11px; border-radius: 20px;
-            background: var(--tl-bg); color: var(--tl-muted); border: 1px solid var(--tl-border);
-            text-transform: uppercase; letter-spacing: 0.5px;
+        .hero-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 14px;
+        }
+        .hero-title span { color: var(--tl-pink); }
+        .hero-subtitle {
+            font-size: 16px;
+            color: var(--tl-muted);
+            font-weight: 400;
+            line-height: 1.6;
+            max-width: 440px;
+            margin: 0 auto;
         }
 
-        .creator-price-section { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--tl-border); margin-top: auto; }
-        .creator-price { font-size: 20px; color: var(--text-dark); font-weight: 600; }
-        .price-label { font-size: 11px; color: var(--tl-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 5px; }
-        .fund-topics-btn {
-            background: var(--tl-pink); color: var(--white); border: none;
-            padding: 9px 20px; font-size: 13px; font-weight: 500;
-            cursor: pointer; transition: background 0.2s; border-radius: 8px; font-family: inherit;
+        /* Strip section */
+        .strip-section {
+            background: var(--tl-off);
+            border-top: 1px solid var(--tl-border);
+            border-bottom: 1px solid var(--tl-border);
+            padding: 36px 0 40px;
+            overflow: visible;
         }
-        .fund-topics-btn:hover { background: var(--tl-pink-dark); }
 
-        .no-results { text-align: center; padding: 60px 20px; color: var(--tl-muted); font-size: 15px; display: none; grid-column: 1/-1; }
-        .no-results strong { display: block; font-size: 18px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+        .creator-strip {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+        }
+        .creator-strip .strip-avatar-wrap { margin-left: 30px; }
+        .creator-strip .strip-send { margin-right: 30px; }
 
-        @media (max-width: 900px) { .creators-grid-landing { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) { .nav-center { display: none; } }
+        /* hint label above avatar */
+        .strip-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .select-creator-hint {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .select-creator-hint span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--tl-pink);
+            letter-spacing: 0.3px;
+        }
+        .hint-arrow { display: block; }
+        .select-creator-hint.hidden { display: none; }
+
+        .strip-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--white);
+            flex-shrink: 0;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            overflow: hidden;
+            padding: 0;
+        }
+        .strip-avatar:hover { opacity: 0.85; transform: scale(1.06); }
+        .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .strip-avatar-initials { font-size: 16px; font-weight: 600; color: var(--white); }
+
+        .strip-input-field {
+            flex: 1;
+            background: var(--white);
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid var(--tl-border);
+            font-size: 14px;
+            color: var(--text-dark);
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, opacity 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .strip-input-field::placeholder { color: #bbb; }
+        .strip-input-field:focus { border-color: rgba(232,48,90,0.4); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
+        .strip-input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .strip-send {
+            width: 44px; height: 44px;
+            background: var(--tl-pink);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .strip-send:hover:not(:disabled) { background: var(--tl-pink-dark); }
+        .strip-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* Step hint below strip */
+        .strip-hint-row {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            margin-top: 20px;
+            padding: 0 30px;
+        }
+        .strip-hint-step {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: var(--tl-muted);
+            font-weight: 400;
+        }
+        .strip-hint-step strong {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px; height: 18px;
+            background: var(--tl-pink);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* Modals */
+        .tl-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .tl-overlay.open { display: flex; }
+
+        .tl-modal {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+            animation: modalIn 0.18s ease-out both;
+        }
+        .tl-modal-sm { max-width: 440px; }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .tl-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+        }
+        .tl-modal-title { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+        .tl-modal-sub { font-size: 12px; color: var(--tl-muted); margin-top: 2px; }
+        .tl-modal-close {
+            background: none; border: none; color: #aaa; font-size: 20px;
+            cursor: pointer; line-height: 1; padding: 0 2px; transition: color 0.15s;
+        }
+        .tl-modal-close:hover { color: var(--text-dark); }
+
+        .tl-modal-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+            color: #bbb;
+        }
+        .tl-modal-search input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 13px; color: var(--text-dark); font-family: inherit;
+        }
+        .tl-modal-search input::placeholder { color: #bbb; }
+
+        .creator-picker-grid {
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 16px;
+        }
+        .creator-picker-item {
+            background: var(--tl-off);
+            border: 1px solid var(--tl-border);
+            border-radius: 12px;
+            padding: 16px 12px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            text-align: center;
+        }
+        .creator-picker-item:hover { border-color: var(--tl-pink); background: rgba(232,48,90,0.04); }
+        .creator-picker-item.selected { border-color: var(--tl-pink); background: rgba(232,48,90,0.08); }
+        .creator-picker-item.hidden { display: none; }
+
+        .picker-avatar {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .picker-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .picker-avatar span { font-size: 20px; font-weight: 600; color: var(--white); }
+        .picker-name { font-size: 12px; font-weight: 500; color: var(--text-dark); line-height: 1.3; }
+        .picker-price { font-size: 10px; color: var(--tl-muted); }
+
+        /* Topic details modal body */
+        .tl-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .tl-field { display: flex; flex-direction: column; gap: 6px; }
+        .tl-label { font-size: 11px; font-weight: 500; color: var(--tl-muted); letter-spacing: 0.4px; text-transform: uppercase; }
+        .tl-optional { color: var(--tl-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+        .tl-topic-preview {
+            background: var(--tl-off);
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-dark);
+            min-height: 38px;
+        }
+
+        .tl-input-prefix-wrap { display: flex; align-items: center; background: var(--white); border: 1px solid var(--tl-border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+        .tl-input-prefix-wrap:focus-within { border-color: rgba(232,48,90,0.4); }
+        .tl-prefix { padding: 0 10px; font-size: 14px; color: var(--tl-muted); font-weight: 500; border-right: 1px solid var(--tl-border); height: 38px; display: flex; align-items: center; }
+        .tl-input { flex: 1; background: none; border: none; outline: none; padding: 0 12px; font-size: 14px; color: var(--text-dark); font-family: inherit; height: 38px; }
+        .tl-input::placeholder { color: #bbb; }
+
+        .tl-hint { font-size: 11px; color: var(--tl-muted); }
+
+        .tl-textarea {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-dark);
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .tl-textarea:focus { border-color: rgba(232,48,90,0.4); }
+        .tl-textarea::placeholder { color: #bbb; }
+
+        .tl-submit-btn {
+            background: var(--tl-pink);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .tl-submit-btn:hover { background: var(--tl-pink-dark); }
+
+        @media (max-width: 768px) {
+            .nav-center { display: none; }
+            .hero-section { padding: 56px 20px 40px; }
+            .hero-title { font-size: 30px; }
+            .strip-section { padding: 28px 0 32px; }
+            .creator-strip .strip-avatar-wrap { margin-left: 20px; }
+            .creator-strip .strip-send { margin-right: 20px; }
+            .strip-hint-row { gap: 16px; flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>
@@ -138,118 +385,232 @@ try {
                 <a href="/creators/signup.php" class="nav-link">For Creators</a>
             </div>
             <div class="nav-buttons">
-                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
-                <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a href="/auth/logout.php" class="nav-login-btn">Log Out</a>
+                <?php else: ?>
+                    <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                    <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <?php endif; ?>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="header">
-            <div class="header-eyebrow">Discover</div>
-            <h1 class="header-title">Browse Creators</h1>
-            <p class="header-subtitle">Find the perfect creator for what you want to see.</p>
-        </div>
+    <!-- Hero -->
+    <div class="hero-section">
+        <div class="hero-eyebrow">Discover</div>
+        <h1 class="hero-title">Browse <span>Creators</span></h1>
+        <p class="hero-subtitle">Pick a creator, describe your idea, and fund the video you want to see.</p>
+    </div>
 
-        <div class="search-section">
-            <div class="search-bar">
-                <div class="search-input-wrapper">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Search creators by name or topic..." autocomplete="off">
+    <!-- Creator strip -->
+    <div class="strip-section">
+        <div class="creator-strip">
+            <div class="strip-avatar-wrap">
+                <div class="select-creator-hint" id="selectCreatorHint">
+                    <span>Click to Select Creator</span>
+                    <svg class="hint-arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 C4 14, 12 18, 11 20" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M8 17 L11 21 L14 17" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
                 </div>
+                <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </button>
             </div>
-            <div class="topic-filters" id="topicFilters">
-                <button class="topic-filter-btn active" data-topic="all">All</button>
-                <?php
-                $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
-                foreach ($all_topics as $t): ?>
-                <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
-                <?php endforeach; ?>
-            </div>
+            <input type="text" class="strip-input-field" id="topicInput" placeholder="Choose a creator, then type your topic idea…" disabled>
+            <button class="strip-send" id="stripSend" disabled>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+            </button>
         </div>
 
-        <div class="creators-grid-landing" id="creatorsGrid">
-            <?php foreach ($creators as $creator):
-                $video_topics = [];
-                if (!empty($creator->video_topics)) {
-                    $decoded = json_decode($creator->video_topics, true);
-                    if (is_array($decoded)) $video_topics = $decoded;
-                }
-            ?>
-                <a href="/<?php echo htmlspecialchars($creator->display_name); ?>" class="creator-card-kalshi">
-                    <div class="creator-card-top">
-                        <div class="creator-avatar-kalshi">
-                            <?php if ($creator->profile_image): ?>
-                                <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" alt="<?php echo htmlspecialchars($creator->display_name); ?>">
-                            <?php else: ?>
-                                <div class="creator-initial"><?php echo strtoupper(substr($creator->display_name, 0, 1)); ?></div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="creator-card-identity">
-                            <div class="creator-name-kalshi"><?php echo htmlspecialchars($creator->display_name); ?></div>
-                            <div class="creator-handle-kalshi">@<?php echo htmlspecialchars($creator->display_name); ?></div>
-                        </div>
+        <div class="strip-hint-row">
+            <div class="strip-hint-step"><strong>1</strong> Click the avatar to pick a creator</div>
+            <div class="strip-hint-step"><strong>2</strong> Type your topic idea</div>
+            <div class="strip-hint-step"><strong>3</strong> Add details &amp; fund the video</div>
+        </div>
+    </div>
+
+    <!-- Creator Picker Modal -->
+    <div class="tl-overlay" id="creatorPickerOverlay">
+        <div class="tl-modal" id="creatorPickerModal">
+            <div class="tl-modal-header">
+                <div class="tl-modal-title">Choose a creator</div>
+                <button class="tl-modal-close" id="closeCreatorPicker">&times;</button>
+            </div>
+            <div class="tl-modal-search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="creatorSearch" placeholder="Search creators…">
+            </div>
+            <div class="creator-picker-grid" id="creatorPickerGrid">
+                <?php foreach ($creators as $c): ?>
+                <button class="creator-picker-item" data-name="<?php echo htmlspecialchars($c->display_name); ?>" data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>" data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>">
+                    <div class="picker-avatar" style="background:linear-gradient(135deg,#E8305A,#B01F3F)">
+                        <?php if ($c->profile_image): ?>
+                            <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
+                        <?php else: ?>
+                            <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
+                        <?php endif; ?>
                     </div>
-                    <div class="creator-bio"><?php echo !empty($creator->bio) ? htmlspecialchars($creator->bio) : 'Building my empire, one post at a time'; ?></div>
-                    <?php if (!empty($video_topics)): ?>
-                    <div class="creator-topics">
-                        <?php foreach (array_slice($video_topics, 0, 5) as $tag): ?>
-                            <span class="creator-topic-tag"><?php echo htmlspecialchars($tag); ?></span>
-                        <?php endforeach; ?>
+                    <div class="picker-name"><?php echo htmlspecialchars($c->display_name); ?></div>
+                    <div class="picker-price">from $<?php echo (int)($c->minimum_topic_price ?? 100); ?></div>
+                </button>
+                <?php endforeach; ?>
+                <?php if (empty($creators)): ?>
+                <div style="grid-column:1/-1;text-align:center;color:#555;padding:40px 20px;font-size:13px;">No creators yet — <a href="/creators/signup.php" style="color:#E8305A;">be the first</a></div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Details Modal -->
+    <div class="tl-overlay" id="topicModalOverlay">
+        <div class="tl-modal tl-modal-sm" id="topicModal">
+            <div class="tl-modal-header">
+                <div>
+                    <div class="tl-modal-title">Send your request</div>
+                    <div class="tl-modal-sub" id="topicModalCreator"></div>
+                </div>
+                <button class="tl-modal-close" id="closeTopicModal">&times;</button>
+            </div>
+            <div class="tl-modal-body">
+                <div class="tl-field">
+                    <label class="tl-label">Your topic idea</label>
+                    <div class="tl-topic-preview" id="topicPreview"></div>
+                </div>
+                <div class="tl-field">
+                    <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
+                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3"></textarea>
+                </div>
+                <div class="tl-field">
+                    <label class="tl-label">Your offer amount</label>
+                    <div class="tl-input-prefix-wrap">
+                        <span class="tl-prefix">$</span>
+                        <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
                     </div>
-                    <?php endif; ?>
-                    <div class="creator-price-section">
-                        <div>
-                            <span class="creator-price">$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></span>
-                            <span class="price-label">/ per request</span>
-                        </div>
-                        <button class="fund-topics-btn" onclick="event.preventDefault(); window.location.href='/<?php echo htmlspecialchars($creator->display_name); ?>'">
-                            Send Request
-                        </button>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-            <div class="no-results" id="noResults"><strong>No creators found</strong>Try a different search or topic.</div>
+                    <div class="tl-hint" id="minPriceHint"></div>
+                </div>
+                <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const searchInput = document.getElementById('searchInput');
-        const creatorCards = document.querySelectorAll('.creator-card-kalshi');
-        const filterBtns = document.querySelectorAll('.topic-filter-btn');
-        const noResults = document.getElementById('noResults');
-        let activeTopic = 'all';
+    (function () {
+        const stripAvatar   = document.getElementById('stripAvatar');
+        const topicInput    = document.getElementById('topicInput');
+        const stripSend     = document.getElementById('stripSend');
+        const selectHint    = document.getElementById('selectCreatorHint');
 
-        function filterCards() {
-            const searchTerm = searchInput.value.toLowerCase();
-            let visible = 0;
-            creatorCards.forEach(card => {
-                const name = card.querySelector('.creator-name-kalshi').textContent.toLowerCase();
-                const username = card.querySelector('.creator-handle-kalshi').textContent.toLowerCase();
-                const bio = card.querySelector('.creator-bio')?.textContent.toLowerCase() || '';
-                const tags = Array.from(card.querySelectorAll('.creator-topic-tag')).map(t => t.textContent.trim().toLowerCase());
-                const matchesSearch = !searchTerm || name.includes(searchTerm) || username.includes(searchTerm) || bio.includes(searchTerm) || tags.some(t => t.includes(searchTerm));
-                const matchesTopic = activeTopic === 'all' || tags.includes(activeTopic.toLowerCase());
-                const show = matchesSearch && matchesTopic;
-                card.style.display = show ? 'flex' : 'none';
-                if (show) visible++;
+        const pickerOverlay = document.getElementById('creatorPickerOverlay');
+        const closePickerBtn= document.getElementById('closeCreatorPicker');
+        const creatorSearch = document.getElementById('creatorSearch');
+        const pickerGrid    = document.getElementById('creatorPickerGrid');
+
+        const topicOverlay  = document.getElementById('topicModalOverlay');
+        const closeTopicBtn = document.getElementById('closeTopicModal');
+        const topicPreview  = document.getElementById('topicPreview');
+        const topicModalSub = document.getElementById('topicModalCreator');
+        const topicAmount   = document.getElementById('topicAmount');
+        const minPriceHint  = document.getElementById('minPriceHint');
+        const topicDesc     = document.getElementById('topicDesc');
+        const topicSubmit   = document.getElementById('topicSubmit');
+
+        let selectedCreator = null;
+
+        /* Open / close creator picker */
+        stripAvatar.addEventListener('click', () => {
+            pickerOverlay.classList.add('open');
+            creatorSearch.focus();
+        });
+        closePickerBtn.addEventListener('click', closePicker);
+        pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
+        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; filterPicker(''); }
+
+        /* Creator search inside picker */
+        creatorSearch.addEventListener('input', () => filterPicker(creatorSearch.value.trim().toLowerCase()));
+        function filterPicker(q) {
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
+                const n = btn.dataset.name.toLowerCase();
+                btn.classList.toggle('hidden', q.length > 0 && !n.includes(q));
             });
-            noResults.style.display = visible === 0 ? 'block' : 'none';
         }
 
-        searchInput.addEventListener('input', filterCards);
+        /* Select a creator */
+        pickerGrid.addEventListener('click', e => {
+            const item = e.target.closest('.creator-picker-item');
+            if (!item) return;
+            selectedCreator = {
+                name:  item.dataset.name,
+                price: parseInt(item.dataset.price, 10) || 0,
+                image: item.dataset.image
+            };
 
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTopic = btn.dataset.topic;
-                filterCards();
-            });
+            if (selectedCreator.image) {
+                stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+            } else {
+                const initial = selectedCreator.name.charAt(0).toUpperCase();
+                stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+            }
+
+            selectHint.classList.add('hidden');
+            topicInput.disabled = false;
+            topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
+            topicInput.focus();
+            stripSend.disabled = true;
+
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
+            item.classList.add('selected');
+            closePicker();
         });
+
+        /* Enable send only when input has text */
+        topicInput.addEventListener('input', () => {
+            stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
+        });
+
+        /* Open topic details modal */
+        stripSend.addEventListener('click', () => {
+            if (!selectedCreator || !topicInput.value.trim()) return;
+            topicPreview.textContent = topicInput.value.trim();
+            topicModalSub.textContent = `To: ${selectedCreator.name}`;
+            if (selectedCreator.price > 0) {
+                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
+                topicAmount.min = selectedCreator.price;
+                topicAmount.placeholder = selectedCreator.price;
+            } else {
+                minPriceHint.textContent = '';
+            }
+            topicAmount.value = '';
+            topicDesc.value = '';
+            topicOverlay.classList.add('open');
+            topicDesc.focus();
+        });
+
+        closeTopicBtn.addEventListener('click', closeTopic);
+        topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
+        function closeTopic() { topicOverlay.classList.remove('open'); }
+
+        /* Submit: redirect to creator profile with params */
+        topicSubmit.addEventListener('click', () => {
+            const amount = parseInt(topicAmount.value, 10);
+            const topic  = topicInput.value.trim();
+            const desc   = topicDesc.value.trim();
+
+            if (!amount || amount < 1) {
+                topicAmount.style.borderColor = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => topicAmount.style.borderColor = '', 1500);
+                return;
+            }
+            if (selectedCreator.price > 0 && amount < selectedCreator.price) {
+                minPriceHint.style.color = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => minPriceHint.style.color = '', 1500);
+                return;
+            }
+
+            const params = new URLSearchParams({ topic, amount });
+            if (desc) params.set('desc', desc);
+            window.location.href = `/${encodeURIComponent(selectedCreator.name)}?${params.toString()}`;
+        });
+    })();
     </script>
 </body>
 </html>
