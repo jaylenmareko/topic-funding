@@ -599,35 +599,8 @@ foreach ($topics as $topic) {
             gap: 20px;
         }
         
-        .earnings-stats > div {
-            flex: 0 0 auto;
-        }
-        
-        .earnings-stats .stat-label {
-            font-size: 13px;
-            color: #888;
-            font-weight: 500;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        
-        .earnings-stats .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #111010;
-        }
-        
-        .earnings-stats .stat-value.balance {
-            color: var(--hot-pink);
-        }
-        
-        .earnings-stats .stat-value.pending {
-            color: #B45309;
-        }
-        
-        .earnings-stats .stat-value.paid {
-            color: #15803D;
+        .earnings-stats > .stat-card {
+            flex: 1 1 140px;
         }
         
         .payout-wrapper {
@@ -661,6 +634,41 @@ foreach ($topics as $topic) {
             color: #888;
             margin-top: 6px;
         }
+
+        /* Unified stat card — used in both header and earnings section */
+        .stat-card {
+            background: white;
+            border: 1px solid #E5E5E5;
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+        .stat-card-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .stat-card-value {
+            font-size: 26px;
+            font-weight: 600;
+            color: #111010;
+            line-height: 1.1;
+        }
+        .stat-card-value.balance { color: var(--hot-pink); }
+        .stat-card-value.pending { color: #B45309; }
+        .stat-card-value.paid    { color: #15803D; }
+        .stat-card-sub {
+            font-size: 11px;
+            color: #aaa;
+        }
         
         @media (max-width: 768px) {
             .nav-center {
@@ -684,14 +692,11 @@ foreach ($topics as $topic) {
                 gap: 16px;
                 align-items: stretch;
             }
-            .earnings-stats > div {
-                text-align: center;
+            .earnings-stats > .stat-card {
+                flex: 1 1 100%;
             }
-            .earnings-stats .stat-label {
-                font-size: 12px;
-            }
-            .earnings-stats .stat-value {
-                font-size: 24px;
+            .stat-card-value {
+                font-size: 22px;
             }
             .payout-wrapper {
                 margin-top: 8px;
@@ -731,16 +736,16 @@ foreach ($topics as $topic) {
                     <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>! You have <?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
                 
-                <div style="background: white; border: 1px solid #E5E5E5; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
-                    <div style="font-size: 11px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px;">Your Price</div>
-                    <div style="font-size: 24px; font-weight: 600; color: #111010;">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
-                    <div style="font-size: 11px; color: #aaa;">per video topic</div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Your Price</div>
+                    <div class="stat-card-value">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
+                    <div class="stat-card-sub">per video topic</div>
                 </div>
                 
-                <div style="background: white; border: 1px solid #E5E5E5; border-radius: 12px; padding: 12px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
-                    <div style="font-size: 11px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px;">Completed Videos</div>
-                    <div style="font-size: 24px; font-weight: 600; color: #111010;"><?php echo $completed_count; ?></div>
-                    <div style="font-size: 11px; color: #aaa;">videos delivered</div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Completed Videos</div>
+                    <div class="stat-card-value"><?php echo $completed_count; ?></div>
+                    <div class="stat-card-sub">videos delivered</div>
                 </div>
             </div>
             
@@ -774,24 +779,28 @@ foreach ($topics as $topic) {
 
         <div class="earnings-section">
             <div class="earnings-stats">
-                <div>
-                    <div class="stat-label">Total Earnings</div>
-                    <div class="stat-value">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Total Earnings</div>
+                    <div class="stat-card-value">$<?php echo number_format($creator->total_earnings ?? 0, 2); ?></div>
+                    <div class="stat-card-sub">all time</div>
                 </div>
                 
-                <div>
-                    <div class="stat-label">Available Balance</div>
-                    <div class="stat-value balance">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Available Balance</div>
+                    <div class="stat-card-value balance">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
+                    <div class="stat-card-sub">ready to withdraw</div>
                 </div>
                 
-                <div>
-                    <div class="stat-label">Pending Payout</div>
-                    <div class="stat-value pending">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Pending Payout</div>
+                    <div class="stat-card-value pending">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
+                    <div class="stat-card-sub">in progress</div>
                 </div>
                 
-                <div>
-                    <div class="stat-label">Paid Out</div>
-                    <div class="stat-value paid">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Paid Out</div>
+                    <div class="stat-card-value paid">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
+                    <div class="stat-card-sub">total withdrawn</div>
                 </div>
                 
                 <div class="payout-wrapper">
