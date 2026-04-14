@@ -430,7 +430,6 @@ try {
 
     <!-- Hero -->
     <div class="hero-section">
-        <div class="hero-eyebrow">Discover</div>
         <h1 class="hero-title">Browse <span>Creators</span></h1>
         <div class="topic-filter-row" id="topicFilterRow">
             <?php
