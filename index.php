@@ -344,34 +344,6 @@ if ($db_available) {
             max-width: 900px;
             margin: 0 auto;
         }
-        .strip-avatar {
-            width: 34px; height: 34px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 500; color: var(--white);
-            flex-shrink: 0;
-        }
-        .strip-input {
-            flex: 1;
-            background: #1a1a1a;
-            border-radius: 8px;
-            padding: 9px 14px;
-            border: 1px solid var(--tl-border);
-            font-size: 12px;
-            color: #555;
-            font-family: inherit;
-        }
-        .strip-send {
-            width: 34px; height: 34px;
-            background: var(--tl-pink);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            text-decoration: none;
-            transition: background 0.2s;
-        }
-        .strip-send:hover { background: var(--tl-pink-dark); }
 
         /* ── Creators browse section ── */
         .creators-section {
@@ -579,6 +551,205 @@ if ($db_available) {
             gap: 28px;
         }
 
+        /* ── Strip updated styles ── */
+        .strip-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--white);
+            flex-shrink: 0;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            overflow: hidden;
+            padding: 0;
+        }
+        .strip-avatar:hover { opacity: 0.85; transform: scale(1.06); }
+        .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .strip-avatar-initials { font-size: 13px; font-weight: 600; color: var(--white); }
+
+        .strip-input-field {
+            flex: 1;
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 9px 14px;
+            border: 1px solid var(--tl-border);
+            font-size: 12px;
+            color: var(--white);
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, opacity 0.2s;
+        }
+        .strip-input-field::placeholder { color: #555; }
+        .strip-input-field:focus { border-color: rgba(232,48,90,0.4); }
+        .strip-input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .strip-send {
+            width: 34px; height: 34px;
+            background: var(--tl-pink);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .strip-send:hover:not(:disabled) { background: var(--tl-pink-dark); }
+        .strip-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ── Modals ── */
+        .tl-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .tl-overlay.open { display: flex; }
+
+        .tl-modal {
+            background: #1a1a1a;
+            border: 1px solid var(--tl-border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalIn 0.18s ease-out both;
+        }
+        .tl-modal-sm { max-width: 440px; }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .tl-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+        }
+        .tl-modal-title { font-size: 15px; font-weight: 600; color: var(--white); }
+        .tl-modal-sub { font-size: 12px; color: var(--tl-muted); margin-top: 2px; }
+        .tl-modal-close {
+            background: none; border: none; color: #555; font-size: 20px;
+            cursor: pointer; line-height: 1; padding: 0 2px;
+            transition: color 0.15s;
+        }
+        .tl-modal-close:hover { color: var(--white); }
+
+        .tl-modal-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+            color: #555;
+        }
+        .tl-modal-search input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 13px; color: var(--white); font-family: inherit;
+        }
+        .tl-modal-search input::placeholder { color: #555; }
+
+        .creator-picker-grid {
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 16px;
+        }
+        .creator-picker-item {
+            background: #222;
+            border: 1px solid var(--tl-border);
+            border-radius: 12px;
+            padding: 16px 12px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            text-align: center;
+        }
+        .creator-picker-item:hover { border-color: var(--tl-pink); background: #2a1a1f; }
+        .creator-picker-item.selected { border-color: var(--tl-pink); background: rgba(232,48,90,0.12); }
+
+        .picker-avatar {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .picker-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .picker-avatar span { font-size: 20px; font-weight: 600; color: var(--white); }
+        .picker-name { font-size: 12px; font-weight: 500; color: var(--white); line-height: 1.3; }
+        .picker-price { font-size: 10px; color: #555; }
+
+        .creator-picker-item.hidden { display: none; }
+
+        /* topic details modal body */
+        .tl-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .tl-field { display: flex; flex-direction: column; gap: 6px; }
+        .tl-label { font-size: 11px; font-weight: 500; color: var(--tl-muted); letter-spacing: 0.4px; text-transform: uppercase; }
+        .tl-optional { color: #444; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+        .tl-topic-preview {
+            background: #111;
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--white);
+            min-height: 38px;
+        }
+
+        .tl-input-prefix-wrap { display: flex; align-items: center; background: #111; border: 1px solid var(--tl-border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+        .tl-input-prefix-wrap:focus-within { border-color: rgba(232,48,90,0.4); }
+        .tl-prefix { padding: 0 10px; font-size: 14px; color: #555; font-weight: 500; border-right: 1px solid var(--tl-border); height: 38px; display: flex; align-items: center; }
+        .tl-input { flex: 1; background: none; border: none; outline: none; padding: 0 12px; font-size: 14px; color: var(--white); font-family: inherit; height: 38px; }
+        .tl-input::placeholder { color: #444; }
+
+        .tl-hint { font-size: 11px; color: #555; }
+
+        .tl-textarea {
+            background: #111;
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--white);
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .tl-textarea:focus { border-color: rgba(232,48,90,0.4); }
+        .tl-textarea::placeholder { color: #444; }
+
+        .tl-submit-btn {
+            background: var(--tl-pink);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .tl-submit-btn:hover { background: var(--tl-pink-dark); }
+
         /* ── Responsive ── */
         @media (max-width: 1024px) {
             .creators-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -684,11 +855,77 @@ if ($db_available) {
     <!-- Creator strip -->
     <div style="background:#161616; border-top:1px solid #1e1e1e; border-bottom:1px solid #1e1e1e;">
         <div class="creator-strip">
-            <div class="strip-avatar">JD</div>
-            <div class="strip-input">Commission a video about morning routines for athletes...</div>
-            <a href="/creators/signup.php" class="strip-send">
+            <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </button>
+            <input type="text" class="strip-input-field" id="topicInput" placeholder="Choose a creator, then type your topic idea…" disabled>
+            <button class="strip-send" id="stripSend" disabled>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
-            </a>
+            </button>
+        </div>
+    </div>
+
+    <!-- Creator Picker Modal -->
+    <div class="tl-overlay" id="creatorPickerOverlay">
+        <div class="tl-modal" id="creatorPickerModal">
+            <div class="tl-modal-header">
+                <div class="tl-modal-title">Choose a creator</div>
+                <button class="tl-modal-close" id="closeCreatorPicker">&times;</button>
+            </div>
+            <div class="tl-modal-search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="creatorSearch" placeholder="Search creators…">
+            </div>
+            <div class="creator-picker-grid" id="creatorPickerGrid">
+                <?php foreach ($creators as $c): ?>
+                <button class="creator-picker-item" data-name="<?php echo htmlspecialchars($c->display_name); ?>" data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>" data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>">
+                    <div class="picker-avatar" style="background:linear-gradient(135deg,#E8305A,#B01F3F)">
+                        <?php if ($c->profile_image): ?>
+                            <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
+                        <?php else: ?>
+                            <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="picker-name"><?php echo htmlspecialchars($c->display_name); ?></div>
+                    <div class="picker-price">from $<?php echo (int)($c->minimum_topic_price ?? 100); ?></div>
+                </button>
+                <?php endforeach; ?>
+                <?php if (empty($creators)): ?>
+                <div style="grid-column:1/-1;text-align:center;color:#555;padding:40px 20px;font-size:13px;">No creators yet — <a href="/creators/signup.php" style="color:#E8305A;">be the first</a></div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Details Modal -->
+    <div class="tl-overlay" id="topicModalOverlay">
+        <div class="tl-modal tl-modal-sm" id="topicModal">
+            <div class="tl-modal-header">
+                <div>
+                    <div class="tl-modal-title">Send your request</div>
+                    <div class="tl-modal-sub" id="topicModalCreator"></div>
+                </div>
+                <button class="tl-modal-close" id="closeTopicModal">&times;</button>
+            </div>
+            <div class="tl-modal-body">
+                <div class="tl-field">
+                    <label class="tl-label">Your topic idea</label>
+                    <div class="tl-topic-preview" id="topicPreview"></div>
+                </div>
+                <div class="tl-field">
+                    <label class="tl-label">Your offer amount</label>
+                    <div class="tl-input-prefix-wrap">
+                        <span class="tl-prefix">$</span>
+                        <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
+                    </div>
+                    <div class="tl-hint" id="minPriceHint"></div>
+                </div>
+                <div class="tl-field">
+                    <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
+                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3"></textarea>
+                </div>
+                <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
+            </div>
         </div>
     </div>
 
@@ -703,5 +940,130 @@ if ($db_available) {
         </div>
     </footer>
 
+    <script>
+    (function () {
+        const stripAvatar   = document.getElementById('stripAvatar');
+        const topicInput    = document.getElementById('topicInput');
+        const stripSend     = document.getElementById('stripSend');
+
+        const pickerOverlay = document.getElementById('creatorPickerOverlay');
+        const closePickerBtn= document.getElementById('closeCreatorPicker');
+        const creatorSearch = document.getElementById('creatorSearch');
+        const pickerGrid    = document.getElementById('creatorPickerGrid');
+
+        const topicOverlay  = document.getElementById('topicModalOverlay');
+        const closeTopicBtn = document.getElementById('closeTopicModal');
+        const topicPreview  = document.getElementById('topicPreview');
+        const topicModalSub = document.getElementById('topicModalCreator');
+        const topicAmount   = document.getElementById('topicAmount');
+        const minPriceHint  = document.getElementById('minPriceHint');
+        const topicDesc     = document.getElementById('topicDesc');
+        const topicSubmit   = document.getElementById('topicSubmit');
+
+        let selectedCreator = null; // { name, price, image }
+
+        /* ── Open / close creator picker ── */
+        stripAvatar.addEventListener('click', () => {
+            pickerOverlay.classList.add('open');
+            creatorSearch.focus();
+        });
+        closePickerBtn.addEventListener('click', closePicker);
+        pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
+        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; filterPicker(''); }
+
+        /* ── Creator search inside picker ── */
+        creatorSearch.addEventListener('input', () => filterPicker(creatorSearch.value.trim().toLowerCase()));
+        function filterPicker(q) {
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
+                const n = btn.dataset.name.toLowerCase();
+                btn.classList.toggle('hidden', q.length > 0 && !n.includes(q));
+            });
+        }
+
+        /* ── Select a creator ── */
+        pickerGrid.addEventListener('click', e => {
+            const item = e.target.closest('.creator-picker-item');
+            if (!item) return;
+            selectedCreator = {
+                name:  item.dataset.name,
+                price: parseInt(item.dataset.price, 10) || 0,
+                image: item.dataset.image
+            };
+
+            // Update strip avatar
+            if (selectedCreator.image) {
+                stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+            } else {
+                const initial = selectedCreator.name.charAt(0).toUpperCase();
+                stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+            }
+
+            // Enable input
+            topicInput.disabled = false;
+            topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
+            topicInput.focus();
+            stripSend.disabled = false;
+
+            // Highlight selected
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
+            item.classList.add('selected');
+
+            closePicker();
+        });
+
+        /* ── Enable/disable send based on input ── */
+        topicInput.addEventListener('input', () => {
+            stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
+        });
+
+        /* ── Open topic details modal on send ── */
+        stripSend.addEventListener('click', () => {
+            if (!selectedCreator || !topicInput.value.trim()) return;
+            topicPreview.textContent = topicInput.value.trim();
+            topicModalSub.textContent = `To: ${selectedCreator.name}`;
+            if (selectedCreator.price > 0) {
+                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
+                topicAmount.min = selectedCreator.price;
+                topicAmount.placeholder = selectedCreator.price;
+            }
+            topicAmount.value = '';
+            topicDesc.value = '';
+            topicOverlay.classList.add('open');
+            topicAmount.focus();
+        });
+
+        closeTopicBtn.addEventListener('click', closeTopic);
+        topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
+        function closeTopic() { topicOverlay.classList.remove('open'); }
+
+        /* ── Submit: redirect to creator profile with params ── */
+        topicSubmit.addEventListener('click', () => {
+            const amount = parseInt(topicAmount.value, 10);
+            const topic  = topicInput.value.trim();
+            const desc   = topicDesc.value.trim();
+
+            if (!amount || amount < 1) {
+                topicAmount.style.borderColor = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => topicAmount.style.borderColor = '', 1500);
+                return;
+            }
+            if (selectedCreator.price > 0 && amount < selectedCreator.price) {
+                minPriceHint.style.color = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => minPriceHint.style.color = '', 1500);
+                return;
+            }
+
+            const params = new URLSearchParams({
+                topic:  topic,
+                amount: amount,
+            });
+            if (desc) params.set('desc', desc);
+
+            window.location.href = `/${encodeURIComponent(selectedCreator.name)}?${params.toString()}`;
+        });
+    })();
+    </script>
 </body>
 </html>
