@@ -85,12 +85,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($existing_username) {
                     $error = 'Username already taken. Please choose another.';
                 } else {
-                    $db->query('SELECT id FROM users WHERE email = :email');
+                    $db->query('SELECT u.id, u.password_hash FROM users u WHERE u.email = :email');
                     $db->bind(':email', $email);
                     $existing_email = $db->single();
                     
+                    $user_id = null;
                     if ($existing_email) {
-                        $error = 'Email already registered';
+                        // Check if they already have a creator record
+                        $db->query('SELECT id FROM creators WHERE applicant_user_id = :uid');
+                        $db->bind(':uid', $existing_email->id);
+                        $existing_creator = $db->single();
+                        if ($existing_creator) {
+                            $error = 'Email already registered';
+                        } elseif (!password_verify($password, $existing_email->password_hash)) {
+                            $error = 'Email registered but password does not match. Please use your original password.';
+                        } else {
+                            // Orphaned user — let them finish creator signup
+                            $user_id = $existing_email->id;
+                        }
                     } else {
                         $password_hash = password_hash($password, PASSWORD_DEFAULT);
                         $db->query('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, 1, NOW(), NOW())');
@@ -99,9 +111,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $db->bind(':password_hash', $password_hash);
                         $db->execute();
                         $user_id = $db->lastInsertId();
+                    }
+                    
+                    if ($user_id !== null && empty($error)) {
                         
-                        $upload_dir = '../uploads/creators/';
-                        if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
+                        $upload_dir = __DIR__ . '/../uploads/creators/';
+                        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                         $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
                         $profile_filename = 'creator_' . $user_id . '_' . time() . '.' . $file_extension;
                         $profile_path = $upload_dir . $profile_filename;

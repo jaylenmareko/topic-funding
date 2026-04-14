@@ -13,7 +13,7 @@ if (isset($_SESSION['user_id'])) {
     if ($creator) {
         header('Location: /creators/dashboard.php');
     } else {
-        header('Location: /');
+        header('Location: /creators/signup.php');
     }
     exit;
 }
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['username'] = $creator->display_name ?: $creator->username;
                 header('Location: /creators/dashboard.php');
             } else {
-                header('Location: /');
+                header('Location: /creators/signup.php');
             }
             exit;
         }

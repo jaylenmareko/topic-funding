@@ -163,3 +163,6 @@ Stack trace:
 [14-Apr-2026 15:00:32 UTC] Signup error: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "username" does not exist
 LINE 1: SELECT id FROM creators WHERE username = $1
                                       ^
+[14-Apr-2026 15:04:47 UTC] PHP Warning:  mkdir(): File exists in /home/runner/workspace/creators/signup.php on line 104
+[14-Apr-2026 15:04:47 UTC] PHP Warning:  move_uploaded_file(../uploads/creators/creator_1_1776179087.png): Failed to open stream: No such file or directory in /home/runner/workspace/creators/signup.php on line 109
+[14-Apr-2026 15:04:47 UTC] PHP Warning:  move_uploaded_file(): Unable to move &quot;/tmp/php9yzqlQ&quot; to &quot;../uploads/creators/creator_1_1776179087.png&quot; in /home/runner/workspace/creators/signup.php on line 109
