@@ -58,7 +58,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     }
                     
                     // Update topic status
-                    $db->query('UPDATE topics SET status = "cancelled" WHERE id = :topic_id');
+                    $db->query("UPDATE topics SET status = 'cancelled' WHERE id = :topic_id");
                     $db->bind(':topic_id', $topic_id);
                     $db->execute();
                     
@@ -74,13 +74,13 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     $hold_reason = trim($_POST['hold_reason'] ?? 'Working on other content first');
                     
                     // Update topic status to on_hold
-                    $db->query('
+                    $db->query("
                         UPDATE topics 
-                        SET status = "on_hold", 
+                        SET status = 'on_hold', 
                             hold_reason = :hold_reason,
                             held_at = NOW()
                         WHERE id = :topic_id
-                    ');
+                    ");
                     $db->bind(':topic_id', $topic_id);
                     $db->bind(':hold_reason', $hold_reason);
                     $db->execute();
@@ -102,25 +102,25 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     
                     if ($new_status === 'funded') {
                         // Resume as funded - set new 48-hour deadline from now
-                        $db->query('
+                        $db->query("
                             UPDATE topics 
-                            SET status = "funded",
-                                content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR),
+                            SET status = 'funded',
+                                content_deadline = NOW() + INTERVAL '48 hours',
                                 hold_reason = NULL,
                                 held_at = NULL,
                                 funded_at = NOW()
                             WHERE id = :topic_id
-                        ');
+                        ");
                         $message = "Topic resumed! You have 48 hours to create the content.";
                     } else {
                         // Resume as active - continue collecting funding
-                        $db->query('
+                        $db->query("
                             UPDATE topics 
-                            SET status = "active",
+                            SET status = 'active',
                                 hold_reason = NULL,
                                 held_at = NULL
                             WHERE id = :topic_id
-                        ');
+                        ");
                         $message = "Topic resumed! Fans can continue contributing to reach the funding goal.";
                     }
                     $db->bind(':topic_id', $topic_id);

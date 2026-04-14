@@ -79,7 +79,7 @@ try {
     $creator_payout_amount = $funding_goal - $platform_fee_amount;
     
     // Create the topic
-    $db->query('
+    $db->query("
         INSERT INTO topics (
             creator_id, 
             initiator_user_id,
@@ -102,10 +102,10 @@ try {
             :platform_fee_percent,
             :platform_fee_amount,
             :creator_payout_amount,
-            "active",
+            'active',
             NOW()
         )
-    ');
+    ");
     
     $db->bind(':creator_id', $creator_id);
     $db->bind(':title', $title);

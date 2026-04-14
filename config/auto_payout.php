@@ -18,13 +18,13 @@ class AutoPayoutManager {
     public function processManualPayout($creator_id, $topic_id, $amount, $reference = null) {
         try {
             // Record in payout_requests table (the one you kept)
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO payout_requests 
                 (creator_id, amount, paypal_email, status, requested_at, transaction_id, admin_notes)
                 VALUES (:creator_id, :amount, 
                     (SELECT paypal_email FROM creators WHERE id = :creator_id), 
-                    "completed", NOW(), :reference, :admin_notes)
-            ');
+                    'completed', NOW(), :reference, :admin_notes)
+            ");
             $this->db->bind(':creator_id', $creator_id);
             $this->db->bind(':amount', $amount);
             $this->db->bind(':reference', $reference);
@@ -32,11 +32,11 @@ class AutoPayoutManager {
             $this->db->execute();
             
             // Update creator payout status
-            $this->db->query('
+            $this->db->query("
                 UPDATE creator_payouts 
-                SET status = "completed", processed_at = NOW()
+                SET status = 'completed', processed_at = NOW()
                 WHERE topic_id = :topic_id
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             
@@ -52,15 +52,15 @@ class AutoPayoutManager {
      * Get pending payouts (for admin review)
      */
     public function getPendingPayouts() {
-        $this->db->query('
+        $this->db->query("
             SELECT cp.*, t.title as topic_title, c.display_name as creator_name,
                    t.current_funding, t.completed_at
             FROM creator_payouts cp
             JOIN topics t ON cp.topic_id = t.id
             JOIN creators c ON cp.creator_id = c.id
-            WHERE cp.status = "pending"
+            WHERE cp.status = 'pending'
             ORDER BY t.completed_at DESC
-        ');
+        ");
         return $this->db->resultSet();
     }
     
@@ -68,12 +68,12 @@ class AutoPayoutManager {
      * Get creator's payout history from payout_requests table
      */
     public function getCreatorPayoutHistory($creator_id) {
-        $this->db->query('
-            SELECT pr.*, "manual" as payout_type
+        $this->db->query("
+            SELECT pr.*, 'manual' as payout_type
             FROM payout_requests pr
             WHERE pr.creator_id = :creator_id
             ORDER BY pr.requested_at DESC
-        ');
+        ");
         $this->db->bind(':creator_id', $creator_id);
         $payouts = $this->db->resultSet();
         
@@ -101,14 +101,14 @@ class AutoPayoutManager {
             $this->db->beginTransaction();
             
             // Get topic and creator info
-            $this->db->query('
+            $this->db->query("
                 SELECT t.*, c.display_name, c.paypal_email,
                        u.email as creator_email
                 FROM topics t
                 JOIN creators c ON t.creator_id = c.id
                 LEFT JOIN users u ON c.applicant_user_id = u.id
-                WHERE t.id = :topic_id AND t.status = "completed"
-            ');
+                WHERE t.id = :topic_id AND t.status = 'completed'
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $topic = $this->db->single();
             
@@ -117,10 +117,10 @@ class AutoPayoutManager {
             }
             
             // Check if payout already processed
-            $this->db->query('
+            $this->db->query("
                 SELECT id FROM creator_payouts 
-                WHERE topic_id = :topic_id AND status = "completed"
-            ');
+                WHERE topic_id = :topic_id AND status = 'completed'
+            ");
             $this->db->bind(':topic_id', $topic_id);
             if ($this->db->single()) {
                 return [
@@ -136,20 +136,20 @@ class AutoPayoutManager {
             $creator_payout = $gross_amount * 0.90; // 90% to creator
             
             // Update platform fee tracking
-            $this->db->query('
+            $this->db->query("
                 UPDATE platform_fees 
-                SET status = "collected", processed_at = NOW()
+                SET status = 'collected', processed_at = NOW()
                 WHERE topic_id = :topic_id
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             
             // Update creator payout status (mark as pending manual payout)
-            $this->db->query('
+            $this->db->query("
                 UPDATE creator_payouts 
-                SET status = "pending", processed_at = NOW()
+                SET status = 'pending', processed_at = NOW()
                 WHERE topic_id = :topic_id
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             

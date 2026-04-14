@@ -12,14 +12,16 @@ if (!is_dir(__DIR__ . '/../logs')) {
 // config/database.php
 // Database configuration and connection with enhanced funding logic
 
-// Database credentials - PRODUCTION
-define('DB_HOST', 'localhost');
-define('DB_USER', 'uunppite_topiclaunch_user');
-define('DB_PASS', '***REMOVED***');
-define('DB_NAME', 'uunppite_topiclaunch');
+// Database credentials - use PostgreSQL env vars if available, else fallback
+define('DB_HOST', getenv('PGHOST') ?: 'localhost');
+define('DB_PORT', getenv('PGPORT') ?: '5432');
+define('DB_USER', getenv('PGUSER') ?: 'postgres');
+define('DB_PASS', getenv('PGPASSWORD') ?: '');
+define('DB_NAME', getenv('PGDATABASE') ?: 'heliumdb');
 
 class Database {
     private $host = DB_HOST;
+    private $port = DB_PORT;
     private $user = DB_USER;
     private $pass = DB_PASS;
     private $dbname = DB_NAME;
@@ -28,12 +30,11 @@ class Database {
     private $stmt;
 
     public function __construct() {
-        // Set DSN
-        $dsn = 'mysql:host=' . $this->host . ';dbname=' . $this->dbname;
+        // Set DSN for PostgreSQL
+        $dsn = 'pgsql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->dbname;
         
         // Set options
         $options = array(
-            PDO::ATTR_PERSISTENT => true,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         );
 
@@ -150,25 +151,25 @@ class DatabaseHelper {
 
     // Get topic by ID with creator info
     public function getTopicById($id) {
-        $this->db->query('
+        $this->db->query("
             SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image 
             FROM topics t 
             JOIN creators c ON t.creator_id = c.id 
             WHERE t.id = :id
-        ');
+        ");
         $this->db->bind(':id', $id);
         return $this->db->single();
     }
 
     // Get user contributions for a topic
     public function getTopicContributions($topic_id) {
-        $this->db->query('
+        $this->db->query("
             SELECT c.*, u.username 
             FROM contributions c 
             JOIN users u ON c.user_id = u.id 
-            WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
+            WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
             ORDER BY c.contributed_at DESC
-        ');
+        ");
         $this->db->bind(':topic_id', $topic_id);
         return $this->db->resultSet();
     }
@@ -181,10 +182,10 @@ class DatabaseHelper {
 
     // Create new topic
     public function createTopic($creator_id, $user_id, $title, $description, $funding_threshold) {
-        $this->db->query('
+        $this->db->query("
             INSERT INTO topics (creator_id, initiator_user_id, title, description, funding_threshold) 
             VALUES (:creator_id, :user_id, :title, :description, :funding_threshold)
-        ');
+        ");
         $this->db->bind(':creator_id', $creator_id);
         $this->db->bind(':user_id', $user_id);
         $this->db->bind(':title', $title);
@@ -206,10 +207,10 @@ class DatabaseHelper {
 
     // Create new user
     public function createUser($username, $email, $password_hash, $full_name) {
-        $this->db->query('
+        $this->db->query("
             INSERT INTO users (username, email, password_hash, full_name) 
             VALUES (:username, :email, :password_hash, :full_name)
-        ');
+        ");
         $this->db->bind(':username', $username);
         $this->db->bind(':email', $email);
         $this->db->bind(':password_hash', $password_hash);
@@ -243,7 +244,7 @@ class DatabaseHelper {
 
     // Get funding analytics for a topic
     public function getTopicFundingAnalytics($topic_id) {
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 COUNT(*) as total_contributors,
                 AVG(amount) as average_contribution,
@@ -253,26 +254,26 @@ class DatabaseHelper {
                 DATE(MIN(contributed_at)) as first_contribution_date,
                 DATE(MAX(contributed_at)) as latest_contribution_date
             FROM contributions 
-            WHERE topic_id = :topic_id AND payment_status = "completed"
-        ');
+            WHERE topic_id = :topic_id AND payment_status = 'completed'
+        ");
         $this->db->bind(':topic_id', $topic_id);
         return $this->db->single();
     }
 
     // Get funding momentum (contributions per day)
     public function getFundingMomentum($topic_id, $days = 7) {
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 DATE(contributed_at) as contribution_date,
                 COUNT(*) as contributions_count,
                 SUM(amount) as daily_total
             FROM contributions 
             WHERE topic_id = :topic_id 
-            AND payment_status = "completed"
-            AND contributed_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+            AND payment_status = 'completed'
+            AND contributed_at >= NOW() - (:days * INTERVAL '1 day')
             GROUP BY DATE(contributed_at)
             ORDER BY contribution_date DESC
-        ');
+        ");
         $this->db->bind(':topic_id', $topic_id);
         $this->db->bind(':days', $days);
         return $this->db->resultSet();
@@ -280,18 +281,18 @@ class DatabaseHelper {
 
     // Get user's funding impact
     public function getUserFundingImpact($user_id) {
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 COUNT(DISTINCT t.id) as topics_helped_fund,
-                COUNT(DISTINCT CASE WHEN t.status = "funded" THEN t.id END) as topics_successfully_funded,
-                COUNT(DISTINCT CASE WHEN t.status = "completed" THEN t.id END) as topics_completed,
+                COUNT(DISTINCT CASE WHEN t.status = 'funded' THEN t.id END) as topics_successfully_funded,
+                COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN t.id END) as topics_completed,
                 SUM(c.amount) as total_contributed,
                 COUNT(DISTINCT t.creator_id) as creators_supported,
                 AVG(c.amount) as average_contribution
             FROM contributions c
             JOIN topics t ON c.topic_id = t.id
-            WHERE c.user_id = :user_id AND c.payment_status = "completed"
-        ');
+            WHERE c.user_id = :user_id AND c.payment_status = 'completed'
+        ");
         $this->db->bind(':user_id', $user_id);
         return $this->db->single();
     }
@@ -310,10 +311,10 @@ class DatabaseHelper {
         foreach ($milestone_checks as $milestone) {
             if ($progress_percent >= $milestone) {
                 // Check if we've already notified for this milestone
-                $this->db->query('
+                $this->db->query("
                     SELECT id FROM funding_milestones 
                     WHERE topic_id = :topic_id AND milestone_percent = :milestone
-                ');
+                ");
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->bind(':milestone', $milestone);
                 $this->db->execute();
@@ -322,10 +323,10 @@ class DatabaseHelper {
                     $milestones[] = $milestone;
                     
                     // Record that we've hit this milestone
-                    $this->db->query('
+                    $this->db->query("
                         INSERT INTO funding_milestones (topic_id, milestone_percent, reached_at)
                         VALUES (:topic_id, :milestone, NOW())
-                    ');
+                    ");
                     $this->db->bind(':topic_id', $topic_id);
                     $this->db->bind(':milestone', $milestone);
                     $this->db->execute();
@@ -346,10 +347,10 @@ class DatabaseHelper {
             $old_progress = ($topic_before->current_funding / $topic_before->funding_threshold) * 100;
             
             // Insert contribution
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO contributions (topic_id, user_id, amount, payment_status) 
-                VALUES (:topic_id, :user_id, :amount, "completed")
-            ');
+                VALUES (:topic_id, :user_id, :amount, 'completed')
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':user_id', $user_id);
             $this->db->bind(':amount', $amount);
@@ -357,11 +358,11 @@ class DatabaseHelper {
             $contribution_id = $this->db->lastInsertId();
             
             // Update topic funding
-            $this->db->query('
+            $this->db->query("
                 UPDATE topics 
                 SET current_funding = current_funding + :amount 
                 WHERE id = :topic_id
-            ');
+            ");
             $this->db->bind(':amount', $amount);
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
@@ -372,11 +373,11 @@ class DatabaseHelper {
             
             // Check if funding threshold reached
             if ($topic_after->current_funding >= $topic_after->funding_threshold) {
-                $this->db->query('
+                $this->db->query("
                     UPDATE topics 
-                    SET status = "funded", funded_at = NOW(), content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR)
+                    SET status = 'funded', funded_at = NOW(), content_deadline = NOW() + INTERVAL '48 hours'
                     WHERE id = :topic_id
-                ');
+                ");
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
             }
@@ -386,10 +387,10 @@ class DatabaseHelper {
             
             // Log contribution impact (only if tables exist)
             try {
-                $this->db->query('
+                $this->db->query("
                     INSERT INTO contribution_impact (contribution_id, old_progress, new_progress, milestones_triggered)
                     VALUES (:contribution_id, :old_progress, :new_progress, :milestones)
-                ');
+                ");
                 $this->db->bind(':contribution_id', $contribution_id);
                 $this->db->bind(':old_progress', $old_progress);
                 $this->db->bind(':new_progress', $new_progress);
@@ -418,48 +419,48 @@ class DatabaseHelper {
 
     // Get trending topics (high funding velocity)
     public function getTrendingTopics($limit = 5) {
-        $this->db->query('
+        $this->db->query("
             SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image,
                    COUNT(cont.id) as recent_contributions,
                    SUM(cont.amount) as recent_funding
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
             LEFT JOIN contributions cont ON t.id = cont.topic_id 
-                AND cont.contributed_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                AND cont.payment_status = "completed"
-            WHERE t.status = "active"
+                AND cont.contributed_at >= NOW() - INTERVAL '24 hours'
+                AND cont.payment_status = 'completed'
+            WHERE t.status = 'active'
             GROUP BY t.id
             HAVING recent_contributions > 0
             ORDER BY recent_contributions DESC, recent_funding DESC
             LIMIT :limit
-        ');
+        ");
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }
 
     // Get topics close to funding (90%+)
     public function getAlmostFundedTopics($limit = 5) {
-        $this->db->query('
+        $this->db->query("
             SELECT t.*, c.display_name as creator_name, c.profile_image as creator_image,
                    (t.current_funding / t.funding_threshold * 100) as progress_percent
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
-            WHERE t.status = "active" 
+            WHERE t.status = 'active' 
             AND (t.current_funding / t.funding_threshold) >= 0.90
             ORDER BY progress_percent DESC
             LIMIT :limit
-        ');
+        ");
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }
 
     // Get recommended topics for user based on their contribution history
     public function getRecommendedTopics($user_id, $limit = 5) {
-        $this->db->query('
+        $this->db->query("
             SELECT DISTINCT t.*, c.display_name as creator_name, c.profile_image as creator_image
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
-            WHERE t.status = "active"
+            WHERE t.status = 'active'
             AND t.creator_id IN (
                 SELECT DISTINCT t2.creator_id 
                 FROM contributions cont
@@ -471,7 +472,7 @@ class DatabaseHelper {
             )
             ORDER BY t.created_at DESC
             LIMIT :limit
-        ');
+        ");
         $this->db->bind(':user_id', $user_id);
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();

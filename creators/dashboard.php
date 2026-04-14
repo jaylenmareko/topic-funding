@@ -19,7 +19,7 @@ if (!$creator) {
 }
 
 // Get completed count
-$db->query('SELECT COUNT(*) as count FROM topics WHERE creator_id = :creator_id AND status = "completed"');
+$db->query("SELECT COUNT(*) as count FROM topics WHERE creator_id = :creator_id AND status = 'completed'");
 $db->bind(':creator_id', $creator->id);
 $completed_result = $db->single();
 $completed_count = $completed_result->count ?? 0;
@@ -67,7 +67,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
             $upload_error = implode(". ", $validation_errors);
             $uploaded_topic_id = $topic_id;
         } else {
-            $db->query('SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = "funded"');
+            $db->query("SELECT * FROM topics WHERE id = :topic_id AND creator_id = :creator_id AND status = 'funded'");
             $db->bind(':topic_id', $topic_id);
             $db->bind(':creator_id', $creator->id);
             $topic_check = $db->single();
@@ -82,7 +82,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                     $uploaded_topic_id = $topic_id;
                 } else {
                     try {
-                        $db->query('UPDATE topics SET content_url = :content_url, status = "completed", completed_at = NOW() WHERE id = :topic_id');
+                        $db->query("UPDATE topics SET content_url = :content_url, status = 'completed', completed_at = NOW() WHERE id = :topic_id");
                         $db->bind(':content_url', $content_url);
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
@@ -107,20 +107,20 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     }
 }
 
-$db->query('
+$db->query("
     SELECT t.*, 
-           UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
-           TIMESTAMPDIFF(SECOND, NOW(), t.content_deadline) as seconds_remaining,
+           EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp,
+           EXTRACT(EPOCH FROM (t.content_deadline - NOW())) as seconds_remaining,
            (t.funding_threshold * 0.9) as potential_earnings
     FROM topics t 
     WHERE t.creator_id = :creator_id 
-    AND t.status IN ("active", "funded", "on_hold") 
-    AND (t.content_url IS NULL OR t.content_url = "")
-    AND (t.status != "funded" OR t.content_deadline IS NULL OR t.content_deadline >= NOW())
+    AND t.status IN ('active', 'funded', 'on_hold') 
+    AND (t.content_url IS NULL OR t.content_url = '')
+    AND (t.status != 'funded' OR t.content_deadline IS NULL OR t.content_deadline >= NOW())
     ORDER BY 
-        CASE WHEN t.status = "funded" THEN 1 WHEN t.status = "active" THEN 2 WHEN t.status = "on_hold" THEN 3 END, 
+        CASE WHEN t.status = 'funded' THEN 1 WHEN t.status = 'active' THEN 2 WHEN t.status = 'on_hold' THEN 3 END, 
         potential_earnings DESC, t.funded_at ASC, t.created_at DESC
-');
+");
 $db->bind(':creator_id', $creator->id);
 $topics = $db->resultSet();
 

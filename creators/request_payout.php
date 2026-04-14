@@ -13,12 +13,12 @@ if (!isset($_SESSION['user_id'])) {
 $db = new Database();
 
 // Get creator info
-$db->query('
+$db->query("
     SELECT c.*, u.email 
     FROM creators c 
     LEFT JOIN users u ON c.applicant_user_id = u.id 
     WHERE c.applicant_user_id = :user_id AND c.is_active = 1
-');
+");
 $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
@@ -28,14 +28,14 @@ if (!$creator) {
 }
 
 // Calculate available earnings
-$db->query('
+$db->query("
     SELECT 
-        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned,
-        COALESCE(SUM(CASE WHEN pr.status = "completed" THEN pr.amount END), 0) as total_paid_out
+        COALESCE(SUM(CASE WHEN t.status = 'completed' THEN t.current_funding * 0.9 END), 0) as total_earned,
+        COALESCE(SUM(CASE WHEN pr.status = 'completed' THEN pr.amount END), 0) as total_paid_out
     FROM topics t 
     LEFT JOIN payout_requests pr ON pr.creator_id = :creator_id
     WHERE t.creator_id = :creator_id
-');
+");
 $db->bind(':creator_id', $creator->id);
 $earnings = $db->single();
 
@@ -59,7 +59,7 @@ if ($_POST && isset($_POST['request_payout'])) {
     }
     
     // Check for pending requests
-    $db->query('SELECT COUNT(*) as count FROM payout_requests WHERE creator_id = :creator_id AND status = "pending"');
+    $db->query("SELECT COUNT(*) as count FROM payout_requests WHERE creator_id = :creator_id AND status = 'pending'");
     $db->bind(':creator_id', $creator->id);
     $pending_count = $db->single()->count;
     
@@ -70,10 +70,10 @@ if ($_POST && isset($_POST['request_payout'])) {
     if (empty($errors)) {
         try {
             // Create payout request
-            $db->query('
+            $db->query("
                 INSERT INTO payout_requests (creator_id, amount, paypal_email, status, requested_at)
-                VALUES (:creator_id, :amount, :paypal_email, "pending", NOW())
-            ');
+                VALUES (:creator_id, :amount, :paypal_email, 'pending', NOW())
+            ");
             $db->bind(':creator_id', $creator->id);
             $db->bind(':amount', $requested_amount);
             $db->bind(':paypal_email', $creator->paypal_email);
@@ -107,30 +107,28 @@ if ($_POST && isset($_POST['request_payout'])) {
 }
 
 // Get payout history
-$db->query('
+$db->query("
     SELECT * FROM payout_requests 
     WHERE creator_id = :creator_id 
     ORDER BY requested_at DESC 
     LIMIT 10
-');
+");
 $db->bind(':creator_id', $creator->id);
 $payout_history = $db->resultSet();
 
 // Create payout_requests table if it doesn't exist
 $db->query("
     CREATE TABLE IF NOT EXISTS payout_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         creator_id INT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
-        paypal_email VARCHAR(255) NOT NULL,
-        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+        paypal_email VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
         requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         processed_at TIMESTAMP NULL,
         admin_notes TEXT,
-        transaction_id VARCHAR(255),
-        INDEX idx_creator (creator_id),
-        INDEX idx_status (status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        transaction_id VARCHAR(255)
+    )
 ");
 $db->execute();
 ?>

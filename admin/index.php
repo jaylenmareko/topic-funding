@@ -22,11 +22,11 @@ try {
     $total_topics = $db->single()->count;
     
     // Total funded topics
-    $db->query('SELECT COUNT(*) as count FROM topics WHERE status IN ("funded", "completed")');
+    $db->query("SELECT COUNT(*) as count FROM topics WHERE status IN ('funded', 'completed')");
     $funded_topics = $db->single()->count;
     
     // Total revenue (sum of all contributions)
-    $db->query('SELECT SUM(amount) as total FROM contributions WHERE payment_status = "succeeded"');
+    $db->query("SELECT SUM(amount) as total FROM contributions WHERE payment_status = 'succeeded'");
     $total_revenue = $db->single()->total ?? 0;
     
 } catch (Exception $e) {

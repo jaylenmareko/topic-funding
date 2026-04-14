@@ -37,23 +37,23 @@ class PlatformFeeManager {
             $creator_amount = $total_funding - $fee_amount;
             
             // Update topic with fee calculations
-            $this->db->query('
+            $this->db->query("
                 UPDATE topics 
                 SET platform_fee_amount = :fee_amount,
                     creator_payout_amount = :creator_amount,
                     fee_processed = 1
                 WHERE id = :topic_id
-            ');
+            ");
             $this->db->bind(':fee_amount', $fee_amount);
             $this->db->bind(':creator_amount', $creator_amount);
             $this->db->bind(':topic_id', $topic_id);
             $this->db->execute();
             
             // Record platform fee
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO platform_fees (topic_id, total_funding, fee_percent, fee_amount, creator_amount, status)
-                VALUES (:topic_id, :total_funding, :fee_percent, :fee_amount, :creator_amount, "processed")
-            ');
+                VALUES (:topic_id, :total_funding, :fee_percent, :fee_amount, :creator_amount, 'processed')
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':total_funding', $total_funding);
             $this->db->bind(':fee_percent', $fee_percent);
@@ -62,10 +62,10 @@ class PlatformFeeManager {
             $this->db->execute();
             
             // Create creator payout record
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO creator_payouts (topic_id, creator_id, gross_amount, platform_fee, net_amount)
                 VALUES (:topic_id, :creator_id, :gross_amount, :platform_fee, :net_amount)
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':creator_id', $topic->creator_id);
             $this->db->bind(':gross_amount', $total_funding);
@@ -94,7 +94,7 @@ class PlatformFeeManager {
      * Get platform fee statistics
      */
     public function getPlatformStats() {
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 COUNT(*) as total_funded_topics,
                 SUM(total_funding) as total_gross_funding,
@@ -102,7 +102,7 @@ class PlatformFeeManager {
                 SUM(creator_amount) as total_creator_payouts,
                 AVG(fee_percent) as average_fee_percent
             FROM platform_fees 
-        ');
+        ");
         return $this->db->single();
     }
     
@@ -145,14 +145,14 @@ class PlatformFeeManager {
      * Get pending platform fees
      */
     public function getPendingFees() {
-        $this->db->query('
+        $this->db->query("
             SELECT pf.*, t.title as topic_title, c.display_name as creator_name
             FROM platform_fees pf
             JOIN topics t ON pf.topic_id = t.id
             JOIN creators c ON t.creator_id = c.id
-            WHERE pf.status = "pending"
+            WHERE pf.status = 'pending'
             ORDER BY pf.processed_at DESC
-        ');
+        ");
         return $this->db->resultSet();
     }
     
@@ -161,13 +161,13 @@ class PlatformFeeManager {
      */
     public function markPayoutCompleted($payout_id, $payout_reference = null) {
         try {
-            $this->db->query('
+            $this->db->query("
                 UPDATE creator_payouts 
-                SET status = "completed", 
+                SET status = 'completed', 
                     processed_at = NOW(),
                     payout_reference = :reference
                 WHERE id = :payout_id
-            ');
+            ");
             $this->db->bind(':reference', $payout_reference);
             $this->db->bind(':payout_id', $payout_id);
             $this->db->execute();
@@ -201,7 +201,7 @@ class PlatformFeeManager {
         $year = $year ?: date('Y');
         $month = $month ?: date('m');
         
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 COUNT(*) as topics_funded,
                 SUM(total_funding) as gross_revenue,
@@ -211,7 +211,7 @@ class PlatformFeeManager {
             FROM platform_fees 
             WHERE YEAR(processed_at) = :year 
             AND MONTH(processed_at) = :month
-        ');
+        ");
         $this->db->bind(':year', $year);
         $this->db->bind(':month', $month);
         
@@ -222,7 +222,7 @@ class PlatformFeeManager {
      * Get top earning creators
      */
     public function getTopCreators($limit = 10) {
-        $this->db->query('
+        $this->db->query("
             SELECT 
                 c.display_name,
                 c.id as creator_id,
@@ -232,11 +232,11 @@ class PlatformFeeManager {
                 SUM(cp.net_amount) as total_earned
             FROM creator_payouts cp
             JOIN creators c ON cp.creator_id = c.id
-            WHERE cp.status IN ("completed", "processing")
+            WHERE cp.status IN ('completed', 'processing')
             GROUP BY cp.creator_id
             ORDER BY total_earned DESC
             LIMIT :limit
-        ');
+        ");
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }

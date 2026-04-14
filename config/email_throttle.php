@@ -15,13 +15,13 @@ class EmailThrottle {
     public function canSendEmail($email, $topic_id, $email_type) {
         try {
             // Check if we've sent this type of email recently
-            $this->db->query('
+            $this->db->query("
                 SELECT id FROM email_throttle 
                 WHERE email = :email 
                 AND topic_id = :topic_id 
                 AND email_type = :email_type 
-                AND sent_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
-            ');
+                AND sent_at > NOW() - (:minutes * INTERVAL '1 minute')
+            ");
             $this->db->bind(':email', $email);
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':email_type', $email_type);
@@ -42,10 +42,10 @@ class EmailThrottle {
      */
     public function recordEmail($email, $topic_id, $email_type, $subject) {
         try {
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO email_throttle (email, topic_id, email_type, subject, sent_at)
                 VALUES (:email, :topic_id, :email_type, :subject, NOW())
-            ');
+            ");
             $this->db->bind(':email', $email);
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':email_type', $email_type);
@@ -126,10 +126,10 @@ class EmailThrottle {
      */
     public function cleanupOldRecords() {
         try {
-            $this->db->query('
+            $this->db->query("
                 DELETE FROM email_throttle 
-                WHERE sent_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            ');
+                WHERE sent_at < NOW() - INTERVAL '24 hours'
+            ");
             $deleted = $this->db->execute();
             error_log("Cleaned up {$deleted} old email throttle records");
             
@@ -143,17 +143,17 @@ class EmailThrottle {
      */
     public function getEmailStats() {
         try {
-            $this->db->query('
+            $this->db->query("
                 SELECT 
                     email_type,
                     COUNT(*) as count,
                     COUNT(DISTINCT email) as unique_recipients,
                     MAX(sent_at) as last_sent
                 FROM email_throttle 
-                WHERE sent_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                WHERE sent_at > NOW() - INTERVAL '24 hours'
                 GROUP BY email_type
                 ORDER BY count DESC
-            ');
+            ");
             
             return $this->db->resultSet();
             
@@ -170,16 +170,13 @@ class EmailThrottle {
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS email_throttle (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     email VARCHAR(255) NOT NULL,
                     topic_id INT NULL,
                     email_type VARCHAR(50) NOT NULL,
                     subject VARCHAR(255) NOT NULL,
-                    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    INDEX idx_email_topic_type (email, topic_id, email_type),
-                    INDEX idx_sent_at (sent_at),
-                    INDEX idx_email_type (email_type)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
             ");
             $this->db->execute();
             

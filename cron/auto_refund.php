@@ -20,26 +20,26 @@ try {
     
     // FIXED: Better query to prevent duplicate processing
     // Only process topics that are:
-    // 1. Status = "funded" (not already failed)
+    // 1. Status = 'funded' (not already failed)
     // 2. Past deadline
     // 3. No content uploaded
     // 4. Not already processed (check auto_refund_processed table)
-    $db->query('
+    $db->query("
         SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
                u.email as creator_user_email
         FROM topics t
         JOIN creators c ON t.creator_id = c.id
         LEFT JOIN users u ON c.applicant_user_id = u.id
-        WHERE t.status = "funded" 
+        WHERE t.status = 'funded' 
         AND t.content_deadline < NOW()
-        AND (t.content_url IS NULL OR t.content_url = "")
+        AND (t.content_url IS NULL OR t.content_url = '')
         AND t.id NOT IN (
             SELECT topic_id FROM auto_refund_processed 
-            WHERE processed_at > DATE_SUB(NOW(), INTERVAL 2 HOUR)
+            WHERE processed_at > NOW() - INTERVAL '2 hours'
         )
         ORDER BY t.content_deadline ASC
         LIMIT 10
-    ');
+    ");
     $overdue_topics = $db->resultSet();
     
     if (empty($overdue_topics)) {
@@ -61,10 +61,10 @@ try {
             $db->beginTransaction();
             
             // Double-check this topic hasn't been processed in another cron run
-            $db->query('
+            $db->query("
                 SELECT id FROM auto_refund_processed 
-                WHERE topic_id = :topic_id AND processed_at > DATE_SUB(NOW(), INTERVAL 2 HOUR)
-            ');
+                WHERE topic_id = :topic_id AND processed_at > NOW() - INTERVAL '2 hours'
+            ");
             $db->bind(':topic_id', $topic->id);
             if ($db->single()) {
                 error_log("Topic {$topic->id} already processed recently, skipping");
@@ -73,21 +73,21 @@ try {
             }
             
             // FIXED: Immediately mark as processing to prevent duplicates
-            $db->query('
+            $db->query("
                 INSERT INTO auto_refund_processed (topic_id, refunds_count, total_refunded, processed_at, status)
-                VALUES (:topic_id, 0, 0, NOW(), "processing")
-                ON DUPLICATE KEY UPDATE status = "processing", processed_at = NOW()
-            ');
+                VALUES (:topic_id, 0, 0, NOW(), 'processing')
+                ON DUPLICATE KEY UPDATE status = 'processing', processed_at = NOW()
+            ");
             $db->bind(':topic_id', $topic->id);
             $db->execute();
             
             // Get all contributions for this topic
-            $db->query('
+            $db->query("
                 SELECT c.*, u.email 
                 FROM contributions c 
                 JOIN users u ON c.user_id = u.id 
-                WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-            ');
+                WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
+            ");
             $db->bind(':topic_id', $topic->id);
             $contributions = $db->resultSet();
             
@@ -95,16 +95,16 @@ try {
                 error_log("No contributions found for topic {$topic->id}, marking as failed");
                 
                 // Update topic status to failed
-                $db->query('UPDATE topics SET status = "failed", failed_at = NOW() WHERE id = :id');
+                $db->query("UPDATE topics SET status = 'failed', failed_at = NOW() WHERE id = :id");
                 $db->bind(':id', $topic->id);
                 $db->execute();
                 
                 // Update processing record
-                $db->query('
+                $db->query("
                     UPDATE auto_refund_processed 
-                    SET status = "completed", refunds_count = 0, total_refunded = 0
+                    SET status = 'completed', refunds_count = 0, total_refunded = 0
                     WHERE topic_id = :topic_id
-                ');
+                ");
                 $db->bind(':topic_id', $topic->id);
                 $db->execute();
                 
@@ -151,10 +151,10 @@ try {
                     $db->execute();
                     
                     // Log the refund
-                    $db->query('
+                    $db->query("
                         INSERT INTO refund_log (contribution_id, amount, original_amount, platform_fee_kept, reason, stripe_refund_id, processed_at)
                         VALUES (:contribution_id, :amount, :original_amount, :platform_fee_kept, :reason, :stripe_refund_id, NOW())
-                    ');
+                    ");
                     $db->bind(':contribution_id', $contribution->id);
                     $db->bind(':amount', $refund_amount);
                     $db->bind(':original_amount', $original_amount);
@@ -190,30 +190,30 @@ try {
             }
             
             // FIXED: Update topic status to failed to prevent re-processing
-            $db->query('UPDATE topics SET status = "failed", failed_at = NOW() WHERE id = :id');
+            $db->query("UPDATE topics SET status = 'failed', failed_at = NOW() WHERE id = :id");
             $db->bind(':id', $topic->id);
             $db->execute();
             
             // Keep platform fee as revenue since topic failed
-            $db->query('
+            $db->query("
                 UPDATE platform_fees 
-                SET status = "retained_failed_delivery", processed_at = NOW()
+                SET status = 'retained_failed_delivery', processed_at = NOW()
                 WHERE topic_id = :id
-            ');
+            ");
             $db->bind(':id', $topic->id);
             $db->execute();
             
             // Mark creator payout as failed
-            $db->query('UPDATE creator_payouts SET status = "failed" WHERE topic_id = :id');
+            $db->query("UPDATE creator_payouts SET status = 'failed' WHERE topic_id = :id");
             $db->bind(':id', $topic->id);
             $db->execute();
             
             // FIXED: Update processing record with final counts
-            $db->query('
+            $db->query("
                 UPDATE auto_refund_processed 
-                SET status = "completed", refunds_count = :refunds_count, total_refunded = :total_refunded
+                SET status = 'completed', refunds_count = :refunds_count, total_refunded = :total_refunded
                 WHERE topic_id = :topic_id
-            ');
+            ");
             $db->bind(':topic_id', $topic->id);
             $db->bind(':refunds_count', $topic_refunds);
             $db->bind(':total_refunded', $topic_amount);
@@ -248,11 +248,11 @@ try {
             
             // Mark as failed in processing table to prevent retry
             try {
-                $db->query('
+                $db->query("
                     UPDATE auto_refund_processed 
-                    SET status = "failed", processed_at = NOW()
+                    SET status = 'failed', processed_at = NOW()
                     WHERE topic_id = :topic_id
-                ');
+                ");
                 $db->bind(':topic_id', $topic->id);
                 $db->execute();
             } catch (Exception $e2) {
@@ -403,24 +403,20 @@ function createRequiredTables() {
     // Enhanced auto_refund_processed table with status tracking
     $db->query("
         CREATE TABLE IF NOT EXISTS auto_refund_processed (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            topic_id INT NOT NULL,
+            id SERIAL PRIMARY KEY,
+            topic_id INT NOT NULL UNIQUE,
             refunds_count INT NOT NULL DEFAULT 0,
             total_refunded DECIMAL(10,2) NOT NULL DEFAULT 0,
-            status ENUM('processing', 'completed', 'failed') DEFAULT 'processing',
-            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_topic (topic_id),
-            INDEX idx_processed_at (processed_at),
-            INDEX idx_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            status VARCHAR(50) DEFAULT 'processing',
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     ");
     $db->execute();
     
-    // Enhanced refund_log table
     $db->query("
         CREATE TABLE IF NOT EXISTS refund_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             contribution_id INT NOT NULL,
             amount DECIMAL(10,2) NOT NULL,
             original_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -428,11 +424,8 @@ function createRequiredTables() {
             reason TEXT,
             stripe_refund_id VARCHAR(255),
             admin_user_id INT,
-            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_contribution (contribution_id),
-            INDEX idx_processed_at (processed_at),
-            INDEX idx_stripe_refund (stripe_refund_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     ");
     $db->execute();
     

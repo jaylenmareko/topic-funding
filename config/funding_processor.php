@@ -89,10 +89,10 @@ class FundingProcessor {
             error_log("Topic before: Current={$topic_before->current_funding}, Threshold={$topic_before->funding_threshold}, Status={$topic_before->status}");
             
             // Add contribution to database
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
-                VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
-            ');
+                VALUES (:topic_id, :user_id, :amount, 'completed', :payment_id, NOW())
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':user_id', $user_id);
             $this->db->bind(':amount', $amount);
@@ -122,13 +122,13 @@ class FundingProcessor {
                 error_log("ðŸŽ‰ TOPIC FULLY FUNDED! Updating status...");
                 
                 // Update topic status to funded
-                $this->db->query('
+                $this->db->query("
                     UPDATE topics 
-                    SET status = "funded", 
+                    SET status = 'funded', 
                         funded_at = NOW(), 
-                        content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR) 
+                        content_deadline = NOW() + INTERVAL '48 hours' 
                     WHERE id = :topic_id
-                ');
+                ");
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
                 
@@ -175,7 +175,7 @@ class FundingProcessor {
             $creator_payout_amount = $funding_threshold - $platform_fee_amount;
             
             // Create the topic
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO topics (
                     creator_id, 
                     initiator_user_id, 
@@ -198,10 +198,10 @@ class FundingProcessor {
                     :platform_fee_percent,
                     :platform_fee_amount,
                     :creator_payout_amount,
-                    "active", 
+                    'active', 
                     NOW()
                 )
-            ');
+            ");
             $this->db->bind(':creator_id', $creator_id);
             $this->db->bind(':initiator_user_id', $initiator_user_id);
             $this->db->bind(':title', $title);
@@ -217,10 +217,10 @@ class FundingProcessor {
             error_log("âœ“ Created topic ID: " . $topic_id);
             
             // Create initial contribution
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
-                VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
-            ');
+                VALUES (:topic_id, :user_id, :amount, 'completed', :payment_id, NOW())
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':user_id', $initiator_user_id);
             $this->db->bind(':amount', $initial_amount);
@@ -235,13 +235,13 @@ class FundingProcessor {
             if ($fully_funded) {
                 error_log("ðŸŽ‰ Topic immediately fully funded!");
                 
-                $this->db->query('
+                $this->db->query("
                     UPDATE topics 
-                    SET status = "funded", 
+                    SET status = 'funded', 
                         funded_at = NOW(), 
-                        content_deadline = DATE_ADD(NOW(), INTERVAL 48 HOUR) 
+                        content_deadline = NOW() + INTERVAL '48 hours' 
                     WHERE id = :topic_id
-                ');
+                ");
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
             }

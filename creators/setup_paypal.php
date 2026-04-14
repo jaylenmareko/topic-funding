@@ -13,12 +13,12 @@ if (!isset($_SESSION['user_id'])) {
 $db = new Database();
 
 // Get creator info
-$db->query('
+$db->query("
     SELECT c.*, u.email 
     FROM creators c 
     LEFT JOIN users u ON c.applicant_user_id = u.id 
     WHERE c.applicant_user_id = :user_id AND c.is_active = 1
-');
+");
 $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
@@ -28,12 +28,12 @@ if (!$creator) {
 }
 
 // Calculate available earnings
-$db->query('
+$db->query("
     SELECT 
-        COALESCE(SUM(CASE WHEN t.status = "completed" THEN t.current_funding * 0.9 END), 0) as total_earned
+        COALESCE(SUM(CASE WHEN t.status = 'completed' THEN t.current_funding * 0.9 END), 0) as total_earned
     FROM topics t 
     WHERE t.creator_id = :creator_id
-');
+");
 $db->bind(':creator_id', $creator->id);
 $earnings = $db->single();
 
@@ -61,11 +61,11 @@ if ($_POST && isset($_POST['setup_paypal'])) {
     if (empty($errors)) {
         try {
             // Update creator with PayPal email
-            $db->query('
+            $db->query("
                 UPDATE creators 
                 SET paypal_email = :paypal_email
                 WHERE id = :creator_id
-            ');
+            ");
             $db->bind(':paypal_email', $paypal_email);
             $db->bind(':creator_id', $creator->id);
             $db->execute();
@@ -73,7 +73,7 @@ if ($_POST && isset($_POST['setup_paypal'])) {
             $success = "PayPal email saved successfully! You can now request payouts.";
             
             // Refresh creator data
-            $db->query('SELECT * FROM creators WHERE id = :creator_id');
+            $db->query("SELECT * FROM creators WHERE id = :creator_id");
             $db->bind(':creator_id', $creator->id);
             $creator = $db->single();
             

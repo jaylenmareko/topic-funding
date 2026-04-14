@@ -57,7 +57,7 @@ try {
     $db = new Database();
 
     // Active topics
-    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'active' ORDER BY created_at DESC");
     $db->bind(':creator_id', $creator_id);
     $active_topics = $db->resultSet();
     
@@ -68,24 +68,24 @@ try {
     }
 
     // Waiting Upload topics
-    $db->query('
+    $db->query("
         SELECT t.*, 
-               UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp,
-               TIMESTAMPDIFF(HOUR, t.funded_at, NOW()) as hours_since_funded,
-               (48 - TIMESTAMPDIFF(HOUR, t.funded_at, NOW())) as hours_remaining,
-               TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) as hours_past_deadline
+               EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp,
+               EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600) as hours_since_funded,
+               (48 - EXTRACT(EPOCH FROM (NOW() - t.funded_at))/3600)) as hours_remaining,
+               EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600) as hours_past_deadline
         FROM topics t 
         WHERE t.creator_id = :creator_id 
-        AND t.status = "funded" 
-        AND (t.content_url IS NULL OR t.content_url = "")
-        AND TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) <= 2
+        AND t.status = 'funded' 
+        AND (t.content_url IS NULL OR t.content_url = '')
+        AND EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600) <= 2
         ORDER BY t.funded_at ASC
-    ');
+    ");
     $db->bind(':creator_id', $creator_id);
     $waiting_upload_topics = $db->resultSet();
 
     // Completed topics
-    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'completed' ORDER BY completed_at DESC");
     $db->bind(':creator_id', $creator_id);
     $completed_topics = $db->resultSet();
     

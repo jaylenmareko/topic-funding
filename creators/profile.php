@@ -29,15 +29,15 @@ try {
     if (!$creator) { header('Location: /'); exit; }
     $creator_id = $creator->id;
     $db = new Database();
-    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "active" ORDER BY created_at DESC');
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'active' ORDER BY created_at DESC");
     $db->bind(':creator_id', $creator_id);
     $active_topics = $db->resultSet();
     $auto_open_topic_id = 0;
     if ($topic_num > 0 && $topic_num <= count($active_topics)) { $auto_open_topic_id = $active_topics[$topic_num - 1]->id; }
-    $db->query('SELECT t.*, UNIX_TIMESTAMP(t.content_deadline) as deadline_timestamp FROM topics t WHERE t.creator_id = :creator_id AND t.status = "funded" AND (t.content_url IS NULL OR t.content_url = "") AND TIMESTAMPDIFF(HOUR, t.content_deadline, NOW()) <= 2 ORDER BY t.funded_at ASC');
+    $db->query("SELECT t.*, EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp FROM topics t WHERE t.creator_id = :creator_id AND t.status = 'funded' AND (t.content_url IS NULL OR t.content_url = '') AND EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600 <= 2 ORDER BY t.funded_at ASC");
     $db->bind(':creator_id', $creator_id);
     $waiting_upload_topics = $db->resultSet();
-    $db->query('SELECT * FROM topics WHERE creator_id = :creator_id AND status = "completed" ORDER BY completed_at DESC');
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'completed' ORDER BY completed_at DESC");
     $db->bind(':creator_id', $creator_id);
     $completed_topics = $db->resultSet();
 

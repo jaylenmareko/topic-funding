@@ -42,7 +42,7 @@ class NotificationSystem {
             error_log("Sending topic live notification for topic: " . $topic_id);
             
             // Get topic, creator, and proposer info
-            $this->db->query('
+            $this->db->query("
                 SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
                        u.email as creator_user_email, proposer.username as proposer_name,
                        proposer.email as proposer_email
@@ -51,7 +51,7 @@ class NotificationSystem {
                 LEFT JOIN users u ON c.applicant_user_id = u.id
                 JOIN users proposer ON t.initiator_user_id = proposer.id
                 WHERE t.id = :topic_id
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $topic = $this->db->single();
             
@@ -178,13 +178,13 @@ Support: support@topiclaunch.com";
             $this->db->beginTransaction();
             
             // Get topic and creator info BEFORE any updates
-            $this->db->query('
+            $this->db->query("
                 SELECT t.*, c.display_name as creator_name, c.email as creator_email, u.email as creator_user_email
                 FROM topics t 
                 JOIN creators c ON t.creator_id = c.id 
                 LEFT JOIN users u ON c.applicant_user_id = u.id
                 WHERE t.id = :topic_id
-            ');
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $topic = $this->db->single();
             
@@ -204,14 +204,14 @@ Support: support@topiclaunch.com";
             error_log("Setting funded_at to: " . $funded_at);
             
             // FIXED: Use explicit column names and ensure values are set
-            $this->db->query('
+            $this->db->query("
                 UPDATE topics 
                 SET 
                     content_deadline = :deadline, 
                     funded_at = :funded_at,
-                    status = "funded"
+                    status = 'funded'
                 WHERE id = :topic_id
-            ');
+            ");
             $this->db->bind(':deadline', $deadline);
             $this->db->bind(':funded_at', $funded_at);
             $this->db->bind(':topic_id', $topic_id);
@@ -372,12 +372,12 @@ Support: support@topiclaunch.com";
      */
     private function sendContributorFundedNotifications($topic_id, $topic, $deadline) {
         // Get all contributors
-        $this->db->query('
+        $this->db->query("
             SELECT DISTINCT u.email, u.username, c.amount, u.id as user_id
             FROM contributions c
             JOIN users u ON c.user_id = u.id
-            WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-        ');
+            WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
+        ");
         $this->db->bind(':topic_id', $topic_id);
         $contributors = $this->db->resultSet();
         
@@ -438,24 +438,24 @@ Support: support@topiclaunch.com";
      */
     public function sendContentDeliveredNotifications($topic_id, $content_url) {
         // Get topic and contributors
-        $this->db->query('
+        $this->db->query("
             SELECT t.*, c.display_name as creator_name
             FROM topics t 
             JOIN creators c ON t.creator_id = c.id 
             WHERE t.id = :topic_id
-        ');
+        ");
         $this->db->bind(':topic_id', $topic_id);
         $topic = $this->db->single();
         
         if (!$topic) return false;
         
         // Get all contributors
-        $this->db->query('
+        $this->db->query("
             SELECT DISTINCT u.email, u.username, c.amount
             FROM contributions c
             JOIN users u ON c.user_id = u.id
-            WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-        ');
+            WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
+        ");
         $this->db->bind(':topic_id', $topic_id);
         $contributors = $this->db->resultSet();
         
@@ -502,11 +502,11 @@ Support: support@topiclaunch.com";
      */
     private function scheduleAutoRefundCheck($topic_id, $deadline) {
         try {
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO auto_refund_schedule (topic_id, deadline, status, created_at)
-                VALUES (:topic_id, :deadline, "scheduled", NOW())
-                ON DUPLICATE KEY UPDATE deadline = :deadline, status = "scheduled"
-            ');
+                VALUES (:topic_id, :deadline, 'scheduled', NOW())
+                ON DUPLICATE KEY UPDATE deadline = :deadline, status = 'scheduled'
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $this->db->bind(':deadline', $deadline);
             $this->db->execute();
@@ -527,16 +527,16 @@ Support: support@topiclaunch.com";
         }
         
         // IMPROVED: Only get topics that are truly overdue AND haven't been completed
-        $this->db->query('
+        $this->db->query("
             SELECT t.*, c.display_name as creator_name
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
-            WHERE t.status = "funded" 
+            WHERE t.status = 'funded' 
             AND t.content_deadline IS NOT NULL
             AND t.content_deadline < NOW()
-            AND (t.content_url IS NULL OR t.content_url = "")
+            AND (t.content_url IS NULL OR t.content_url = '')
             AND (t.completed_at IS NULL)
-        ');
+        ");
         $overdue_topics = $this->db->resultSet();
         
         error_log("========================================");
@@ -561,23 +561,23 @@ Support: support@topiclaunch.com";
                 );
                 
                 // Update topic status
-                $this->db->query('UPDATE topics SET status = "failed", failed_at = NOW() WHERE id = :id');
+                $this->db->query("UPDATE topics SET status = 'failed', failed_at = NOW() WHERE id = :id");
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
                 
                 // Keep platform fee as revenue since topic failed
                 if ($this->feeManager) {
                     try {
-                        $this->db->query('
+                        $this->db->query("
                             UPDATE platform_fees 
-                            SET status = "retained_failed_delivery", processed_at = NOW()
+                            SET status = 'retained_failed_delivery', processed_at = NOW()
                             WHERE topic_id = :id
-                        ');
+                        ");
                         $this->db->bind(':id', $topic->id);
                         $this->db->execute();
                         
                         // Mark creator payout as failed
-                        $this->db->query('UPDATE creator_payouts SET status = "failed" WHERE topic_id = :id');
+                        $this->db->query("UPDATE creator_payouts SET status = 'failed' WHERE topic_id = :id");
                         $this->db->bind(':id', $topic->id);
                         $this->db->execute();
                     } catch (Exception $e) {
@@ -621,12 +621,12 @@ Support: support@topiclaunch.com";
      * Send failure notification to creator
      */
     private function sendCreatorFailureNotification($topic, $refund_result) {
-        $this->db->query('
+        $this->db->query("
             SELECT c.email, u.email as user_email
             FROM creators c
             LEFT JOIN users u ON c.applicant_user_id = u.id
             WHERE c.id = :creator_id
-        ');
+        ");
         $this->db->bind(':creator_id', $topic->creator_id);
         $creator = $this->db->single();
         
@@ -803,16 +803,16 @@ Support: support@topiclaunch.com";
             }
             
             if ($has_category) {
-                $this->db->query('
+                $this->db->query("
                     INSERT INTO notifications (user_id, type, category, message, topic_id, created_at)
                     VALUES (:user_id, :type, :category, :message, :topic_id, NOW())
-                ');
+                ");
                 $this->db->bind(':category', $category);
             } else {
-                $this->db->query('
+                $this->db->query("
                     INSERT INTO notifications (user_id, type, message, topic_id, created_at)
                     VALUES (:user_id, :type, :message, :topic_id, NOW())
-                ');
+                ");
             }
             
             $this->db->bind(':user_id', $user_id);
@@ -833,25 +833,15 @@ Support: support@topiclaunch.com";
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS notifications (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     user_id INT,
-                    type ENUM('creator', 'contributor', 'proposer', 'admin') NOT NULL,
+                    type VARCHAR(50) NOT NULL,
                     category VARCHAR(50) NOT NULL DEFAULT 'general',
                     message TEXT NOT NULL,
                     topic_id INT,
-                    is_read TINYINT(1) DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    INDEX idx_user (user_id),
-                    INDEX idx_type (type),
-                    INDEX idx_category (category),
-                    INDEX idx_topic (topic_id)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-            ");
-            $this->db->execute();
-            
-            $this->db->query("
-                ALTER TABLE notifications 
-                ADD COLUMN IF NOT EXISTS category VARCHAR(50) NOT NULL DEFAULT 'general' AFTER type
+                    is_read SMALLINT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
             ");
             $this->db->execute();
             
@@ -862,17 +852,13 @@ Support: support@topiclaunch.com";
         try {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS auto_refund_schedule (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    topic_id INT NOT NULL,
-                    deadline DATETIME NOT NULL,
-                    status ENUM('scheduled', 'processed', 'cancelled') DEFAULT 'scheduled',
+                    id SERIAL PRIMARY KEY,
+                    topic_id INT NOT NULL UNIQUE,
+                    deadline TIMESTAMP NOT NULL,
+                    status VARCHAR(50) DEFAULT 'scheduled',
                     processed_at TIMESTAMP NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_topic (topic_id),
-                    INDEX idx_topic (topic_id),
-                    INDEX idx_deadline (deadline),
-                    INDEX idx_status (status)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
             ");
             $this->db->execute();
         } catch (Exception $e) {

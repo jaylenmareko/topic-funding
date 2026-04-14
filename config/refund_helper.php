@@ -16,13 +16,13 @@ class RefundManager {
     public function processContribution90PercentRefund($contribution_id, $reason = 'Creator failed to deliver content - 90% refund') {
         try {
             // Get contribution details
-            $this->db->query('
+            $this->db->query("
                 SELECT c.*, u.email, t.title as topic_title 
                 FROM contributions c 
                 JOIN users u ON c.user_id = u.id 
                 JOIN topics t ON c.topic_id = t.id 
-                WHERE c.id = :id AND c.payment_status = "completed"
-            ');
+                WHERE c.id = :id AND c.payment_status = 'completed'
+            ");
             $this->db->bind(':id', $contribution_id);
             $contribution = $this->db->single();
             
@@ -84,12 +84,12 @@ class RefundManager {
             $this->db->beginTransaction();
             
             // Get all completed contributions for this topic
-            $this->db->query('
+            $this->db->query("
                 SELECT c.*, u.email 
                 FROM contributions c 
                 JOIN users u ON c.user_id = u.id 
-                WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-            ');
+                WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $contributions = $this->db->resultSet();
             
@@ -140,13 +140,13 @@ class RefundManager {
     public function processContributionRefund($contribution_id, $reason = 'Admin requested refund') {
         try {
             // Get contribution details
-            $this->db->query('
+            $this->db->query("
                 SELECT c.*, u.email, t.title as topic_title 
                 FROM contributions c 
                 JOIN users u ON c.user_id = u.id 
                 JOIN topics t ON c.topic_id = t.id 
-                WHERE c.id = :id AND c.payment_status = "completed"
-            ');
+                WHERE c.id = :id AND c.payment_status = 'completed'
+            ");
             $this->db->bind(':id', $contribution_id);
             $contribution = $this->db->single();
             
@@ -166,7 +166,7 @@ class RefundManager {
             ]);
             
             // Update contribution status
-            $this->db->query('UPDATE contributions SET payment_status = "refunded" WHERE id = :id');
+            $this->db->query("UPDATE contributions SET payment_status = 'refunded' WHERE id = :id");
             $this->db->bind(':id', $contribution_id);
             $this->db->execute();
             
@@ -203,12 +203,12 @@ class RefundManager {
             $this->db->beginTransaction();
             
             // Get all completed contributions for this topic
-            $this->db->query('
+            $this->db->query("
                 SELECT c.*, u.email 
                 FROM contributions c 
                 JOIN users u ON c.user_id = u.id 
-                WHERE c.topic_id = :topic_id AND c.payment_status = "completed"
-            ');
+                WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
+            ");
             $this->db->bind(':topic_id', $topic_id);
             $contributions = $this->db->resultSet();
             
@@ -260,10 +260,10 @@ class RefundManager {
     public function refundAllCreatorTopics($creator_id, $reason = 'Creator removed - 90% refund') {
         try {
             // Get all active/funded topics for this creator
-            $this->db->query('
+            $this->db->query("
                 SELECT id, title FROM topics 
-                WHERE creator_id = :creator_id AND status IN ("active", "funded")
-            ');
+                WHERE creator_id = :creator_id AND status IN ('active', 'funded')
+            ");
             $this->db->bind(':creator_id', $creator_id);
             $topics = $this->db->resultSet();
             
@@ -293,7 +293,7 @@ class RefundManager {
                 ];
                 
                 // Cancel the topic
-                $this->db->query('UPDATE topics SET status = "cancelled" WHERE id = :id');
+                $this->db->query("UPDATE topics SET status = 'cancelled' WHERE id = :id");
                 $this->db->bind(':id', $topic->id);
                 $this->db->execute();
             }
@@ -310,7 +310,7 @@ class RefundManager {
      * Get refund history for admin dashboard
      */
     public function getRefundHistory($limit = 50) {
-        $this->db->query('
+        $this->db->query("
             SELECT r.*, c.amount, u.username, t.title as topic_title, cr.display_name as creator_name
             FROM refund_log r
             JOIN contributions c ON r.contribution_id = c.id
@@ -319,7 +319,7 @@ class RefundManager {
             JOIN creators cr ON t.creator_id = cr.id
             ORDER BY r.processed_at DESC
             LIMIT :limit
-        ');
+        ");
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }
@@ -329,13 +329,13 @@ class RefundManager {
      */
     private function logRefund($contribution_id, $refund_amount, $reason, $stripe_refund_id, $original_amount = null, $platform_fee_kept = 0) {
         try {
-            $this->db->query('
+            $this->db->query("
                 INSERT INTO refund_log (
                     contribution_id, amount, original_amount, platform_fee_kept, 
                     reason, stripe_refund_id, admin_user_id, processed_at
                 )
                 VALUES (:contribution_id, :amount, :original_amount, :platform_fee_kept, :reason, :stripe_refund_id, :admin_user_id, NOW())
-            ');
+            ");
             $this->db->bind(':contribution_id', $contribution_id);
             $this->db->bind(':amount', $refund_amount);
             $this->db->bind(':original_amount', $original_amount ?: $refund_amount);
@@ -354,11 +354,11 @@ class RefundManager {
      * Check if a contribution can be refunded
      */
     public function canRefund($contribution_id) {
-        $this->db->query('
+        $this->db->query("
             SELECT payment_status, contributed_at 
             FROM contributions 
             WHERE id = :id
-        ');
+        ");
         $this->db->bind(':id', $contribution_id);
         $contribution = $this->db->single();
         
@@ -381,7 +381,7 @@ function createRefundLogTable() {
     $db = new Database();
     $db->query("
         CREATE TABLE IF NOT EXISTS refund_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             contribution_id INT NOT NULL,
             amount DECIMAL(10,2) NOT NULL,
             original_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -389,11 +389,8 @@ function createRefundLogTable() {
             reason TEXT,
             stripe_refund_id VARCHAR(255),
             admin_user_id INT,
-            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_contribution (contribution_id),
-            INDEX idx_admin (admin_user_id),
-            INDEX idx_date (processed_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     ");
     $db->execute();
 }

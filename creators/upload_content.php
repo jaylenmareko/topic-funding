@@ -21,12 +21,12 @@ $errors = [];
 $success = '';
 
 // Get topic and verify creator ownership
-$db->query('
+$db->query("
     SELECT t.*, c.display_name as creator_name, c.applicant_user_id, c.id as creator_id
     FROM topics t 
     JOIN creators c ON t.creator_id = c.id 
-    WHERE t.id = :topic_id AND t.status = "funded"
-');
+    WHERE t.id = :topic_id AND t.status = 'funded'
+");
 $db->bind(':topic_id', $topic_id);
 $topic = $db->single();
 
@@ -65,13 +65,13 @@ if ($_POST && isset($_POST['content_url'])) {
             $db->beginTransaction();
             
             // Update topic
-            $db->query('
+            $db->query("
                 UPDATE topics 
                 SET content_url = :content_url, 
-                    status = "completed", 
+                    status = 'completed', 
                     completed_at = NOW()
                 WHERE id = :topic_id
-            ');
+            ");
             $db->bind(':content_url', $content_url);
             $db->bind(':topic_id', $topic_id);
             $db->execute();
@@ -95,11 +95,11 @@ if ($_POST && isset($_POST['content_url'])) {
 }
 
 // Get contributors for display
-$db->query('
+$db->query("
     SELECT COUNT(*) as contributor_count, SUM(amount) as total_funding
     FROM contributions 
-    WHERE topic_id = :topic_id AND payment_status = "completed"
-');
+    WHERE topic_id = :topic_id AND payment_status = 'completed'
+");
 $db->bind(':topic_id', $topic_id);
 $funding_stats = $db->single();
 ?>

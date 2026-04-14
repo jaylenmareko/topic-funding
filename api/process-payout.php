@@ -14,7 +14,7 @@ function processCreatorPayout($topic_id) {
 
     try {
         // Get topic and creator details
-        $db->query('
+        $db->query("
             SELECT
                 t.*,
                 c.id as creator_id,
@@ -24,7 +24,7 @@ function processCreatorPayout($topic_id) {
             FROM topics t
             JOIN creators c ON t.creator_id = c.id
             WHERE t.id = :topic_id
-        ');
+        ");
         $db->bind(':topic_id', $topic_id);
         $topic = $db->single();
 
@@ -47,7 +47,7 @@ function processCreatorPayout($topic_id) {
         }
 
         // Check if payout already processed
-        $db->query('SELECT id FROM payouts WHERE topic_id = :topic_id AND status IN ("completed", "processing")');
+        $db->query("SELECT id FROM payouts WHERE topic_id = :topic_id AND status IN ('completed', 'processing')");
         $db->bind(':topic_id', $topic_id);
         $existing_payout = $db->single();
 
@@ -68,15 +68,15 @@ function processCreatorPayout($topic_id) {
         $creator_payout = round($creator_payout, 2);
 
         // Create payout record (pending)
-        $db->query('
+        $db->query("
             INSERT INTO payouts (
                 creator_id, topic_id, amount, platform_fee,
                 stripe_fee, net_amount, status
             ) VALUES (
                 :creator_id, :topic_id, :amount, :platform_fee,
-                0, :net_amount, "processing"
+                0, :net_amount, 'processing'
             )
-        ');
+        ");
         $db->bind(':creator_id', $topic->creator_id);
         $db->bind(':topic_id', $topic_id);
         $db->bind(':amount', $total_funded);
@@ -101,23 +101,23 @@ function processCreatorPayout($topic_id) {
             ]);
 
             // Update payout record with success
-            $db->query('
+            $db->query("
                 UPDATE payouts
-                SET status = "completed",
+                SET status = 'completed',
                     stripe_transfer_id = :transfer_id,
                     paid_at = NOW()
                 WHERE id = :payout_id
-            ');
+            ");
             $db->bind(':transfer_id', $transfer->id);
             $db->bind(':payout_id', $payout_id);
             $db->execute();
 
             // Update creator's total earnings
-            $db->query('
+            $db->query("
                 UPDATE creators
                 SET total_earnings = total_earnings + :amount
                 WHERE id = :creator_id
-            ');
+            ");
             $db->bind(':amount', $creator_payout);
             $db->bind(':creator_id', $topic->creator_id);
             $db->execute();
@@ -139,12 +139,12 @@ function processCreatorPayout($topic_id) {
             error_log("Stripe transfer failed - Topic: $topic_id, Error: $error_message");
 
             // Update payout record with failure
-            $db->query('
+            $db->query("
                 UPDATE payouts
-                SET status = "failed",
+                SET status = 'failed',
                     failure_reason = :failure_reason
                 WHERE id = :payout_id
-            ');
+            ");
             $db->bind(':failure_reason', $error_message);
             $db->bind(':payout_id', $payout_id);
             $db->execute();
