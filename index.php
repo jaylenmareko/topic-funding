@@ -97,636 +97,446 @@ if ($db_available) {
     
     <style>
         :root {
-            --hot-pink: #FF006B;
-            --deep-pink: #E6005F;
-            --black: #000000;
-            --off-white: #FAFAFA;
-            --white: #FFFFFF;
-            --cream: #FFF8F5;
-            --gray-dark: #1A1A1A;
-            --gray-med: #666666;
-            --gray-light: #E5E5E5;
+            --tl-pink: #E8305A;
+            --tl-pink-light: #F7C0D0;
+            --tl-pink-dark: #B01F3F;
+            --tl-black: #111010;
+            --tl-off: #1C1C1C;
+            --tl-card: #1e1e1e;
+            --tl-border: #2a2a2a;
+            --tl-muted: #888888;
+            --tl-dimmed: #555555;
+            --white: #ffffff;
+            /* kept for creator cards section */
+            --hot-pink: #E8305A;
+            --deep-pink: #B01F3F;
+            --gray-light: #2a2a2a;
+            --gray-med: #888888;
+            --gray-dark: #cccccc;
         }
-        
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-        
-        body { 
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0; 
-            padding: 0; 
-            background: var(--white);
-            color: var(--black);
+            background: var(--tl-black);
+            color: var(--white);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            animation: fadeIn 0.6s ease-in;
+            animation: fadeIn 0.5s ease-in;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        
-        /* Navigation */
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Navigation ── */
         .topiclaunch-nav {
-            background: var(--white);
-            padding: 16px 0;
-            border-bottom: 1px solid var(--gray-light);
+            background: var(--tl-black);
+            border-bottom: 1px solid var(--tl-border);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        
+
         .nav-container {
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 30px;
+            padding: 16px 30px;
         }
-        
-        .nav-logo {
-            font-family: 'Inter', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--black);
-            text-decoration: none;
-            letter-spacing: -0.5px;
-        }
-        
-        .nav-logo span { color: var(--hot-pink); }
 
-        .nav-center {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-        
-        .nav-link {
-            color: var(--gray-dark);
+        .nav-logo {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--white);
             text-decoration: none;
-            font-size: 14px;
+            letter-spacing: -0.3px;
+        }
+        .nav-logo span { color: var(--tl-pink); }
+
+        .nav-center { display: flex; gap: 24px; align-items: center; }
+
+        .nav-link {
+            color: var(--tl-muted);
+            text-decoration: none;
+            font-size: 13px;
             font-weight: 500;
             transition: color 0.2s;
         }
-        
-        .nav-link:hover { color: var(--hot-pink); }
+        .nav-link:hover { color: var(--white); }
 
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
+        .nav-buttons { display: flex; gap: 12px; align-items: center; }
+
         .nav-login-btn {
-            color: var(--gray-dark);
+            color: var(--tl-muted);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 0;
+            font-size: 13px;
+            font-weight: 500;
             transition: color 0.2s;
         }
-        
-        .nav-login-btn:hover { color: var(--hot-pink); }
-        
+        .nav-login-btn:hover { color: var(--white); }
+
         .nav-getstarted-btn {
-            background: var(--hot-pink);
+            background: var(--tl-pink);
             color: var(--white);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 50px;
-            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: 8px;
+            transition: background 0.2s;
         }
-        
-        .nav-getstarted-btn:hover {
-            background: var(--deep-pink);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 0, 107, 0.3);
-        }
-        
-        /* Hero Section */
-        .hero { 
-            background: var(--white);
-            padding: 80px 30px 60px 30px; 
+        .nav-getstarted-btn:hover { background: var(--tl-pink-dark); }
+
+        /* ── Hero ── */
+        .hero {
+            background: var(--tl-black);
+            padding: 72px 30px 56px;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
-        
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, var(--hot-pink) 0%, transparent 70%);
-            opacity: 0.08;
-            animation: pulse 8s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.08; }
-            50% { transform: scale(1.1); opacity: 0.12; }
-        }
-        
+
         .hero-container {
-            max-width: 1000px;
+            max-width: 680px;
             margin: 0 auto;
             position: relative;
             z-index: 2;
-            animation: fadeInUp 0.8s ease-out 0.2s both;
+            animation: fadeInUp 0.7s ease-out 0.1s both;
         }
-        
+
         .hero-eyebrow {
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--hot-pink);
-            margin-bottom: 20px;
-            animation: fadeInUp 0.6s ease-out 0.3s both;
-        }
-        
-        .hero h1 { 
-            font-family: 'Inter', sans-serif;
-            font-size: 52px; 
-            margin: 0 0 25px 0; 
-            font-weight: 600; 
-            color: var(--black); 
-            line-height: 1.15;
-            letter-spacing: -2px;
-            animation: fadeInUp 0.8s ease-out 0.4s both;
-        }
-        
-        .hero h1 .pink { color: var(--hot-pink); }
-        
-        .hero-subhead {
-            font-size: 22px;
-            font-weight: 400;
-            color: var(--gray-dark);
-            max-width: 750px;
-            margin: 0 auto 40px auto;
-            line-height: 1.6;
-            animation: fadeInUp 0.8s ease-out 0.5s both;
-        }
-        
-        .desktop-break { display: block; }
-        
-        .hero-cta {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: var(--hot-pink);
-            color: var(--white);
-            padding: 18px 45px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(255, 0, 107, 0.25);
-            animation: fadeInScale 0.6s ease-out 0.7s both;
-        }
-        
-        .hero-cta:hover {
-            background: var(--deep-pink);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(255, 0, 107, 0.35);
-        }
-        
-        .platform-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 28px;
-            gap: 8px;
-        }
-
-        /* Hero Step Cards */
-        .hero-steps {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-top: 50px;
-            margin-bottom: 10px;
-            max-width: 860px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-step-card {
-            background: var(--off-white);
-            border: 1px solid var(--gray-light);
-            border-radius: 16px;
-            padding: 28px 24px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .hero-step-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(255, 0, 107, 0.1);
-            border-color: rgba(255, 0, 107, 0.2);
-        }
-
-        .hero-step-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 52px;
-            height: 52px;
-            background: rgba(255, 0, 107, 0.08);
-            border-radius: 50%;
-            color: var(--hot-pink);
-            margin-bottom: 14px;
-        }
-
-        .hero-step-card h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--black);
-            margin-bottom: 8px;
-        }
-
-        .step-label {
+            gap: 7px;
             font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--hot-pink);
-            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--tl-pink);
+            background: rgba(232,48,90,0.12);
+            padding: 5px 13px;
+            border-radius: 20px;
+            margin-bottom: 22px;
+            letter-spacing: 0.5px;
+        }
+        .hero-eyebrow-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--tl-pink);
+            display: inline-block;
+            flex-shrink: 0;
         }
 
-        .hero-step-card p {
-            font-size: 13px;
-            color: var(--gray-dark);
-            line-height: 1.6;
-        }
-
-        @media (max-width: 640px) {
-            .hero-steps {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .mobile-browse-link {
-            display: block;
-            margin-top: 16px;
-            font-size: 14px;
+        .hero h1 {
+            font-size: 40px;
             font-weight: 600;
-            color: var(--black);
+            color: var(--white);
+            line-height: 1.15;
+            letter-spacing: -0.8px;
+            margin: 0 0 18px;
+        }
+        .hero h1 .pink { color: var(--tl-pink); }
+
+        .hero-subhead {
+            font-size: 15px;
+            color: var(--tl-muted);
+            max-width: 420px;
+            margin: 0 auto 34px;
+            line-height: 1.65;
+        }
+
+        .hero-cta-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
+        .hero-cta {
+            background: var(--tl-pink);
+            color: var(--white);
+            padding: 13px 26px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
             text-decoration: none;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-            padding-bottom: 2px;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+        .hero-cta:hover { background: var(--tl-pink-dark); }
+
+        .hero-cta-ghost {
+            background: transparent;
+            color: var(--tl-muted);
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid var(--tl-border);
             transition: border-color 0.2s, color 0.2s;
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
+            display: inline-block;
         }
+        .hero-cta-ghost:hover { border-color: #555; color: var(--white); }
 
-        .mobile-browse-link:hover {
-            color: var(--gray-dark);
-            border-color: var(--gray-dark);
+        /* stat row */
+        .hero-stat-row {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            margin-top: 50px;
+            border-top: 1px solid #222;
+            padding-top: 32px;
         }
+        .hero-stat { flex: 1; text-align: center; max-width: 150px; }
+        .hero-stat-n { font-size: 26px; font-weight: 600; color: var(--white); }
+        .hero-stat-n span { color: var(--tl-pink); }
+        .hero-stat-label { font-size: 11px; color: #555; margin-top: 4px; }
+        .hero-stat-divider { width: 1px; background: #222; align-self: stretch; margin: 0 10px; }
 
-        @media (max-width: 768px) {
-            .mobile-browse-link {
-                display: block;
-            }
+        /* ── Why section (cards) ── */
+        .why-section {
+            background: #161616;
+            padding: 36px 30px 40px;
+            border-top: 1px solid #222;
         }
-        
-        .platform-logos {
+        .why-container { max-width: 900px; margin: 0 auto; }
+        .why-label {
+            font-size: 11px;
+            color: #555;
+            letter-spacing: 0.8px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            text-transform: uppercase;
+        }
+        .why-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .why-card {
+            background: var(--tl-card);
+            border-radius: 12px;
+            padding: 18px 16px;
+            border: 1px solid var(--tl-border);
+        }
+        .why-card-icon {
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            background: rgba(232,48,90,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 12px;
+        }
+        .why-card-icon svg { width: 16px; height: 16px; }
+        .why-card-title { font-size: 13px; font-weight: 500; color: #e0e0e0; margin-bottom: 5px; }
+        .why-card-desc { font-size: 11px; color: #666; line-height: 1.55; }
+
+        /* ── Creator input strip ── */
+        .creator-strip {
+            background: var(--tl-black);
+            padding: 20px 30px;
+            border-top: 1px solid #1e1e1e;
             display: flex;
             align-items: center;
-            gap: 20px;
-        }
-        
-        .platform-label {
-            font-size: 12px;
-            color: rgba(0,0,0,0.4);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        
-        /* How It Works */
-        .how-it-works {
-            background: var(--off-white);
-            padding: 80px 30px 60px 30px;
-        }
-        
-        .how-container {
-            max-width: 1200px;
+            gap: 14px;
+            max-width: 900px;
             margin: 0 auto;
         }
-        
-        .how-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-        
-        .how-header h2 {
-            font-family: 'Inter', sans-serif;
-            font-size: 48px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            color: var(--black);
-        }
-        
-        .how-header p {
-            font-size: 18px;
-            color: var(--gray-med);
-        }
-        
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 40px;
-            margin-bottom: 50px;
-        }
-        
-        .step-card {
-            text-align: center;
-            position: relative;
-            background: var(--white);
-            padding: 40px 30px;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-        }
-        
-        .step-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-        }
-        
-        .step-number {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            background: var(--hot-pink);
-            color: var(--white);
+        .strip-avatar {
+            width: 34px; height: 34px;
             border-radius: 50%;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 500; color: var(--white);
+            flex-shrink: 0;
         }
-        
-        .step-card h3 {
-            font-family: 'Inter', sans-serif;
-            font-size: 24px;
-            margin-bottom: 12px;
-            font-weight: 700;
-            color: var(--black);
+        .strip-input {
+            flex: 1;
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 9px 14px;
+            border: 1px solid var(--tl-border);
+            font-size: 12px;
+            color: #555;
+            font-family: inherit;
         }
-        
-        .step-card p {
-            font-size: 16px;
-            line-height: 1.6;
-            color: var(--gray-dark);
+        .strip-send {
+            width: 34px; height: 34px;
+            background: var(--tl-pink);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            text-decoration: none;
+            transition: background 0.2s;
         }
-        
-        /* Value Props */
-        .value-props {
-            background: var(--white);
-            padding: 80px 30px;
-            animation: fadeInUp 0.8s ease-out 0.4s both;
-        }
-        
-        .value-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 50px;
-        }
-        
-        .value-card {
-            text-align: center;
-            padding: 40px 30px;
-            background: var(--cream);
-            border-radius: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .value-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        
-        .value-icon { font-size: 48px; margin-bottom: 20px; }
-        
-        .value-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            color: var(--black);
-        }
-        
-        .value-card p {
-            font-size: 16px;
-            line-height: 1.6;
-            color: var(--gray-dark);
-            font-weight: 400;
-        }
-        
-        /* Creators Section */
+        .strip-send:hover { background: var(--tl-pink-dark); }
+
+        /* ── Creators browse section ── */
         .creators-section {
-            background: var(--white);
-            padding: 60px 30px 100px 30px;
-            animation: fadeInUp 0.8s ease-out 0.5s both;
+            background: var(--tl-black);
+            padding: 56px 30px 80px;
         }
-        
-        .creators-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .section-header {
-            margin-bottom: 50px;
-            text-align: center;
-        }
-        
+        .creators-container { max-width: 1400px; margin: 0 auto; }
+
+        .section-header { margin-bottom: 36px; text-align: center; }
         .section-eyebrow {
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 2px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
-            color: var(--hot-pink);
-            margin-bottom: 15px;
+            color: #555;
+            margin-bottom: 10px;
         }
-        
         .section-title {
-            font-family: 'Inter', sans-serif;
-            font-size: 28px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            color: var(--black);
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--white);
+            letter-spacing: -0.4px;
         }
-        
         .section-subtitle {
-            font-size: 18px;
-            color: var(--gray-med);
-            font-weight: 400;
+            font-size: 14px;
+            color: var(--tl-muted);
+            margin-top: 8px;
         }
-        
+
         /* Search */
-        .search-section { margin: 0 auto 40px auto; max-width: 700px; }
-        .search-bar { background: var(--white); border-radius: 50px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 16px; border: 1.5px solid transparent; transition: border-color 0.2s; }
-        .search-bar:focus-within { border-color: rgba(255,0,107,0.3); }
+        .search-section { margin: 0 auto 36px; max-width: 700px; }
+        .search-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 6px;
+            border: 1px solid var(--tl-border);
+            margin-bottom: 14px;
+            transition: border-color 0.2s;
+        }
+        .search-bar:focus-within { border-color: rgba(232,48,90,0.4); }
         .search-input-wrapper { position: relative; }
-        .search-input { width: 100%; padding: 14px 20px 14px 50px; border: none; border-radius: 50px; font-size: 15px; font-weight: 500; outline: none; background: transparent; }
-        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--gray-med); width: 18px; height: 18px; }
-        .topic-filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .topic-filter-btn { padding: 7px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; border: 1.5px solid var(--gray-light); background: var(--white); color: var(--gray-dark); cursor: pointer; transition: all 0.18s; white-space: nowrap; }
-        .topic-filter-btn:hover { border-color: var(--hot-pink); color: var(--hot-pink); }
-        .topic-filter-btn.active { background: var(--hot-pink); border-color: var(--hot-pink); color: var(--white); }
-        
+        .search-input {
+            width: 100%;
+            padding: 11px 18px 11px 46px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 400;
+            outline: none;
+            background: transparent;
+            color: var(--white);
+        }
+        .search-input::placeholder { color: #555; }
+        .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #555; width: 16px; height: 16px; }
+        .topic-filters { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+        .topic-filter-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid var(--tl-border);
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
+
         /* Creator Cards */
         .creators-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 14px;
         }
 
         .creator-card {
-            background: var(--white);
-            border-radius: 16px;
-            border: 1px solid var(--gray-light);
-            padding: 24px;
-            transition: all 0.25s;
+            background: var(--tl-card);
+            border-radius: 14px;
+            border: 1px solid var(--tl-border);
+            padding: 22px;
+            transition: all 0.22s;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
-
         .creator-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(255, 0, 107, 0.12);
-            border-color: rgba(255, 0, 107, 0.3);
+            transform: translateY(-3px);
+            border-color: rgba(232,48,90,0.35);
+            box-shadow: 0 8px 24px rgba(232,48,90,0.08);
         }
 
         .creator-card-top {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 14px;
+            gap: 14px;
+            margin-bottom: 12px;
         }
 
         .creator-card-image {
-            width: 72px;
-            height: 72px;
+            width: 56px; height: 56px;
             flex-shrink: 0;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
+        .creator-card-image img { width: 100%; height: 100%; object-fit: cover; }
 
-        .creator-card-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .creator-initial {
-            font-size: 28px;
-            color: var(--white);
-            font-weight: 700;
-        }
+        .creator-initial { font-size: 22px; color: var(--white); font-weight: 600; }
 
         .creator-card-identity { flex: 1; min-width: 0; }
 
         .creator-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--black);
-            margin-bottom: 3px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .creator-handle {
-            font-size: 13px;
-            color: var(--gray-med);
-            font-weight: 500;
-        }
+        .creator-handle { font-size: 12px; color: #555; font-weight: 400; }
 
         .creator-bio {
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.55;
-            color: #4B5563;
-            margin-bottom: 14px;
+            color: #777;
+            margin-bottom: 12px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
-        .creator-topics {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 18px;
-        }
+        .creator-topics { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
 
         .creator-topic-tag {
-            font-size: 12px;
-            font-weight: 600;
-            padding: 5px 13px;
-            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 11px;
+            border-radius: 6px;
             background: transparent;
-            color: var(--gray-dark);
-            border: 1.5px solid var(--gray-light);
+            color: #666;
+            border: 1px solid var(--tl-border);
         }
 
         .creator-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid var(--gray-light);
+            padding-top: 14px;
+            border-top: 1px solid var(--tl-border);
             margin-top: auto;
         }
 
-        .creator-price {
-            font-size: 20px;
-            color: var(--black);
-            font-weight: 700;
-            display: inline;
-        }
+        .creator-price { font-size: 18px; color: var(--white); font-weight: 600; display: inline; }
 
         .price-label {
             font-size: 11px;
-            color: var(--gray-med);
+            color: #555;
             font-weight: 500;
             margin-left: 6px;
             text-transform: uppercase;
@@ -734,62 +544,58 @@ if ($db_available) {
         }
 
         .fund-btn {
-            background: var(--hot-pink);
+            background: var(--tl-pink);
             color: var(--white);
             border: none;
-            padding: 10px 22px;
-            font-size: 13px;
-            font-weight: 700;
+            padding: 9px 18px;
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 50px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: background 0.2s;
+            border-radius: 8px;
         }
+        .fund-btn:hover { background: var(--tl-pink-dark); }
 
-        .fund-btn:hover {
-            background: var(--deep-pink);
-            transform: scale(1.03);
-        }
-        
-        /* Footer */
+        /* ── Footer ── */
         .footer {
-            background: var(--black);
-            color: var(--gray-light);
+            background: var(--tl-black);
+            border-top: 1px solid var(--tl-border);
+            color: #555;
             text-align: center;
-            padding: 50px 30px;
-            font-size: 14px;
+            padding: 36px 30px;
+            font-size: 13px;
         }
-        
         .footer a {
-            color: var(--hot-pink);
+            color: var(--tl-pink);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
             transition: color 0.2s;
         }
-        
         .footer a:hover { color: var(--white); }
-        
         .footer-links {
-            margin-top: 20px;
+            margin-top: 16px;
             display: flex;
             justify-content: center;
-            gap: 30px;
+            gap: 28px;
         }
-        
+
+        /* ── Responsive ── */
         @media (max-width: 1024px) {
-            .steps-grid { grid-template-columns: 1fr; gap: 40px; }
             .creators-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .why-cards { grid-template-columns: 1fr; }
         }
-        
         @media (max-width: 768px) {
             .nav-center { display: none; }
-            .hero { padding: 60px 20px 80px 20px; }
-            .hero h1 { font-size: 36px; letter-spacing: -1px; }
-            .hero-subhead { font-size: 18px; }
-            .desktop-break { display: inline; }
-            .how-header h2, .section-title { font-size: 22px; }
+            .hero { padding: 56px 20px 48px; }
+            .hero h1 { font-size: 30px; }
+            .hero-stat-row { gap: 0; }
             .creators-grid { grid-template-columns: 1fr; }
+            .why-cards { grid-template-columns: 1fr; }
+            .creator-strip { padding: 16px 20px; }
+        }
+        @media (max-width: 480px) {
+            .hero-cta-row { flex-direction: column; align-items: stretch; }
+            .hero-cta, .hero-cta-ghost { text-align: center; }
         }
     </style>
 </head>
@@ -798,12 +604,10 @@ if ($db_available) {
     <nav class="topiclaunch-nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">Topic<span>Launch</span></a>
-            
             <div class="nav-center">
                 <a href="/creators/" class="nav-link">Browse Creators</a>
                 <a href="/creators/signup.php" class="nav-link">For Creators</a>
             </div>
-            
             <div class="nav-buttons">
                 <a href="/auth/login.php" class="nav-login-btn">Log In</a>
                 <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
@@ -814,64 +618,80 @@ if ($db_available) {
     <!-- Hero Section -->
     <div class="hero">
         <div class="hero-container">
-            <div class="hero-eyebrow">Closing the Gap Between Creators and Fans</div>
+            <div class="hero-eyebrow">
+                <span class="hero-eyebrow-dot"></span>
+                CREATORS KEEP 90%
+            </div>
             <h1>
-                Creators Get Paid.<br>
-                <span class="pink">Fans Send Ideas.</span>
+                Your fans <span class="pink">commission</span><br>your best work.
             </h1>
             <p class="hero-subhead">
-                Send a topic request to the creator of your choice, pay their price, and get a guaranteed video made.
+                TopicLaunch connects creators with fans who want custom content — on their terms, at your price.
             </p>
-            <a href="creators/signup.php" class="hero-cta">
-                Start Earning
-            </a>
-
-            <a href="creators/index.php" class="mobile-browse-link">Browse Creators</a>
-
-
-            <div class="hero-steps">
-                <div class="hero-step-card">
-                    <div class="hero-step-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    </div>
-                    <div class="step-label">Step 1</div>
-                    <h3>Fan Sends a Request</h3>
-                    <p>Pick a creator, submit your topic idea, and pay their price upfront.</p>
-                </div>
-                <div class="hero-step-card">
-                    <div class="hero-step-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                    </div>
-                    <div class="step-label">Step 2</div>
-                    <h3>Creator Makes Content</h3>
-                    <p>The creator films and delivers the video within 48 hours.</p>
-                </div>
-                <div class="hero-step-card">
-                    <div class="hero-step-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                    </div>
-                    <div class="step-label">Step 3</div>
-                    <h3>Creator Gets Paid</h3>
-                    <p>We send 90% of the payment straight to the creator. No waiting.</p>
-                </div>
+            <div class="hero-cta-row">
+                <a href="creators/signup.php" class="hero-cta">Launch your page</a>
+                <a href="creators/index.php" class="hero-cta-ghost">See how it works</a>
             </div>
 
-            <div class="platform-bar">
-                <div class="platform-logos">
-                    <!-- YouTube -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 7s-.3-1.7-1-2.4c-1-1-2.1-1-2.6-1.1C17 3 12 3 12 3s-5 0-7.4.5c-.5.1-1.6.1-2.6 1.1C1.3 5.3 1 7 1 7S.7 9 .7 11v1.8c0 2 .3 3.8.3 3.8s.3 1.7 1 2.4c1 1 2.3.9 2.9 1 2.1.2 7.1.3 7.1.3s5 0 7.4-.5c.5-.1 1.6-.1 2.6-1.1.7-.7 1-2.4 1-2.4s.3-1.8.3-3.8V11c0-2-.3-4-.3-4z" fill="rgba(0,0,0,0.5)"/><path d="M9.7 15.5l6.5-3.5-6.5-3.5v7z" fill="rgba(0,0,0,0.7)"/></svg>
-                    <!-- Instagram -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="4.5" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="rgba(0,0,0,0.5)"/></svg>
-                    <!-- TikTok -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M19.6 4.8c-1.1-.7-1.8-1.8-2-3h-2.9v12.9c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .5 0 .8.1V8.1c-.3 0-.5-.1-.8-.1-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5 5.5-2.5 5.5-5.5V9.1c1.1.7 2.4 1.1 3.8 1.1V7.3c-1.4 0-2.6-.7-3.6-1.7" fill="rgba(0,0,0,0.5)"/></svg>
+            <div class="hero-stat-row">
+                <div class="hero-stat">
+                    <div class="hero-stat-n">90<span>%</span></div>
+                    <div class="hero-stat-label">Revenue to creator</div>
                 </div>
-                <div class="platform-label">Works with any platform</div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <div class="hero-stat-n">0<span>$</span></div>
+                    <div class="hero-stat-label">Cost to sign up</div>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <div class="hero-stat-n">Any<span> topic</span></div>
+                    <div class="hero-stat-label">You set the terms</div>
+                </div>
             </div>
-
         </div>
     </div>
 
+    <!-- Why TopicLaunch Cards -->
+    <div class="why-section">
+        <div class="why-container">
+            <div class="why-label">WHY TOPICLAUNCH</div>
+            <div class="why-cards">
+                <div class="why-card">
+                    <div class="why-card-icon">
+                        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="#E8305A"/></svg>
+                    </div>
+                    <div class="why-card-title">Fan-driven</div>
+                    <div class="why-card-desc">Fans request topics, you deliver. Demand before you create.</div>
+                </div>
+                <div class="why-card">
+                    <div class="why-card-icon">
+                        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" fill="#E8305A"/><path d="M5 8h6M8 5v6" stroke="#fff" stroke-width="1.5"/></svg>
+                    </div>
+                    <div class="why-card-title">Set your price</div>
+                    <div class="why-card-desc">You control what you charge. No platform minimums.</div>
+                </div>
+                <div class="why-card">
+                    <div class="why-card-icon">
+                        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#E8305A"/><path d="M6 8l1.5 1.5L10 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="why-card-title">Keep 90%</div>
+                    <div class="why-card-desc">The highest payout in the creator economy.</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Creator strip -->
+    <div style="background:#161616; border-top:1px solid #1e1e1e; border-bottom:1px solid #1e1e1e;">
+        <div class="creator-strip">
+            <div class="strip-avatar">JD</div>
+            <div class="strip-input">Commission a video about morning routines for athletes...</div>
+            <a href="/creators/signup.php" class="strip-send">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+            </a>
+        </div>
+    </div>
 
     <!-- Creators Section -->
     <div class="creators-section">

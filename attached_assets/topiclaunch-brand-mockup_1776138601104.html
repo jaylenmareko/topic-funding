@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TopicLaunch — Brand Mockup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+      color: #111;
+    }
+
+    :root {
+      --tl-pink: #E8305A;
+      --tl-pink-light: #F7C0D0;
+      --tl-pink-dark: #B01F3F;
+      --tl-black: #111010;
+      --tl-off: #1C1C1C;
+    }
+
+    .page-wrapper {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      letter-spacing: 0.6px;
+      margin-bottom: 24px;
+    }
+
+    /* --- PALETTE --- */
+    .brand-label {
+      font-size: 11px;
+      color: #888;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .brand-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .swatch { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .swatch-box { width: 48px; height: 48px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.08); }
+    .swatch-label { font-size: 10px; color: #999; }
+
+    /* --- FRAME --- */
+    .tl-frame {
+      background: #111010;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+    }
+
+    .tl-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .tl-logo { font-size: 18px; font-weight: 500; color: #fff; letter-spacing: -0.3px; }
+    .tl-logo span { color: var(--tl-pink); }
+
+    .tl-nav-links { display: flex; gap: 20px; align-items: center; }
+    .tl-nav-link { font-size: 13px; color: #999; }
+
+    .tl-btn-sm {
+      background: var(--tl-pink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .tl-hero {
+      padding: 64px 24px 48px;
+      text-align: center;
+      background: #111010;
+    }
+
+    .tl-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--tl-pink);
+      background: rgba(232,48,90,0.12);
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .tl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tl-pink); display: inline-block; }
+
+    .tl-h1 {
+      font-size: 38px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.15;
+      margin: 0 0 16px;
+      letter-spacing: -0.8px;
+    }
+    .tl-h1 .accent { color: var(--tl-pink); }
+
+    .tl-sub {
+      font-size: 15px;
+      color: #888;
+      max-width: 400px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+
+    .tl-cta-row { display: flex; justify-content: center; gap: 12px; align-items: center; }
+
+    .tl-btn-primary {
+      background: var(--tl-pink);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .tl-btn-ghost {
+      background: transparent;
+      color: #aaa;
+      font-size: 14px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    .tl-stat-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 48px;
+      border-top: 1px solid #222;
+      padding-top: 32px;
+    }
+
+    .tl-stat { flex: 1; text-align: center; max-width: 130px; }
+    .tl-stat-n { font-size: 24px; font-weight: 600; color: #fff; }
+    .tl-stat-n span { color: var(--tl-pink); }
+    .tl-stat-label { font-size: 11px; color: #666; margin-top: 4px; }
+    .tl-divider { width: 1px; background: #222; align-self: stretch; }
+
+    .tl-cards-section {
+      background: #161616;
+      padding: 32px 20px;
+      border-top: 1px solid #222;
+    }
+
+    .tl-section-label { font-size: 11px; color: #555; letter-spacing: 0.8px; font-weight: 500; margin-bottom: 16px; }
+
+    .tl-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    .tl-card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .tl-card-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(232,48,90,0.15);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .tl-card-icon svg { width: 16px; height: 16px; }
+    .tl-card-title { font-size: 13px; font-weight: 500; color: #e0e0e0; margin-bottom: 4px; }
+    .tl-card-desc { font-size: 11px; color: #666; line-height: 1.5; }
+
+    .tl-creator-strip {
+      background: #111010;
+      padding: 20px 24px;
+      border-top: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tl-commission {
+      flex: 1;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      border: 1px solid #2a2a2a;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .tl-send {
+      width: 32px; height: 32px;
+      background: var(--tl-pink);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    @media (max-width: 480px) {
+      .tl-cards { grid-template-columns: 1fr; }
+      .tl-nav-links .tl-nav-link { display: none; }
+      .tl-h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <p class="page-title">TOPICLAUNCH — BRAND MOCKUP</p>
+
+    <div class="brand-label">COLOR PALETTE</div>
+    <div class="brand-row">
+      <div class="swatch"><div class="swatch-box" style="background:#E8305A;"></div><span class="swatch-label">Primary</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#F7C0D0;"></div><span class="swatch-label">Soft pink</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#B01F3F;"></div><span class="swatch-label">Deep pink</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#111010;"></div><span class="swatch-label">Black</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#1C1C1C;"></div><span class="swatch-label">Off black</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#888888;"></div><span class="swatch-label">Muted</span></div>
+      <div class="swatch"><div class="swatch-box" style="background:#ffffff;"></div><span class="swatch-label">White</span></div>
+    </div>
+
+    <div class="brand-label" style="margin-top:8px;">LANDING PAGE MOCKUP</div>
+    <div class="tl-frame">
+      <nav class="tl-nav">
+        <div class="tl-logo">Topic<span>Launch</span></div>
+        <div class="tl-nav-links">
+          <span class="tl-nav-link">For creators</span>
+          <span class="tl-nav-link">Explore</span>
+          <button class="tl-btn-sm">Start creating</button>
+        </div>
+      </nav>
+
+      <div class="tl-hero">
+        <div class="tl-eyebrow"><span class="tl-dot"></span> CREATORS KEEP 90%</div>
+        <h1 class="tl-h1">Your fans <span class="accent">commission</span><br>your best work.</h1>
+        <p class="tl-sub">TopicLaunch connects creators with fans who want custom content — on their terms, at your price.</p>
+        <div class="tl-cta-row">
+          <button class="tl-btn-primary">Launch your page</button>
+          <button class="tl-btn-ghost">See how it works</button>
+        </div>
+        <div class="tl-stat-row">
+          <div class="tl-stat">
+            <div class="tl-stat-n">90<span>%</span></div>
+            <div class="tl-stat-label">Revenue to creator</div>
+          </div>
+          <div class="tl-divider"></div>
+          <div class="tl-stat">
+            <div class="tl-stat-n">0<span>$</span></div>
+            <div class="tl-stat-label">Cost to sign up</div>
+          </div>
+          <div class="tl-divider"></div>
+          <div class="tl-stat">
+            <div class="tl-stat-n">Any<span> topic</span></div>
+            <div class="tl-stat-label">You set the terms</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-cards-section">
+        <div class="tl-section-label">WHY TOPICLAUNCH</div>
+        <div class="tl-cards">
+          <div class="tl-card">
+            <div class="tl-card-icon">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="#E8305A"/></svg>
+            </div>
+            <div class="tl-card-title">Fan-driven</div>
+            <div class="tl-card-desc">Fans request topics, you deliver. Demand before you create.</div>
+          </div>
+          <div class="tl-card">
+            <div class="tl-card-icon">
+              <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" fill="#E8305A"/><path d="M5 8h6M8 5v6" stroke="#fff" stroke-width="1.5"/></svg>
+            </div>
+            <div class="tl-card-title">Set your price</div>
+            <div class="tl-card-desc">You control what you charge. No platform minimums.</div>
+          </div>
+          <div class="tl-card">
+            <div class="tl-card-icon">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#E8305A"/><path d="M6 8l1.5 1.5L10 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="tl-card-title">Keep 90%</div>
+            <div class="tl-card-desc">The highest payout in the creator economy.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-creator-strip">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#E8305A,#993556);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#fff;flex-shrink:0;">JD</div>
+        <div class="tl-commission">Commission a video about morning routines for athletes...</div>
+        <div class="tl-send">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
