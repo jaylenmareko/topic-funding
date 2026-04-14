@@ -220,3 +220,15 @@ Stack trace:
 #0 /home/runner/workspace/router.php(17): require()
 #1 {main}
   thrown in /home/runner/workspace/index.php on line 8
+[14-Apr-2026 23:12:51 UTC] PHP Warning:  Undefined variable $db in /home/runner/workspace/index.php on line 8
+[14-Apr-2026 23:12:51 UTC] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in /home/runner/workspace/index.php:8
+Stack trace:
+#0 /home/runner/workspace/router.php(17): require()
+#1 {main}
+  thrown in /home/runner/workspace/index.php on line 8
+[14-Apr-2026 23:12:52 UTC] PHP Warning:  Undefined variable $db in /home/runner/workspace/index.php on line 8
+[14-Apr-2026 23:12:52 UTC] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in /home/runner/workspace/index.php:8
+Stack trace:
+#0 /home/runner/workspace/router.php(17): require()
+#1 {main}
+  thrown in /home/runner/workspace/index.php on line 8
