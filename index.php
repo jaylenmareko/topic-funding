@@ -553,6 +553,36 @@ if ($db_available) {
         }
 
         /* ── Strip updated styles ── */
+        /* hint label above avatar */
+        .strip-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .select-creator-hint {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .select-creator-hint span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--tl-pink);
+            letter-spacing: 0.3px;
+        }
+        .hint-arrow {
+            display: block;
+        }
+        .select-creator-hint.hidden { display: none; }
+
         .strip-avatar {
             width: 34px; height: 34px;
             border-radius: 50%;
@@ -824,11 +854,17 @@ if ($db_available) {
     </div>
 
     <!-- Creator strip -->
-    <div style="background:#161616; border-top:1px solid #1e1e1e; border-bottom:1px solid #1e1e1e;">
+    <div style="background:#161616; border-top:1px solid #1e1e1e; border-bottom:1px solid #1e1e1e; padding-top:38px; overflow:visible;">
         <div class="creator-strip">
+            <div class="strip-avatar-wrap">
+                <div class="select-creator-hint" id="selectCreatorHint">
+                    <span>Select a creator</span>
+                    <svg class="hint-arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 C4 14, 12 18, 11 20" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M8 17 L11 21 L14 17" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </div>
             <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             </button>
+            </div>
             <input type="text" class="strip-input-field" id="topicInput" placeholder="Choose a creator, then type your topic idea…" disabled>
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
@@ -916,6 +952,7 @@ if ($db_available) {
         const stripAvatar   = document.getElementById('stripAvatar');
         const topicInput    = document.getElementById('topicInput');
         const stripSend     = document.getElementById('stripSend');
+        const selectHint    = document.getElementById('selectCreatorHint');
 
         const pickerOverlay = document.getElementById('creatorPickerOverlay');
         const closePickerBtn= document.getElementById('closeCreatorPicker');
@@ -968,6 +1005,9 @@ if ($db_available) {
                 const initial = selectedCreator.name.charAt(0).toUpperCase();
                 stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
             }
+
+            // Hide hint once creator picked
+            selectHint.classList.add('hidden');
 
             // Enable input
             topicInput.disabled = false;
