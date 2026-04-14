@@ -857,8 +857,16 @@ if ($db_available) {
         </div>
     </div>
 
+    <!-- Browse Creators CTA -->
+    <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; padding:18px 30px 0; text-align:center;">
+        <a href="/creators/index.php" style="display:inline-flex; align-items:center; gap:8px; background:#ffffff; color:#111010; border:1px solid #E5E5E5; border-radius:10px; padding:10px 22px; font-size:13px; font-weight:500; text-decoration:none; box-shadow:0 1px 4px rgba(0,0,0,0.06); transition:border-color 0.2s, box-shadow 0.2s;" onmouseover="this.style.borderColor='#E8305A';this.style.color='#E8305A'" onmouseout="this.style.borderColor='#E5E5E5';this.style.color='#111010'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+            Browse Creators
+        </a>
+    </div>
+
     <!-- Creator strip -->
-    <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:38px; overflow:visible;">
+    <div style="background:#F0F0F0; border-bottom:1px solid #E5E5E5; padding-top:16px; overflow:visible;">
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
