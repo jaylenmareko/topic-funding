@@ -460,11 +460,12 @@ try {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 </button>
             </div>
-            <input type="text" class="strip-input-field" id="topicInput" placeholder="Choose a creator, then type your topic idea…" disabled>
+            <input type="text" class="strip-input-field" id="topicInput" placeholder="Choose a creator, then type your topic idea…" disabled maxlength="100">
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
             </button>
         </div>
+        <div style="text-align:right; padding: 4px 30px 0; font-size:11px; color:#bbb;" id="topicInputCount"></div>
 
         <div class="strip-hint-row">
             <div class="strip-hint-step"><strong>1</strong> Click the avatar to pick a creator</div>
@@ -570,7 +571,8 @@ try {
         const topicDesc     = document.getElementById('topicDesc');
         const topicSubmit   = document.getElementById('topicSubmit');
         const activeFilterNote = document.getElementById('activeFilterNote');
-        const topicDescCount = document.getElementById('topicDescCount');
+        const topicDescCount  = document.getElementById('topicDescCount');
+        const topicInputCount = document.getElementById('topicInputCount');
 
         let selectedCreator = null;
         let activeTopics    = new Set(); // selected filter chips
@@ -654,9 +656,11 @@ try {
             closePicker();
         });
 
-        /* Enable send only when input has text */
+        /* Enable send only when input has text + live counter */
         topicInput.addEventListener('input', () => {
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
+            const len = topicInput.value.length;
+            topicInputCount.textContent = len > 0 ? `${len}/100` : '';
         });
 
         topicDesc.addEventListener('input', () => {
