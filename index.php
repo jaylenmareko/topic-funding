@@ -587,6 +587,19 @@ if ($db_available) {
         }
         .select-creator-hint.hidden { display: none; }
 
+        @media (max-width: 768px) {
+            .select-creator-hint {
+                bottom: calc(100% + 4px);
+            }
+            .select-creator-hint span {
+                font-size: 10px;
+            }
+            .hint-arrow {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
         .strip-avatar {
             width: 34px; height: 34px;
             border-radius: 50%;
