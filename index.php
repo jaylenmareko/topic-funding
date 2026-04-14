@@ -811,7 +811,10 @@ if ($db_available) {
             .hero-stat-row { gap: 0; }
             .creators-grid { grid-template-columns: 1fr; }
             .why-cards { grid-template-columns: 1fr; }
-            .creator-strip { padding: 16px 20px; }
+            .creator-strip { padding: 16px 0; }
+            .creator-strip .strip-avatar-wrap { margin-left: 20px; }
+            .creator-strip .strip-input-field { margin-right: 20px; }
+            .creator-strip .strip-send { margin-right: 20px; }
         }
         @media (max-width: 480px) {
             .hero-cta-row { flex-direction: column; align-items: stretch; }
