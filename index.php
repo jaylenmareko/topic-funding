@@ -650,6 +650,36 @@ if ($db_available) {
         .strip-send:hover:not(:disabled) { background: var(--tl-pink-dark); }
         .strip-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
+        /* Selected creator card */
+        .strip-creator-card {
+            display: none;
+            margin: 12px auto 0;
+            max-width: calc(100% - 60px);
+            background: #fff;
+            border: 1px solid #E5E5E5;
+            border-radius: 12px;
+            padding: 12px 16px;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            animation: fadeSlideIn 0.2s ease;
+        }
+        .strip-creator-card.visible { display: flex; }
+        @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .strip-creator-card-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--tl-pink); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px; color: #fff; overflow: hidden;
+        }
+        .strip-creator-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .strip-creator-card-info { flex: 1; min-width: 0; }
+        .strip-creator-card-name { font-weight: 600; font-size: 13px; color: #111; }
+        .strip-creator-card-topics { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .strip-creator-card-price { background: #FFF0F3; color: var(--tl-pink); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+        .strip-creator-card-change { font-size: 11px; color: #aaa; cursor: pointer; flex-shrink: 0; text-decoration: underline; text-underline-offset: 2px; }
+        .strip-creator-card-change:hover { color: var(--tl-pink); }
+
         /* ── Modals ── */
         .tl-overlay {
             display: none;
@@ -897,6 +927,17 @@ if ($db_available) {
             </button>
         </div>
         <div style="text-align:right; padding: 4px 30px 0; font-size:11px; color:#bbb;" id="topicInputCount"></div>
+
+        <!-- Creator card (shown after selection) -->
+        <div class="strip-creator-card" id="stripCreatorCard">
+            <div class="strip-creator-card-avatar" id="stripCreatorCardAvatar"></div>
+            <div class="strip-creator-card-info">
+                <div class="strip-creator-card-name" id="stripCreatorCardName"></div>
+                <div class="strip-creator-card-topics" id="stripCreatorCardTopics"></div>
+            </div>
+            <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
+            <span class="strip-creator-card-change" id="stripCreatorCardChange">Change</span>
+        </div>
     </div>
 
     <!-- Creator Picker Modal -->
@@ -1015,14 +1056,24 @@ if ($db_available) {
             });
         }
 
+        const stripCreatorCard       = document.getElementById('stripCreatorCard');
+        const stripCreatorCardAvatar = document.getElementById('stripCreatorCardAvatar');
+        const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
+        const stripCreatorCardTopics = document.getElementById('stripCreatorCardTopics');
+        const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
+        const stripCreatorCardChange = document.getElementById('stripCreatorCardChange');
+
         /* ── Select a creator ── */
         pickerGrid.addEventListener('click', e => {
             const item = e.target.closest('.creator-picker-item');
             if (!item) return;
+            let topics = [];
+            try { topics = JSON.parse(item.dataset.topics || '[]'); } catch(e) {}
             selectedCreator = {
-                name:  item.dataset.name,
-                price: parseInt(item.dataset.price, 10) || 0,
-                image: item.dataset.image
+                name:   item.dataset.name,
+                price:  parseInt(item.dataset.price, 10) || 0,
+                image:  item.dataset.image,
+                topics: topics
             };
 
             // Update strip avatar
@@ -1040,11 +1091,36 @@ if ($db_available) {
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
 
+            // Populate + show creator card
+            if (selectedCreator.image) {
+                stripCreatorCardAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+            } else {
+                stripCreatorCardAvatar.innerHTML = selectedCreator.name.charAt(0).toUpperCase();
+            }
+            stripCreatorCardName.textContent   = selectedCreator.name;
+            stripCreatorCardTopics.textContent = topics.length ? topics.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' · ') : '';
+            stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
+            stripCreatorCard.classList.add('visible');
+
             // Highlight selected
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             item.classList.add('selected');
 
             closePicker();
+        });
+
+        /* "Change" link reopens picker */
+        stripCreatorCardChange.addEventListener('click', () => {
+            stripCreatorCard.classList.remove('visible');
+            selectedCreator = null;
+            stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+            selectHint.classList.remove('hidden');
+            topicInput.placeholder = 'Type your topic idea…';
+            stripSend.disabled = true;
+            pickerOverlay.classList.add('open');
+            filterPicker('');
+            creatorSearch.value = '';
+            creatorSearch.focus();
         });
 
         /* ── Enable/disable send based on input ── */
