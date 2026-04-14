@@ -120,7 +120,7 @@ try {
             text-align: center;
             font-size: 11px;
             color: var(--tl-pink);
-            font-weight: 500;
+            font-weight: 400;
             margin-top: 10px;
             min-height: 16px;
         }
