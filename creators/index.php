@@ -223,18 +223,19 @@ try {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             margin-top: 20px;
             padding: 0 30px;
         }
         .strip-hint-step {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 10px;
             font-size: 12px;
             color: var(--tl-muted);
             font-weight: 400;
-            justify-content: center;
+            justify-content: flex-start;
+            width: 220px;
         }
         .strip-hint-step strong {
             display: inline-flex;
