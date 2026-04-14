@@ -1,8 +1,8 @@
 <?php
 // admin/revenue.php - Platform revenue and fee management dashboard
 session_start();
-require_once '../config/database.php';
-require_once '../config/platform_fee_helper.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/platform_fee_helper.php';
 
 // Admin access check
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], [1, 2, 9, 186])) {

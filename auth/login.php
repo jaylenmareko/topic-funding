@@ -4,7 +4,7 @@ session_start();
 
 // If already logged in, redirect to appropriate page
 if (isset($_SESSION['user_id'])) {
-    require_once '../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
     $db = new Database();
     $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
     $db->bind(':user_id', $_SESSION['user_id']);
@@ -22,7 +22,7 @@ $error = '';
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once '../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
     
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';

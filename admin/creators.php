@@ -1,7 +1,7 @@
 <?php
 // admin/creators.php - Updated for cleaned database
 session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Enhanced admin authorization - Check multiple admin methods
 function isAdmin($user_id) {

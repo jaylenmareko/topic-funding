@@ -1,8 +1,8 @@
 <?php
 session_start();
 // creators/upload_content.php - Allow creators to upload content URLs for funded topics
-require_once '../config/database.php';
-require_once '../config/notification_system.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/notification_system.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {

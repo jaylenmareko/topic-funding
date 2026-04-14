@@ -1,7 +1,7 @@
 <?php
 // api/process-payout.php - Automatically process payout to creator when topic is completed
-require_once '../config/database.php';
-require_once '../config/stripe.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/stripe.php';
 
 /**
  * Process payout to creator for a completed topic

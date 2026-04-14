@@ -1,8 +1,8 @@
 <?php
 // admin/webhook_debug.php - Debug tool for webhook issues
 session_start();
-require_once '../config/database.php';
-require_once '../config/stripe.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/stripe.php';
 
 // Admin access check
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_id'], [1, 2, 9, 186])) {
@@ -89,7 +89,7 @@ if ($_POST && isset($_POST['manual_process'])) {
     echo "<h2>🔄 Manually Processing Payment: " . $payment_id . "</h2>";
     
     try {
-        require_once '../config/funding_processor.php';
+        require_once __DIR__ . '/../config/funding_processor.php';
         $processor = new FundingProcessor();
         
         $result = $processor->handlePaymentSuccess($payment_id);

@@ -3,7 +3,7 @@
 session_start();
 
 if (isset($_SESSION['user_id'])) {
-    require_once '../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
     try {
         $db = new Database();
         $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
@@ -13,7 +13,7 @@ if (isset($_SESSION['user_id'])) {
     } catch (Exception $e) { error_log("Creator redirect check error: " . $e->getMessage()); }
 }
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 try {
     $db = new Database();

@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true);

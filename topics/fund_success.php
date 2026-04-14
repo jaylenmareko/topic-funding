@@ -1,9 +1,9 @@
 <?php
 // topics/fund_success.php - Handle successful payments with notification integration
 session_start();
-require_once '../config/database.php';
-require_once '../config/stripe.php';
-require_once '../config/notification_system.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/stripe.php';
+require_once __DIR__ . '/../config/notification_system.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {

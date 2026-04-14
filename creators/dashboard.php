@@ -1,7 +1,7 @@
 <?php
 // creators/dashboard.php - UPDATED WITH CONSISTENT BRANDING
 session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: /index.php');
@@ -89,7 +89,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                         
                         try {
                             if (file_exists('../config/notification_system.php')) {
-                                require_once '../config/notification_system.php';
+                                require_once __DIR__ . '/../config/notification_system.php';
                                 $notificationSystem = new NotificationSystem();
                                 $notificationSystem->sendContentDeliveredNotifications($topic_id, $content_url);
                             }

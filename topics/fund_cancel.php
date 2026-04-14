@@ -1,7 +1,7 @@
 <?php
 // topics/fund_cancel.php - Handle cancelled payments
 session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 $topic_id = isset($_GET['topic_id']) ? (int)$_GET['topic_id'] : 0;
 

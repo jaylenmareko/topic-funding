@@ -1,8 +1,8 @@
 <?php
 // creators/stripe_success.php - Stripe onboarding success
 session_start();
-require_once '../config/database.php';
-require_once '../config/stripe_connect.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/stripe_connect.php';
 
 $creator_id = isset($_GET['creator_id']) ? (int)$_GET['creator_id'] : 0;
 

@@ -1,8 +1,8 @@
 <?php
 // creators/topic_actions.php - Handle creator topic management actions
 session_start();
-require_once '../config/database.php';
-require_once '../config/refund_helper.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/refund_helper.php';
 
 // Check if user is logged in and is a creator
 if (!isset($_SESSION['user_id'])) {

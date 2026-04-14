@@ -1,8 +1,8 @@
 <?php
 // creators/setup_paypal.php - PayPal email setup for payouts
 session_start();
-require_once '../config/database.php';
-require_once '../config/navigation.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/navigation.php';
 
 // Check if user is logged in and is a creator
 if (!isset($_SESSION['user_id'])) {

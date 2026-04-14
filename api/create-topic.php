@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 session_start();
 
 try {
-    require_once '../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
 } catch (Exception $e) {
     echo json_encode(['error' => 'Database config failed: ' . $e->getMessage()]);
     exit;

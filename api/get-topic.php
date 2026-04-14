@@ -8,7 +8,7 @@ session_start();
 header('Content-Type: application/json');
 
 try {
-    require_once '../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
 } catch (Exception $e) {
     error_log("Failed to load database: " . $e->getMessage());
     echo json_encode(['error' => 'Configuration error: ' . $e->getMessage()]);

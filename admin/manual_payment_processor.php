@@ -1,9 +1,9 @@
 <?php
 // admin/manual_payment_processor.php - COMPLETE FILE WITH STUCK PAYMENT DEBUG
 session_start();
-require_once '../config/database.php';
-require_once '../config/stripe.php';
-require_once '../config/funding_processor.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/stripe.php';
+require_once __DIR__ . '/../config/funding_processor.php';
 
 // === HTML HEAD AND STYLES ===
 echo "<!DOCTYPE html><html><head><title>Manual Payment Processor - TopicLaunch Admin</title>";

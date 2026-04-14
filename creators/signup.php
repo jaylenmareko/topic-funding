@@ -5,7 +5,7 @@ session_start();
 // Redirect if already logged in as verified creator
 if (isset($_SESSION['user_id'])) {
     if (file_exists('../config/database.php')) {
-        require_once '../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
     } elseif (file_exists(__DIR__ . '/../config/database.php')) {
         require_once __DIR__ . '/../config/database.php';
     }
@@ -31,7 +31,7 @@ $success = '';
 // Handle signup form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (file_exists('../config/database.php')) {
-        require_once '../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
     } elseif (file_exists(__DIR__ . '/../config/database.php')) {
         require_once __DIR__ . '/../config/database.php';
     }

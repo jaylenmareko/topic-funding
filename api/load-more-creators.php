@@ -1,7 +1,7 @@
 <?php
 // api/load-more-creators.php - Load additional creators for infinite scroll
 header('Content-Type: application/json');
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 $limit = 12;
