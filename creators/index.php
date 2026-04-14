@@ -432,8 +432,6 @@ try {
     <div class="hero-section">
         <div class="hero-eyebrow">Discover</div>
         <h1 class="hero-title">Browse <span>Creators</span></h1>
-        <p class="hero-subtitle">Pick a creator, describe your idea, and fund the video you want to see.</p>
-
         <div class="topic-filter-row" id="topicFilterRow">
             <?php
             $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
