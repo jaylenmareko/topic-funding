@@ -152,6 +152,8 @@ try {
             width: 100%;
         }
         .creator-strip .strip-avatar-wrap { margin-left: 30px; padding-top: 10px; }
+        .creator-strip.no-creator { justify-content: center; }
+        .creator-strip.no-creator .strip-avatar-wrap { margin-left: 0; padding-top: 0; }
         .creator-strip .strip-send { margin-right: 30px; margin-top: 10px; flex-shrink: 0; }
 
         /* hint label above avatar */
@@ -596,7 +598,7 @@ try {
 
     <!-- Creator strip -->
     <div class="strip-section">
-        <div class="creator-strip">
+        <div class="creator-strip no-creator" id="creatorStrip">
             <div class="strip-avatar-wrap">
                 <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -727,8 +729,9 @@ try {
     </script>
     <script>
     (function () {
-        const stripAvatar   = document.getElementById('stripAvatar');
-        const topicInput    = document.getElementById('topicInput');
+        const stripAvatar        = document.getElementById('stripAvatar');
+        const creatorStrip       = document.getElementById('creatorStrip');
+        const topicInput         = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
         const stripInputWrapper  = document.getElementById('stripInputWrapper');
         const stripActiveTopics = document.getElementById('stripActiveTopics');
@@ -886,6 +889,7 @@ try {
                 stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
             }
             stripAvatar.classList.add('avatar-selected');
+            creatorStrip.classList.remove('no-creator');
             stripInputWrapper.style.display = '';
             stripSend.style.display = '';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
@@ -919,6 +923,7 @@ try {
             selectedCreator = null;
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             stripAvatar.classList.remove('avatar-selected');
+            creatorStrip.classList.add('no-creator');
             stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="strip-avatar-label">Select a Creator</span>`;
             stripInputWrapper.style.display = 'none';
             stripSend.style.display = 'none';

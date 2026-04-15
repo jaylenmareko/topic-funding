@@ -387,6 +387,8 @@ if ($db_available) {
             margin: 0;
         }
         .creator-strip .strip-avatar-wrap { margin-left: 30px; }
+        .creator-strip.no-creator { justify-content: center; }
+        .creator-strip.no-creator .strip-avatar-wrap { margin-left: 0; }
         .creator-strip .strip-input-field { max-width: none; }
         .creator-strip .strip-send { margin-right: 30px; }
 
@@ -1007,7 +1009,7 @@ if ($db_available) {
 
     <!-- Creator strip -->
     <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
-        <div class="creator-strip">
+        <div class="creator-strip no-creator" id="creatorStrip">
             <div class="strip-avatar-wrap">
             <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -1150,6 +1152,7 @@ if ($db_available) {
     <script>
     (function () {
         const stripAvatar        = document.getElementById('stripAvatar');
+        const creatorStrip       = document.getElementById('creatorStrip');
         const topicInput         = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
         const stripInputWrapper  = document.getElementById('stripInputWrapper');
@@ -1304,6 +1307,7 @@ if ($db_available) {
                 stripAvatar.innerHTML = `<span class="strip-avatar-initials">${selectedCreator.name.charAt(0).toUpperCase()}</span>`;
             }
             stripAvatar.classList.add('avatar-selected');
+            creatorStrip.classList.remove('no-creator');
             stripInputWrapper.style.display = '';
             stripSend.style.display = '';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
@@ -1335,6 +1339,7 @@ if ($db_available) {
             selectedCreator = null;
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             stripAvatar.classList.remove('avatar-selected');
+            creatorStrip.classList.add('no-creator');
             stripAvatar.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="strip-avatar-label">Select a Creator</span>`;
             stripInputWrapper.style.display = 'none';
             stripSend.style.display = 'none';
