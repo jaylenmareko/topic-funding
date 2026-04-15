@@ -1007,11 +1007,11 @@ if ($db_available) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             </button>
             </div>
-            <div class="strip-input-wrapper">
+            <div class="strip-input-wrapper" id="stripInputWrapper" style="display:none;">
                 <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
                 <span class="strip-input-count" id="topicInputCount"></span>
             </div>
-            <button class="strip-send" id="stripSend" disabled>
+            <button class="strip-send" id="stripSend" disabled style="display:none;">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
             </button>
         </div>
@@ -1145,6 +1145,7 @@ if ($db_available) {
         const stripAvatar        = document.getElementById('stripAvatar');
         const topicInput         = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
+        const stripInputWrapper  = document.getElementById('stripInputWrapper');
         const selectHint         = document.getElementById('selectCreatorHint');
         const stripActiveTopics  = document.getElementById('stripActiveTopics');
         const stripTopicsList    = document.getElementById('stripTopicsList');
@@ -1298,6 +1299,8 @@ if ($db_available) {
             }
 
             selectHint.classList.add('hidden');
+            stripInputWrapper.style.display = '';
+            stripSend.style.display = '';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
@@ -1328,7 +1331,10 @@ if ($db_available) {
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
             selectHint.classList.remove('hidden');
+            stripInputWrapper.style.display = 'none';
+            stripSend.style.display = 'none';
             topicInput.placeholder = 'Type your topic idea…';
+            topicInput.value = '';
             stripSend.disabled = true;
         });
 
