@@ -594,9 +594,8 @@ try {
     <!-- Creator strip -->
     <div class="strip-section">
         <div class="strip-hint-row">
-            <div class="strip-hint-step" id="stripStep1"><strong>1</strong> Click the avatar to pick a creator</div>
-            <div class="strip-hint-step" id="stripStep2"><strong>2</strong> Type your topic idea</div>
-            <div class="strip-hint-step" id="stripStep3"><strong>3</strong> Add details &amp; fund the video</div>
+            <div class="strip-hint-step" id="stripStep2"><strong>1</strong> Type your topic idea</div>
+            <div class="strip-hint-step" id="stripStep3"><strong>2</strong> Add details &amp; fund the video</div>
         </div>
 
         <div class="creator-strip">
@@ -757,7 +756,7 @@ try {
         const stripCreatorCardBio    = document.getElementById('stripCreatorCardBio');
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
         const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
-        const stripStep1 = document.getElementById('stripStep1');
+
         const topicDescField   = document.getElementById('topicDescField');
         const topicFundingInfo = document.getElementById('topicFundingInfo');
 
@@ -888,9 +887,6 @@ try {
             renderCreatorTopics(selectedCreator.id);
             renderFundedTopics(selectedCreator.id);
 
-            /* Hide step 1 — creator is chosen */
-            stripStep1.style.display = 'none';
-
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             item.classList.add('selected');
             closePicker();
@@ -902,7 +898,6 @@ try {
             stripCreatorCard.classList.remove('visible');
             stripActiveTopics.classList.remove('visible');
             stripFundedTopics.classList.remove('visible');
-            stripStep1.style.display = '';
             selectedCreator = null;
             stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
             selectHint.classList.remove('hidden');
