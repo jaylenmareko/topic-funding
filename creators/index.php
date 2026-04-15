@@ -46,7 +46,7 @@ try {
 $creator_funded_map = [];
 try {
     $db3 = new Database();
-    $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason FROM topics WHERE status IN ('funded','on_hold','queued') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
+    $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason, funded_at FROM topics WHERE status IN ('funded','on_hold','queued') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
     $all_funded_topics = $db3->resultSet();
     foreach ($all_funded_topics as $t) {
         $creator_funded_map[$t->creator_id][] = [
@@ -56,6 +56,7 @@ try {
             'funding_threshold' => (float)$t->funding_threshold,
             'status'            => $t->status,
             'hold_reason'       => $t->hold_reason ?? '',
+            'funded_at'         => $t->funded_at ?? null,
         ];
     }
 } catch (Exception $e) {
@@ -832,15 +833,24 @@ try {
         function renderFundedTopics(creatorId) {
             const topics = CREATOR_FUNDED[creatorId] || [];
             if (topics.length === 0) { stripFundedTopics.classList.remove('visible'); return; }
-            stripFundedList.innerHTML = topics.map(t => {
-                const isOnHold = t.status === 'on_hold';
-                const isQueued  = t.status === 'queued';
-                const dotColor = isOnHold ? 'background:#9CA3AF;' : isQueued ? 'background:#3B82F6;' : '';
-                const badge = isOnHold
-                    ? `<div class="strip-funded-badge strip-onhold-badge">On Hold</div>`
-                    : isQueued
-                    ? `<div class="strip-funded-badge strip-queued-badge">In Queue</div>`
-                    : `<div class="strip-funded-badge">Waiting Upload</div>`;
+            const funded = topics.filter(t => t.status === 'funded');
+            const queued = topics.filter(t => t.status === 'queued').sort((a, b) => new Date(a.funded_at || 0) - new Date(b.funded_at || 0));
+            const onHold = topics.filter(t => t.status === 'on_hold');
+            const ordered = [...funded, ...queued, ...onHold];
+            let queueNum = 0;
+            stripFundedList.innerHTML = ordered.map(t => {
+                let dotColor = '';
+                let badge = '';
+                if (t.status === 'funded') {
+                    badge = `<div class="strip-funded-badge">Waiting Upload</div>`;
+                } else if (t.status === 'queued') {
+                    queueNum++;
+                    dotColor = 'background:#3B82F6;';
+                    badge = `<div class="strip-funded-badge strip-queued-badge">#${queueNum} In Queue</div>`;
+                } else {
+                    dotColor = 'background:#9CA3AF;';
+                    badge = `<div class="strip-funded-badge strip-onhold-badge">On Hold</div>`;
+                }
                 return `<div class="strip-funded-item">
                     <div class="strip-funded-dot" style="${dotColor}"></div>
                     <div class="strip-funded-title">${t.title}</div>
