@@ -836,6 +836,10 @@ if ($db_available) {
         .picker-avatar span { font-size: 20px; font-weight: 600; color: var(--white); }
         .picker-name { font-size: 12px; font-weight: 500; color: var(--text-dark); line-height: 1.3; }
         .picker-price { font-size: 10px; color: var(--tl-muted); }
+        .picker-chips-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--tl-border); flex-shrink: 0; }
+        .picker-chip { font-size: 11px; padding: 4px 11px; border-radius: 20px; border: 1px solid #E5E5E5; background: #fff; color: #555; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+        .picker-chip:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .picker-chip.active { background: var(--tl-pink); border-color: var(--tl-pink); color: #fff; }
 
         .creator-picker-item.hidden { display: none; }
 
@@ -1022,6 +1026,12 @@ if ($db_available) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input type="text" id="creatorSearch" placeholder="Search creators…">
             </div>
+            <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
+            <div class="picker-chips-row" id="pickerChipsRow">
+                <?php foreach ($all_topics as $t): ?>
+                <button class="picker-chip" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+                <?php endforeach; ?>
+            </div>
             <div class="creator-picker-grid" id="creatorPickerGrid">
                 <?php foreach ($creators as $c):
                     $c_topics = [];
@@ -1146,6 +1156,22 @@ if ($db_available) {
 
         let selectedCreator = null;
         let activeTopic     = null;
+        let pickerTopics    = new Set();
+
+        /* ── Picker topic chips ── */
+        document.querySelectorAll('.picker-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const t = chip.dataset.topic.toLowerCase();
+                if (pickerTopics.has(t)) {
+                    pickerTopics.delete(t);
+                    chip.classList.remove('active');
+                } else {
+                    pickerTopics.add(t);
+                    chip.classList.add('active');
+                }
+                applyPickerFilter(creatorSearch.value.trim().toLowerCase());
+            });
+        });
 
         /* ── Open / close creator picker ── */
         stripAvatar.addEventListener('click', () => {
@@ -1159,6 +1185,8 @@ if ($db_available) {
         function closePicker() {
             pickerOverlay.classList.remove('open');
             creatorSearch.value = '';
+            pickerTopics.clear();
+            document.querySelectorAll('.picker-chip').forEach(c => c.classList.remove('active'));
             applyPickerFilter('');
         }
 
@@ -1167,7 +1195,11 @@ if ($db_available) {
         function applyPickerFilter(q) {
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
                 const name = btn.dataset.name.toLowerCase();
-                btn.classList.toggle('hidden', q.length > 0 && !name.includes(q));
+                let topics = [];
+                try { topics = JSON.parse(btn.dataset.topics || '[]'); } catch(e) {}
+                const matchesSearch = !q || name.includes(q);
+                const matchesPicker = pickerTopics.size === 0 || [...pickerTopics].some(t => topics.includes(t));
+                btn.classList.toggle('hidden', !matchesSearch || !matchesPicker);
             });
         }
 
