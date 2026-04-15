@@ -609,7 +609,7 @@ foreach ($topics as $topic) {
         }
         
         .payout-button {
-            background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
+            background: linear-gradient(135deg, #2ecc71 0%, #1f9d55 100%);
             color: white;
             border: none;
             padding: 13px 24px;
@@ -626,7 +626,7 @@ foreach ($topics as $topic) {
         }
         
         .payout-button:hover {
-            background: var(--deep-pink);
+            background: #1f9d55;
         }
         
         .payout-note {
