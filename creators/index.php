@@ -318,8 +318,9 @@ try {
         .strip-topic-item-title { font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
         .strip-topic-progress-bar { background: #F0F0F0; border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 4px; }
         .strip-topic-progress-fill { height: 100%; background: var(--tl-pink); border-radius: 4px; transition: width 0.3s; }
-        .strip-topic-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--tl-muted); }
+        .strip-topic-meta { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--tl-muted); margin-top: 6px; }
         .strip-topic-pct { color: var(--tl-pink); font-weight: 600; }
+        .strip-topic-fund-btn { font-size: 10px; font-weight: 600; color: var(--white); background: var(--tl-pink); border: none; border-radius: 20px; padding: 3px 10px; cursor: pointer; pointer-events: none; }
 
         /* Funded / waiting for upload section */
         .strip-funded-topics {
@@ -685,7 +686,7 @@ try {
         <div class="tl-modal tl-modal-sm" id="topicModal">
             <div class="tl-modal-header">
                 <div>
-                    <div class="tl-modal-title">Send your request</div>
+                    <div class="tl-modal-title" id="topicModalTitle">Send your request</div>
                     <div class="tl-modal-sub" id="topicModalCreator"></div>
                 </div>
                 <button class="tl-modal-close" id="closeTopicModal">&times;</button>
@@ -701,7 +702,7 @@ try {
                     <div class="tl-char-count" id="topicDescCount">0/350</div>
                 </div>
                 <div class="tl-field">
-                    <label class="tl-label">Your offer amount</label>
+                    <label class="tl-label" id="topicAmountLabel">Your offer amount</label>
                     <div class="tl-input-prefix-wrap">
                         <span class="tl-prefix">$</span>
                         <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
@@ -754,6 +755,8 @@ try {
 
         const topicDescField   = document.getElementById('topicDescField');
         const topicFundingInfo = document.getElementById('topicFundingInfo');
+        const topicModalTitle  = document.getElementById('topicModalTitle');
+        const topicAmountLabel = document.getElementById('topicAmountLabel');
 
         let selectedCreator  = null;
         let activeTopics     = new Set(); // selected filter chips
@@ -824,8 +827,8 @@ try {
                     <div class="strip-topic-item-title">${t.title}</div>
                     <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
                     <div class="strip-topic-meta">
-                        <span>$${Math.round(t.current_funding)} raised of $${Math.round(t.funding_threshold)}</span>
-                        <span class="strip-topic-pct">${pct}%</span>
+                        <span>$${Math.round(t.current_funding)} raised of $${Math.round(t.funding_threshold)} &bull; <span class="strip-topic-pct">${pct}%</span></span>
+                        <button class="strip-topic-fund-btn">Contribute →</button>
                     </div>
                 </div>`;
             }).join('');
@@ -924,20 +927,17 @@ try {
             const remaining = Math.max(0, fundingThreshold - currentFunding);
             activeTopic = { id: topicId, title: topicTitle, description: topicDescription };
 
+            topicModalTitle.textContent = 'Fund this topic';
+            topicAmountLabel.textContent = 'Your contribution';
             topicPreview.textContent   = topicTitle;
-            topicModalSub.textContent  = `To: ${selectedCreator.name}`;
+            topicModalSub.textContent  = `For: ${selectedCreator.name}`;
             minPriceHint.textContent   = '';
             topicAmount.min            = 1;
             topicAmount.placeholder    = '0';
-            topicAmount.value = '';
-            topicDesc.value = topicDescription;
-            topicDescCount.textContent = `${topicDescription.length}/350`;
-            topicDesc.setAttribute('readonly', true);
-            topicDesc.style.background = '#F5F5F5';
-            topicDesc.style.color = '#888';
-            topicDescField.style.display = '';
+            topicAmount.value          = '';
+            topicDescField.style.display = 'none';
             topicFundingInfo.style.display = 'block';
-            topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> already funded &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong>$${Math.round(remaining)}</strong> still needed`;
+            topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> raised &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong style="color:#333;">$${Math.round(remaining)}</strong> still needed`;
             topicOverlay.classList.add('open');
             topicAmount.focus();
         });
@@ -946,6 +946,8 @@ try {
         stripSend.addEventListener('click', () => {
             if (!selectedCreator || !topicInput.value.trim()) return;
             activeTopic = null;
+            topicModalTitle.textContent = 'Send your request';
+            topicAmountLabel.textContent = 'Your offer amount';
             topicPreview.textContent = topicInput.value.trim();
             topicModalSub.textContent = `To: ${selectedCreator.name}`;
             if (selectedCreator.price > 0) {
