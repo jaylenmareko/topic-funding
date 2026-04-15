@@ -592,11 +592,7 @@ try {
 
     <!-- Hero -->
     <div class="hero-section">
-        <h1 class="hero-title">Browse <em>Creators</em></h1>
-        <button id="browseCreatorsBtn" style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#E8305A,#B01F3F);color:#fff;border:none;border-radius:50px;padding:12px 24px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            Select a Creator
-        </button>
+        <h1 class="hero-title" id="browseCreatorsBtn" style="cursor:pointer;" onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">Browse <em>Creators</em></h1>
         <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
     </div>
 
