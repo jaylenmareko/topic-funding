@@ -137,25 +137,28 @@ $db->query("
     AND (t.content_url IS NULL OR t.content_url = '')
     AND (t.status != 'funded' OR t.content_deadline IS NULL OR t.content_deadline >= NOW())
     ORDER BY 
-        CASE WHEN t.status = 'funded' THEN 1 WHEN t.status = 'queued' THEN 2 WHEN t.status = 'active' THEN 3 WHEN t.status = 'on_hold' THEN 4 END, 
-        potential_earnings DESC, t.funded_at ASC, t.created_at DESC
+        CASE WHEN t.status = 'funded' THEN 1 WHEN t.status = 'queued' THEN 2 WHEN t.status = 'on_hold' THEN 3 WHEN t.status = 'active' THEN 4 END, 
+        t.funded_at ASC, t.created_at DESC
 ");
 $db->bind(':creator_id', $creator->id);
 $topics = $db->resultSet();
 
-$funded_count = 0;
-$active_count = 0;
-$queued_count = 0;
+// Group topics into sections
+$section_running  = [];
+$section_queued   = [];
+$section_on_hold  = [];
+$section_active   = [];
 foreach ($topics as $topic) {
-    if ($topic->status === 'funded') {
-        $funded_count++;
-    } elseif ($topic->status === 'active') {
-        $active_count++;
-    } elseif ($topic->status === 'queued') {
-        $queued_count++;
-    }
+    if ($topic->status === 'funded')       $section_running[]  = $topic;
+    elseif ($topic->status === 'queued')   $section_queued[]   = $topic;
+    elseif ($topic->status === 'on_hold')  $section_on_hold[]  = $topic;
+    elseif ($topic->status === 'active')   $section_active[]   = $topic;
 }
-$has_running = $funded_count > 0;
+
+$funded_count = count($section_running);
+$queued_count = count($section_queued);
+$active_count = count($section_active);
+$has_running  = $funded_count > 0;
 
 // Fetch queue positions for queued topics
 $queue_positions = [];
@@ -631,6 +634,49 @@ if ($queued_count > 0) {
             font-weight: 600;
             color: #15803D;
         }
+
+        /* Topic sections */
+        .topic-section {
+            margin-bottom: 28px;
+        }
+
+        .topic-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .section-label-count {
+            background: #F3F4F6;
+            color: #6B7280;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 20px;
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 1px solid #F0F0F0;
+            margin: 24px 0;
+        }
         
         /* UPDATED: Earnings section with consistent pink */
         .earnings-section {
@@ -859,83 +905,140 @@ if ($queued_count > 0) {
                     <button onclick="copyProfileLink()" class="empty-btn">Copy Profile Link</button>
                 </div>
             <?php else: ?>
-                <div class="topics-grid">
-                    <?php foreach ($topics as $topic): ?>
-                        <?php
-                            $tileClass = 'topic-tile';
-                            if ($topic->status === 'funded')  $tileClass .= ' tile-running';
-                            if ($topic->status === 'on_hold') $tileClass .= ' tile-on-hold';
-                            $pct = $topic->funding_threshold > 0
-                                ? min(100, round(($topic->current_funding / $topic->funding_threshold) * 100))
-                                : 0;
-                        ?>
-                        <div class="<?php echo $tileClass; ?>" onclick="openTopicModal(<?php echo $topic->id; ?>)">
 
-                            <!-- Top row: dot + badge + earnings -->
-                            <div class="tile-top">
-                                <?php if ($topic->status === 'funded'): ?>
-                                    <div class="tile-dot dot-running"></div>
-                                    <span class="tile-badge badge-running">
-                                        ⏱ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>"><?php
-                                            $seconds_left = max(0, $topic->seconds_remaining);
-                                            $hours   = floor($seconds_left / 3600);
-                                            $minutes = floor(($seconds_left % 3600) / 60);
-                                            $secs    = $seconds_left % 60;
-                                            echo sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
-                                        ?></span>
-                                    </span>
-                                <?php elseif ($topic->status === 'queued'): ?>
-                                    <div class="tile-dot dot-queued"></div>
-                                    <span class="tile-badge badge-queued">#<?php echo $queue_positions[$topic->id] ?? '?'; ?> In Queue</span>
-                                <?php elseif ($topic->status === 'on_hold'): ?>
-                                    <div class="tile-dot dot-hold"></div>
-                                    <span class="tile-badge badge-hold">On Hold</span>
-                                <?php else: ?>
-                                    <div class="tile-dot dot-active"></div>
-                                    <span class="tile-badge badge-active">Active</span>
-                                <?php endif; ?>
-                                <span class="tile-earnings-inline">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?> earnings</span>
-                            </div>
+                <?php
+                // Reusable card renderer — outputs the tile HTML for one topic
+                function renderTopicTile($topic, $queue_positions, $has_running) {
+                    $tileClass = 'topic-tile';
+                    if ($topic->status === 'funded')  $tileClass .= ' tile-running';
+                    if ($topic->status === 'on_hold') $tileClass .= ' tile-on-hold';
+                    $pct = $topic->funding_threshold > 0
+                        ? min(100, round(($topic->current_funding / $topic->funding_threshold) * 100))
+                        : 0;
+                    ?>
+                    <div class="<?php echo $tileClass; ?>" onclick="openTopicModal(<?php echo $topic->id; ?>)">
 
-                            <!-- Title -->
-                            <h3 class="topic-tile-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-
-                            <!-- Progress bar -->
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill" style="width:<?php echo $pct; ?>%"></div>
-                            </div>
-
-                            <!-- Meta row -->
-                            <div class="tile-meta">
-                                <span>$<?php echo number_format($topic->current_funding, 0); ?> raised of $<?php echo number_format($topic->funding_threshold, 0); ?></span>
-                                <span><?php echo $pct; ?>%</span>
-                            </div>
-
-                            <!-- Action buttons -->
-                            <div class="topic-tile-actions" onclick="event.stopPropagation();">
-                                <?php if ($topic->status === 'funded'): ?>
-                                    <button class="tile-btn primary" onclick="openUploadModal(<?php echo $topic->id; ?>)">Upload</button>
-                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
-                                    <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
-                                <?php elseif ($topic->status === 'queued'): ?>
-                                    <?php if ($has_running): ?>
-                                        <button class="tile-btn" disabled style="opacity:0.45;cursor:not-allowed;flex:1;" title="Finish the current running topic first">Auto-queued</button>
-                                    <?php else: ?>
-                                        <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
-                                    <?php endif; ?>
-                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
-                                    <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
-                                <?php elseif ($topic->status === 'on_hold'): ?>
-                                    <button class="tile-btn primary" onclick="resumeTopic(<?php echo $topic->id; ?>)">Resume</button>
-                                    <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
-                                <?php else: ?>
-                                    <button class="tile-btn" onclick="copyTopicLink(<?php echo $topic->id; ?>)">Copy Link</button>
-                                    <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
-                                <?php endif; ?>
-                            </div>
+                        <div class="tile-top">
+                            <?php if ($topic->status === 'funded'): ?>
+                                <div class="tile-dot dot-running"></div>
+                                <span class="tile-badge badge-running">
+                                    ⏱ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>"><?php
+                                        $seconds_left = max(0, $topic->seconds_remaining);
+                                        $hours   = floor($seconds_left / 3600);
+                                        $minutes = floor(($seconds_left % 3600) / 60);
+                                        $secs    = $seconds_left % 60;
+                                        echo sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+                                    ?></span>
+                                </span>
+                            <?php elseif ($topic->status === 'queued'): ?>
+                                <div class="tile-dot dot-queued"></div>
+                                <span class="tile-badge badge-queued">#<?php echo $queue_positions[$topic->id] ?? '?'; ?> In Queue</span>
+                            <?php elseif ($topic->status === 'on_hold'): ?>
+                                <div class="tile-dot dot-hold"></div>
+                                <span class="tile-badge badge-hold">On Hold</span>
+                            <?php else: ?>
+                                <div class="tile-dot dot-active"></div>
+                                <span class="tile-badge badge-active">Active</span>
+                            <?php endif; ?>
+                            <span class="tile-earnings-inline">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?> earnings</span>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+
+                        <h3 class="topic-tile-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width:<?php echo $pct; ?>%"></div>
+                        </div>
+
+                        <div class="tile-meta">
+                            <span>$<?php echo number_format($topic->current_funding, 0); ?> raised of $<?php echo number_format($topic->funding_threshold, 0); ?></span>
+                            <span><?php echo $pct; ?>%</span>
+                        </div>
+
+                        <div class="topic-tile-actions" onclick="event.stopPropagation();">
+                            <?php if ($topic->status === 'funded'): ?>
+                                <button class="tile-btn primary" onclick="openUploadModal(<?php echo $topic->id; ?>)">Upload</button>
+                                <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
+                                <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
+                            <?php elseif ($topic->status === 'queued'): ?>
+                                <?php if ($has_running): ?>
+                                    <button class="tile-btn" disabled style="opacity:0.45;cursor:not-allowed;flex:1;" title="Finish the current running topic first">Auto-queued</button>
+                                <?php else: ?>
+                                    <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
+                                <?php endif; ?>
+                                <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
+                                <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
+                            <?php elseif ($topic->status === 'on_hold'): ?>
+                                <button class="tile-btn primary" onclick="resumeTopic(<?php echo $topic->id; ?>)">Resume</button>
+                                <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
+                            <?php else: ?>
+                                <button class="tile-btn" onclick="copyTopicLink(<?php echo $topic->id; ?>)">Copy Link</button>
+                                <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php
+                }
+                ?>
+
+                <?php $first_section = true; ?>
+
+                <?php if (!empty($section_running)): ?>
+                    <div class="topic-section">
+                        <div class="section-label">
+                            <div class="section-label-dot" style="background:#22C55E;"></div>
+                            Now Running
+                        </div>
+                        <div class="topics-grid">
+                            <?php foreach ($section_running as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        </div>
+                    </div>
+                    <?php $first_section = false; ?>
+                <?php endif; ?>
+
+                <?php if (!empty($section_queued)): ?>
+                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
+                    <div class="topic-section">
+                        <div class="section-label">
+                            <div class="section-label-dot" style="background:#3B82F6;"></div>
+                            Up Next
+                            <span class="section-label-count"><?php echo count($section_queued); ?></span>
+                        </div>
+                        <div class="topics-grid">
+                            <?php foreach ($section_queued as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        </div>
+                    </div>
+                    <?php $first_section = false; ?>
+                <?php endif; ?>
+
+                <?php if (!empty($section_on_hold)): ?>
+                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
+                    <div class="topic-section">
+                        <div class="section-label">
+                            <div class="section-label-dot" style="background:#F59E0B;"></div>
+                            On Hold
+                            <span class="section-label-count"><?php echo count($section_on_hold); ?></span>
+                        </div>
+                        <div class="topics-grid">
+                            <?php foreach ($section_on_hold as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        </div>
+                    </div>
+                    <?php $first_section = false; ?>
+                <?php endif; ?>
+
+                <?php if (!empty($section_active)): ?>
+                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
+                    <div class="topic-section">
+                        <div class="section-label">
+                            <div class="section-label-dot" style="background:var(--hot-pink);"></div>
+                            Collecting Funding
+                            <span class="section-label-count"><?php echo count($section_active); ?></span>
+                        </div>
+                        <div class="topics-grid">
+                            <?php foreach ($section_active as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
             <?php endif; ?>
         </div>
     </div>
