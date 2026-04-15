@@ -862,10 +862,9 @@ try {
                 try { topics = JSON.parse(btn.dataset.topics || '[]'); } catch(e) {}
 
                 const matchesSearch  = !q || name.includes(q);
-                const matchesHero    = activeTopics.size === 0 || [...activeTopics].some(t => topics.includes(t));
                 const matchesPicker  = pickerTopics.size === 0 || [...pickerTopics].some(t => topics.includes(t));
 
-                btn.classList.toggle('hidden', !matchesSearch || !matchesHero || !matchesPicker);
+                btn.classList.toggle('hidden', !matchesSearch || !matchesPicker);
             });
         }
 
