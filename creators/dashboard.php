@@ -677,6 +677,49 @@ if ($queued_count > 0) {
             border-top: 1px solid #F0F0F0;
             margin: 24px 0;
         }
+
+        /* Collapsible section toggle */
+        .section-label {
+            cursor: default;
+        }
+
+        .section-label.collapsible {
+            cursor: pointer;
+            user-select: none;
+            border-radius: 8px;
+            padding: 5px 6px;
+            margin: -5px -6px 10px;
+            transition: background 0.15s;
+        }
+
+        .section-label.collapsible:hover {
+            background: #F5F5F5;
+        }
+
+        .section-chevron {
+            margin-left: auto;
+            width: 14px;
+            height: 14px;
+            color: #BBB;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .section-label.collapsed .section-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .section-body {
+            overflow: hidden;
+            transition: max-height 0.25s ease, opacity 0.2s ease;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .section-body.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
         
         /* UPDATED: Earnings section with consistent pink */
         .earnings-section {
@@ -998,13 +1041,16 @@ if ($queued_count > 0) {
                 <?php if (!empty($section_queued)): ?>
                     <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
                     <div class="topic-section">
-                        <div class="section-label">
+                        <div class="section-label collapsible" id="label-queued" onclick="toggleSection('queued')">
                             <div class="section-label-dot" style="background:#3B82F6;"></div>
                             Up Next
                             <span class="section-label-count"><?php echo count($section_queued); ?></span>
+                            <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
-                        <div class="topics-grid">
-                            <?php foreach ($section_queued as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        <div class="section-body" id="body-queued">
+                            <div class="topics-grid">
+                                <?php foreach ($section_queued as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                            </div>
                         </div>
                     </div>
                     <?php $first_section = false; ?>
@@ -1013,13 +1059,16 @@ if ($queued_count > 0) {
                 <?php if (!empty($section_on_hold)): ?>
                     <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
                     <div class="topic-section">
-                        <div class="section-label">
+                        <div class="section-label collapsible collapsed" id="label-onhold" onclick="toggleSection('onhold')">
                             <div class="section-label-dot" style="background:#F59E0B;"></div>
                             On Hold
                             <span class="section-label-count"><?php echo count($section_on_hold); ?></span>
+                            <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
-                        <div class="topics-grid">
-                            <?php foreach ($section_on_hold as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        <div class="section-body collapsed" id="body-onhold">
+                            <div class="topics-grid">
+                                <?php foreach ($section_on_hold as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                            </div>
                         </div>
                     </div>
                     <?php $first_section = false; ?>
@@ -1028,13 +1077,16 @@ if ($queued_count > 0) {
                 <?php if (!empty($section_active)): ?>
                     <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
                     <div class="topic-section">
-                        <div class="section-label">
+                        <div class="section-label collapsible collapsed" id="label-active" onclick="toggleSection('active')">
                             <div class="section-label-dot" style="background:var(--hot-pink);"></div>
                             Collecting Funding
                             <span class="section-label-count"><?php echo count($section_active); ?></span>
+                            <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
-                        <div class="topics-grid">
-                            <?php foreach ($section_active as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                        <div class="section-body collapsed" id="body-active">
+                            <div class="topics-grid">
+                                <?php foreach ($section_active as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
+                            </div>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -1156,6 +1208,55 @@ if ($queued_count > 0) {
             });
         }
         
+        // Section collapse/expand with localStorage persistence
+        const SECTION_KEY = 'tl_dashboard_sections';
+
+        function getSectionState() {
+            try { return JSON.parse(localStorage.getItem(SECTION_KEY)) || {}; } catch(e) { return {}; }
+        }
+
+        function saveSectionState(key, collapsed) {
+            const state = getSectionState();
+            state[key] = collapsed;
+            localStorage.setItem(SECTION_KEY, JSON.stringify(state));
+        }
+
+        function toggleSection(key) {
+            const label = document.getElementById('label-' + key);
+            const body  = document.getElementById('body-' + key);
+            if (!label || !body) return;
+            const isCollapsed = body.classList.contains('collapsed');
+            if (isCollapsed) {
+                body.classList.remove('collapsed');
+                label.classList.remove('collapsed');
+                saveSectionState(key, false);
+            } else {
+                body.classList.add('collapsed');
+                label.classList.add('collapsed');
+                saveSectionState(key, true);
+            }
+        }
+
+        // Restore saved section states on load
+        (function restoreSections() {
+            const state = getSectionState();
+            ['queued', 'onhold', 'active'].forEach(key => {
+                // Default: queued=open, onhold=collapsed, active=collapsed
+                const defaultCollapsed = (key !== 'queued');
+                const collapsed = (key in state) ? state[key] : defaultCollapsed;
+                const label = document.getElementById('label-' + key);
+                const body  = document.getElementById('body-' + key);
+                if (!label || !body) return;
+                if (collapsed) {
+                    body.classList.add('collapsed');
+                    label.classList.add('collapsed');
+                } else {
+                    body.classList.remove('collapsed');
+                    label.classList.remove('collapsed');
+                }
+            });
+        })();
+
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer[data-deadline]').forEach(element => {
                 const deadline = parseInt(element.getAttribute('data-deadline')) * 1000;
