@@ -662,6 +662,7 @@ try {
                 ?>
                 <button class="creator-picker-item"
                     data-id="<?php echo (int)$c->id; ?>"
+                    data-handle="<?php echo htmlspecialchars(strtolower($c->handle ?? $c->username ?? $c->display_name)); ?>"
                     data-name="<?php echo htmlspecialchars($c->display_name); ?>"
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
                     data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
@@ -1043,6 +1044,14 @@ try {
                 setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
             });
         });
+        /* Auto-select creator from ?select= query param */
+        const autoSelectHandle = new URLSearchParams(window.location.search).get('select');
+        if (autoSelectHandle) {
+            const match = pickerGrid.querySelector(
+                `.creator-picker-item[data-handle="${CSS.escape(autoSelectHandle.toLowerCase())}"]`
+            );
+            if (match) match.click();
+        }
     })();
     </script>
 </body>

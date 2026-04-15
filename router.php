@@ -36,9 +36,12 @@ $reserved = ['auth', 'creators', 'topics', 'admin', 'uploads', 'config', 'api', 
 $parts = explode('/', ltrim($path, '/'));
 $first = $parts[0] ?? '';
 
-if (preg_match('/^\/([a-zA-Z0-9_.-]+)\/topic([0-9]+)$/', $path, $m) ||
-    ($first && !in_array($first, $reserved) && preg_match('/^[a-zA-Z0-9_.-]+$/', $first) && count($parts) === 1)) {
-    header('Location: /creators/');
+if (preg_match('/^\/([a-zA-Z0-9_.-]+)\/topic([0-9]+)$/', $path, $m)) {
+    header('Location: /creators/?select=' . urlencode($m[1]));
+    return true;
+}
+if ($first && !in_array($first, $reserved) && preg_match('/^[a-zA-Z0-9_.-]+$/', $first) && count($parts) === 1) {
+    header('Location: /creators/?select=' . urlencode($first));
     return true;
 }
 
