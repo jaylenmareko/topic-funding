@@ -343,3 +343,9 @@ Stack trace:
 #0 /home/runner/workspace/tmp_seed_topics_jaylen.php(57): PDOStatement->execute(Array)
 #1 {main}
   thrown in /home/runner/workspace/tmp_seed_topics_jaylen.php on line 57
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.446708" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.446708" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.654988" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.654988" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.652407" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.652407" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823

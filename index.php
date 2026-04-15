@@ -71,6 +71,43 @@ if ($db_available) {
         $creators = [];
     }
 }
+
+// Fetch active topics for all creators
+$creator_topics_map = [];
+if ($db_available) {
+    try {
+        $db2 = new Database();
+        $db2->query("SELECT id, creator_id, title, description, funding_threshold, current_funding FROM topics WHERE status = 'active' ORDER BY created_at DESC");
+        $all_active_topics = $db2->resultSet();
+        foreach ($all_active_topics as $t) {
+            $creator_topics_map[$t->creator_id][] = [
+                'id'                => $t->id,
+                'title'             => $t->title,
+                'description'       => $t->description,
+                'funding_threshold' => (float)$t->funding_threshold,
+                'current_funding'   => (float)$t->current_funding,
+            ];
+        }
+    } catch (Exception $e) {}
+}
+
+// Fetch funded (waiting for upload) topics for all creators
+$creator_funded_map = [];
+if ($db_available) {
+    try {
+        $db3 = new Database();
+        $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold FROM topics WHERE status = 'funded' ORDER BY funded_at DESC");
+        $all_funded_topics = $db3->resultSet();
+        foreach ($all_funded_topics as $t) {
+            $creator_funded_map[$t->creator_id][] = [
+                'id'                => $t->id,
+                'title'             => $t->title,
+                'current_funding'   => (float)$t->current_funding,
+                'funding_threshold' => (float)$t->funding_threshold,
+            ];
+        }
+    } catch (Exception $e) {}
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -678,6 +715,30 @@ if ($db_available) {
         .strip-creator-card-x { background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; flex-shrink: 0; transition: color 0.15s; }
         .strip-creator-card-x:hover { color: var(--tl-pink); }
 
+        /* Active topics section */
+        .strip-active-topics { display: none; margin: 10px auto 0; max-width: calc(100% - 60px); }
+        .strip-active-topics.visible { display: block; }
+        .strip-topics-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--tl-muted); margin-bottom: 8px; }
+        .strip-topic-item { background: var(--white); border: 1px solid var(--tl-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s; }
+        .strip-topic-item:last-child { margin-bottom: 0; }
+        .strip-topic-item:hover { border-color: var(--tl-pink); }
+        .strip-topic-item-title { font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+        .strip-topic-progress-bar { background: #F0F0F0; border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 4px; }
+        .strip-topic-progress-fill { height: 100%; background: var(--tl-pink); border-radius: 4px; transition: width 0.3s; }
+        .strip-topic-meta { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--tl-muted); margin-top: 6px; }
+        .strip-topic-pct { color: var(--tl-pink); font-weight: 600; }
+        .strip-topic-fund-btn { font-size: 10px; font-weight: 600; color: var(--white); background: var(--tl-pink); border: none; border-radius: 20px; padding: 3px 10px; cursor: pointer; pointer-events: none; }
+
+        /* Funded / waiting for upload section */
+        .strip-funded-topics { display: none; margin: 10px auto 0; max-width: calc(100% - 60px); }
+        .strip-funded-topics.visible { display: block; }
+        .strip-funded-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #B45309; margin-bottom: 8px; }
+        .strip-funded-item { background: #FFFBF0; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+        .strip-funded-item:last-child { margin-bottom: 0; }
+        .strip-funded-dot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; }
+        .strip-funded-title { font-size: 12px; font-weight: 600; color: var(--text-dark); flex: 1; }
+        .strip-funded-badge { font-size: 10px; font-weight: 600; color: #B45309; background: #FEF3C7; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+
         /* ── Modals ── */
         .tl-overlay {
             display: none;
@@ -936,6 +997,18 @@ if ($db_available) {
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
             <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
         </div>
+
+        <!-- Active topics for selected creator -->
+        <div class="strip-active-topics" id="stripActiveTopics">
+            <div class="strip-topics-label">Active Topics</div>
+            <div id="stripTopicsList"></div>
+        </div>
+
+        <!-- Funded (waiting for upload) topics -->
+        <div class="strip-funded-topics" id="stripFundedTopics">
+            <div class="strip-funded-label">Waiting for Upload</div>
+            <div id="stripFundedList"></div>
+        </div>
     </div>
 
     <!-- Creator Picker Modal -->
@@ -950,8 +1023,21 @@ if ($db_available) {
                 <input type="text" id="creatorSearch" placeholder="Search creators…">
             </div>
             <div class="creator-picker-grid" id="creatorPickerGrid">
-                <?php foreach ($creators as $c): ?>
-                <button class="creator-picker-item" data-name="<?php echo htmlspecialchars($c->display_name); ?>" data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>" data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>" data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
+                <?php foreach ($creators as $c):
+                    $c_topics = [];
+                    if (!empty($c->video_topics)) {
+                        $decoded = json_decode($c->video_topics, true);
+                        if (is_array($decoded)) $c_topics = array_map('strtolower', $decoded);
+                    }
+                    $c_topics_json = htmlspecialchars(json_encode($c_topics), ENT_QUOTES);
+                ?>
+                <button class="creator-picker-item"
+                    data-id="<?php echo (int)$c->id; ?>"
+                    data-name="<?php echo htmlspecialchars($c->display_name); ?>"
+                    data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
+                    data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
+                    data-topics="<?php echo $c_topics_json; ?>"
+                    data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
                     <div class="picker-avatar" style="background:linear-gradient(135deg,#E8305A,#B01F3F)">
                         <?php if ($c->profile_image): ?>
                             <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
@@ -975,7 +1061,7 @@ if ($db_available) {
         <div class="tl-modal tl-modal-sm" id="topicModal">
             <div class="tl-modal-header">
                 <div>
-                    <div class="tl-modal-title">Send your request</div>
+                    <div class="tl-modal-title" id="topicModalTitle">Send your request</div>
                     <div class="tl-modal-sub" id="topicModalCreator"></div>
                 </div>
                 <button class="tl-modal-close" id="closeTopicModal">&times;</button>
@@ -985,17 +1071,19 @@ if ($db_available) {
                     <label class="tl-label">Your topic idea</label>
                     <div class="tl-topic-preview" id="topicPreview"></div>
                 </div>
+                <div class="tl-field" id="topicDescField">
+                    <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
+                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3" maxlength="350"></textarea>
+                    <div class="tl-char-count" id="topicDescCount">0/350</div>
+                </div>
                 <div class="tl-field">
-                    <label class="tl-label">Your offer amount</label>
+                    <label class="tl-label" id="topicAmountLabel">Your offer amount</label>
                     <div class="tl-input-prefix-wrap">
                         <span class="tl-prefix">$</span>
                         <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
                     </div>
+                    <div id="topicFundingInfo" style="display:none; margin-top:6px; background:#FFF0F3; border-radius:8px; padding:8px 12px; font-size:12px; color:#555; line-height:1.5;"></div>
                     <div class="tl-hint" id="minPriceHint"></div>
-                </div>
-                <div class="tl-field">
-                    <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
-                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3"></textarea>
                 </div>
                 <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
             </div>
@@ -1014,141 +1102,247 @@ if ($db_available) {
     </footer>
 
     <script>
+    const CREATOR_TOPICS = <?php echo json_encode($creator_topics_map, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const CREATOR_FUNDED = <?php echo json_encode($creator_funded_map, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    </script>
+    <script>
     (function () {
-        const stripAvatar   = document.getElementById('stripAvatar');
-        const topicInput    = document.getElementById('topicInput');
-        const stripSend     = document.getElementById('stripSend');
-        const selectHint    = document.getElementById('selectCreatorHint');
+        const stripAvatar        = document.getElementById('stripAvatar');
+        const topicInput         = document.getElementById('topicInput');
+        const stripSend          = document.getElementById('stripSend');
+        const selectHint         = document.getElementById('selectCreatorHint');
+        const stripActiveTopics  = document.getElementById('stripActiveTopics');
+        const stripTopicsList    = document.getElementById('stripTopicsList');
+        const stripFundedTopics  = document.getElementById('stripFundedTopics');
+        const stripFundedList    = document.getElementById('stripFundedList');
 
-        const pickerOverlay = document.getElementById('creatorPickerOverlay');
-        const closePickerBtn= document.getElementById('closeCreatorPicker');
-        const creatorSearch = document.getElementById('creatorSearch');
-        const pickerGrid    = document.getElementById('creatorPickerGrid');
+        const pickerOverlay  = document.getElementById('creatorPickerOverlay');
+        const closePickerBtn = document.getElementById('closeCreatorPicker');
+        const creatorSearch  = document.getElementById('creatorSearch');
+        const pickerGrid     = document.getElementById('creatorPickerGrid');
 
-        const topicOverlay  = document.getElementById('topicModalOverlay');
-        const closeTopicBtn = document.getElementById('closeTopicModal');
-        const topicPreview  = document.getElementById('topicPreview');
-        const topicModalSub = document.getElementById('topicModalCreator');
-        const topicAmount   = document.getElementById('topicAmount');
-        const minPriceHint  = document.getElementById('minPriceHint');
-        const topicDesc     = document.getElementById('topicDesc');
-        const topicSubmit   = document.getElementById('topicSubmit');
+        const topicOverlay   = document.getElementById('topicModalOverlay');
+        const closeTopicBtn  = document.getElementById('closeTopicModal');
+        const topicPreview   = document.getElementById('topicPreview');
+        const topicModalSub  = document.getElementById('topicModalCreator');
+        const topicAmount    = document.getElementById('topicAmount');
+        const minPriceHint   = document.getElementById('minPriceHint');
+        const topicDesc      = document.getElementById('topicDesc');
+        const topicSubmit    = document.getElementById('topicSubmit');
+        const topicDescCount   = document.getElementById('topicDescCount');
+        const topicInputCount  = document.getElementById('topicInputCount');
 
-        let selectedCreator = null; // { name, price, image }
+        const stripCreatorCard        = document.getElementById('stripCreatorCard');
+        const stripCreatorCardAvatar  = document.getElementById('stripCreatorCardAvatar');
+        const stripCreatorCardName    = document.getElementById('stripCreatorCardName');
+        const stripCreatorCardBio     = document.getElementById('stripCreatorCardBio');
+        const stripCreatorCardPrice   = document.getElementById('stripCreatorCardPrice');
+        const stripCreatorCardX       = document.getElementById('stripCreatorCardX');
+
+        const topicDescField   = document.getElementById('topicDescField');
+        const topicFundingInfo = document.getElementById('topicFundingInfo');
+        const topicModalTitle  = document.getElementById('topicModalTitle');
+        const topicAmountLabel = document.getElementById('topicAmountLabel');
+
+        let selectedCreator = null;
+        let activeTopic     = null;
 
         /* ── Open / close creator picker ── */
         stripAvatar.addEventListener('click', () => {
             pickerOverlay.classList.add('open');
+            applyPickerFilter('');
+            creatorSearch.value = '';
             creatorSearch.focus();
         });
         closePickerBtn.addEventListener('click', closePicker);
         pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
-        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; filterPicker(''); }
+        function closePicker() {
+            pickerOverlay.classList.remove('open');
+            creatorSearch.value = '';
+            applyPickerFilter('');
+        }
 
         /* ── Creator search inside picker ── */
-        creatorSearch.addEventListener('input', () => filterPicker(creatorSearch.value.trim().toLowerCase()));
-        function filterPicker(q) {
+        creatorSearch.addEventListener('input', () => applyPickerFilter(creatorSearch.value.trim().toLowerCase()));
+        function applyPickerFilter(q) {
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
-                const n = btn.dataset.name.toLowerCase();
-                btn.classList.toggle('hidden', q.length > 0 && !n.includes(q));
+                const name = btn.dataset.name.toLowerCase();
+                btn.classList.toggle('hidden', q.length > 0 && !name.includes(q));
             });
         }
 
-        const stripCreatorCard       = document.getElementById('stripCreatorCard');
-        const stripCreatorCardAvatar = document.getElementById('stripCreatorCardAvatar');
-        const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
-        const stripCreatorCardBio = document.getElementById('stripCreatorCardBio');
-        const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
-        const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
+        /* ── Render active topics ── */
+        function renderCreatorTopics(creatorId) {
+            const topics = CREATOR_TOPICS[creatorId] || [];
+            if (topics.length === 0) { stripActiveTopics.classList.remove('visible'); return; }
+            stripTopicsList.innerHTML = topics.map(t => {
+                const pct      = Math.min(100, Math.round((t.current_funding / t.funding_threshold) * 100));
+                const descAttr = t.description ? t.description.replace(/"/g, '&quot;') : '';
+                const titleAttr = t.title.replace(/"/g, '&quot;');
+                return `<div class="strip-topic-item" data-topic-id="${t.id}" data-topic-title="${titleAttr}" data-topic-desc="${descAttr}" data-current-funding="${t.current_funding}" data-funding-threshold="${t.funding_threshold}">
+                    <div class="strip-topic-item-title">${t.title}</div>
+                    <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
+                    <div class="strip-topic-meta">
+                        <span>$${Math.round(t.current_funding)} raised of $${Math.round(t.funding_threshold)} &bull; <span class="strip-topic-pct">${pct}%</span></span>
+                        <button class="strip-topic-fund-btn">Contribute →</button>
+                    </div>
+                </div>`;
+            }).join('');
+            stripActiveTopics.classList.add('visible');
+        }
+
+        /* ── Render funded/waiting topics ── */
+        function renderFundedTopics(creatorId) {
+            const topics = CREATOR_FUNDED[creatorId] || [];
+            if (topics.length === 0) { stripFundedTopics.classList.remove('visible'); return; }
+            stripFundedList.innerHTML = topics.map(t =>
+                `<div class="strip-funded-item">
+                    <div class="strip-funded-dot"></div>
+                    <div class="strip-funded-title">${t.title}</div>
+                    <div class="strip-funded-badge">Waiting Upload</div>
+                </div>`
+            ).join('');
+            stripFundedTopics.classList.add('visible');
+        }
 
         /* ── Select a creator ── */
         pickerGrid.addEventListener('click', e => {
             const item = e.target.closest('.creator-picker-item');
             if (!item) return;
             selectedCreator = {
-                name:   item.dataset.name,
-                price:  parseInt(item.dataset.price, 10) || 0,
-                image:  item.dataset.image,
-                bio: item.dataset.bio || ''
+                id:    parseInt(item.dataset.id, 10) || 0,
+                name:  item.dataset.name,
+                price: parseInt(item.dataset.price, 10) || 0,
+                image: item.dataset.image,
+                bio:   item.dataset.bio || ''
             };
 
-            // Update strip avatar
             if (selectedCreator.image) {
                 stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
             } else {
-                const initial = selectedCreator.name.charAt(0).toUpperCase();
-                stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+                stripAvatar.innerHTML = `<span class="strip-avatar-initials">${selectedCreator.name.charAt(0).toUpperCase()}</span>`;
             }
 
-            // Hide hint once creator picked
             selectHint.classList.add('hidden');
-
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
 
-            // Populate + show creator card
             if (selectedCreator.image) {
                 stripCreatorCardAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
             } else {
                 stripCreatorCardAvatar.innerHTML = selectedCreator.name.charAt(0).toUpperCase();
             }
-            stripCreatorCardName.textContent   = selectedCreator.name;
-            stripCreatorCardBio.textContent = selectedCreator.bio;
-            stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
+            stripCreatorCardName.textContent  = selectedCreator.name;
+            stripCreatorCardBio.textContent   = selectedCreator.bio;
+            stripCreatorCardPrice.textContent = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
             stripCreatorCard.classList.add('visible');
+            renderCreatorTopics(selectedCreator.id);
+            renderFundedTopics(selectedCreator.id);
 
-            // Highlight selected
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             item.classList.add('selected');
-
             closePicker();
         });
 
-
-        /* X button — remove selected creator */
+        /* ── X button — remove selected creator ── */
         stripCreatorCardX.addEventListener('click', () => {
             stripCreatorCard.classList.remove('visible');
+            stripActiveTopics.classList.remove('visible');
+            stripFundedTopics.classList.remove('visible');
             selectedCreator = null;
-            stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
+            stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
             selectHint.classList.remove('hidden');
             topicInput.placeholder = 'Type your topic idea…';
             stripSend.disabled = true;
         });
 
-        /* ── Enable/disable send based on input ── */
-        const topicInputCount = document.getElementById('topicInputCount');
-
+        /* ── Enable send + live counter ── */
+        topicInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); if (selectedCreator && topicInput.value.trim()) stripSend.click(); }
+        });
         topicInput.addEventListener('input', () => {
+            topicInput.value = topicInput.value.replace(/\n/g, '');
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
             const len = topicInput.value.length;
-            topicInputCount.textContent = len > 0 ? `${len}/100` : '';
+            topicInputCount.textContent = `${len}/100`;
         });
 
-        /* ── Open topic details modal on send ── */
-        stripSend.addEventListener('click', () => {
-            if (!selectedCreator || !topicInput.value.trim()) return;
-            topicPreview.textContent = topicInput.value.trim();
-            topicModalSub.textContent = `To: ${selectedCreator.name}`;
-            if (selectedCreator.price > 0) {
-                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
-                topicAmount.min = selectedCreator.price;
-                topicAmount.placeholder = selectedCreator.price;
-            }
-            topicAmount.value = '';
-            topicDesc.value = '';
+        topicDesc.addEventListener('input', () => {
+            topicDescCount.textContent = `${topicDesc.value.length}/350`;
+        });
+
+        /* ── Click on an active topic card ── */
+        stripTopicsList.addEventListener('click', e => {
+            const item = e.target.closest('.strip-topic-item');
+            if (!item || !selectedCreator) return;
+            const topicId          = item.dataset.topicId;
+            const topicTitle       = item.dataset.topicTitle;
+            const topicDescription = item.dataset.topicDesc || '';
+            const currentFunding   = parseFloat(item.dataset.currentFunding) || 0;
+            const fundingThreshold = parseFloat(item.dataset.fundingThreshold) || 0;
+            const pct       = fundingThreshold > 0 ? Math.min(100, Math.round((currentFunding / fundingThreshold) * 100)) : 0;
+            const remaining = Math.max(0, fundingThreshold - currentFunding);
+            activeTopic = { id: topicId, title: topicTitle, description: topicDescription };
+
+            topicModalTitle.textContent    = 'Fund this topic';
+            topicAmountLabel.textContent   = 'Your contribution';
+            topicPreview.textContent       = topicTitle;
+            topicModalSub.textContent      = `For: ${selectedCreator.name}`;
+            minPriceHint.textContent       = '';
+            topicAmount.min                = 1;
+            topicAmount.max                = remaining > 0 ? remaining : '';
+            topicAmount.placeholder        = remaining > 0 ? Math.round(remaining) : '0';
+            topicAmount.value              = '';
+            topicDesc.value                = topicDescription;
+            topicDescCount.textContent     = `${topicDescription.length}/350`;
+            topicDesc.setAttribute('readonly', true);
+            topicDesc.style.background     = '#F5F5F5';
+            topicDesc.style.color          = '#888';
+            topicDescField.style.display   = '';
+            topicFundingInfo.style.display = 'block';
+            topicFundingInfo.innerHTML     = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> raised &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong style="color:#333;">$${Math.round(remaining)}</strong> still needed`;
             topicOverlay.classList.add('open');
             topicAmount.focus();
+        });
+
+        /* ── Open topic details modal (new request) ── */
+        stripSend.addEventListener('click', () => {
+            if (!selectedCreator || !topicInput.value.trim()) return;
+            activeTopic = null;
+            topicModalTitle.textContent  = 'Send your request';
+            topicAmountLabel.textContent = 'Your offer amount';
+            topicAmount.removeAttribute('max');
+            topicPreview.textContent     = topicInput.value.trim();
+            topicModalSub.textContent    = `To: ${selectedCreator.name}`;
+            if (selectedCreator.price > 0) {
+                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
+                topicAmount.min          = selectedCreator.price;
+                topicAmount.placeholder  = selectedCreator.price;
+            } else {
+                minPriceHint.textContent = '';
+            }
+            topicAmount.value          = '';
+            topicDesc.value            = '';
+            topicDescCount.textContent = '0/350';
+            topicDesc.removeAttribute('readonly');
+            topicDesc.style.background = '';
+            topicDesc.style.color      = '';
+            topicDescField.style.display   = '';
+            topicFundingInfo.style.display = 'none';
+            topicOverlay.classList.add('open');
+            topicDesc.focus();
         });
 
         closeTopicBtn.addEventListener('click', closeTopic);
         topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
         function closeTopic() { topicOverlay.classList.remove('open'); }
 
-        /* ── Submit: redirect to creator profile with params ── */
+        /* ── Submit: call Stripe API directly ── */
         topicSubmit.addEventListener('click', () => {
-            const amount = parseInt(topicAmount.value, 10);
-            const topic  = topicInput.value.trim();
+            const amount = parseFloat(topicAmount.value);
+            const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
             const desc   = topicDesc.value.trim();
 
             if (!amount || amount < 1) {
@@ -1157,21 +1351,66 @@ if ($db_available) {
                 setTimeout(() => topicAmount.style.borderColor = '', 1500);
                 return;
             }
-            if (selectedCreator.price > 0 && amount < selectedCreator.price) {
+            if (activeTopic && topicAmount.max && amount > parseFloat(topicAmount.max)) {
+                minPriceHint.textContent = `Maximum contribution is $${Math.round(topicAmount.max)} (remaining needed)`;
+                minPriceHint.style.color = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+                return;
+            }
+            if (!activeTopic && selectedCreator.price > 0 && amount < selectedCreator.price) {
                 minPriceHint.style.color = '#E8305A';
                 topicAmount.focus();
                 setTimeout(() => minPriceHint.style.color = '', 1500);
                 return;
             }
 
-            const params = new URLSearchParams({
-                topic:  topic,
-                amount: amount,
-            });
-            if (desc) params.set('desc', desc);
+            topicSubmit.disabled     = true;
+            topicSubmit.textContent  = 'Processing…';
 
-            window.location.href = `/${encodeURIComponent(selectedCreator.name)}?${params.toString()}`;
+            let endpoint, payload;
+            if (activeTopic) {
+                endpoint = '/api/get-topic.php';
+                payload  = { topic_id: parseInt(activeTopic.id, 10), amount };
+            } else {
+                endpoint = '/api/create-topic.php';
+                payload  = {
+                    creator_id:     selectedCreator.id,
+                    title:          topic,
+                    description:    desc || topic,
+                    funding_goal:   amount,
+                    initial_amount: amount
+                };
+            }
+
+            fetch(endpoint, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    topicSubmit.disabled    = false;
+                    topicSubmit.textContent = 'Continue to payment →';
+                    const errMsg = data.error || 'Something went wrong. Please try again.';
+                    minPriceHint.textContent = errMsg;
+                    minPriceHint.style.color = '#E8305A';
+                    setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+                }
+            })
+            .catch(() => {
+                topicSubmit.disabled    = false;
+                topicSubmit.textContent = 'Continue to payment →';
+                minPriceHint.textContent = 'Network error. Please try again.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+            });
         });
+
+        topicInputCount.textContent = '0/100';
     })();
     </script>
 </body>
