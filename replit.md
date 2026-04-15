@@ -101,4 +101,6 @@ The following transactional emails need to be built and wired into the relevant 
 
 4. **Creator uploads / completes a topic** — email all contributors. Let them know the content is ready and include a direct link to the video/content URL.
 
+5. **Creator requests a payout** — send an internal notification email to the TopicLaunch admin/ops email address. Include the creator's name, display name, requested payout amount, and available balance. No email goes to the creator at request time (they can be notified when it's processed).
+
 All emails should be sent via the existing email infrastructure (check `config/` for mailer setup). Use the `email_throttle` table to avoid duplicate sends.
