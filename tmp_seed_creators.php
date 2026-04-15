@@ -1,28 +1,47 @@
 <?php
 require_once __DIR__ . '/config/database.php';
-$pdo = new PDO('pgsql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME, DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ]);
-$creators = [
-    ['username' => 'creator_dummy_1', 'email' => 'creatordummy1@example.com', 'display_name' => 'Ava Stone', 'bio' => 'Dummy creator account for testing.', 'minimum_topic_price' => 120, 'video_topics' => ['fitness', 'health', 'motivation']],
-    ['username' => 'creator_dummy_2', 'email' => 'creatordummy2@example.com', 'display_name' => 'Noah Reed', 'bio' => 'Dummy creator account for testing.', 'minimum_topic_price' => 150, 'video_topics' => ['business', 'money', 'career']],
-    ['username' => 'creator_dummy_3', 'email' => 'creatordummy3@example.com', 'display_name' => 'Maya Chen', 'bio' => 'Dummy creator account for testing.', 'minimum_topic_price' => 200, 'video_topics' => ['technology & ai', 'psychology', 'cosmetics']],
+$pdo = $db;
+$cases = [
+    ['creator_dummy_1', 'creatordummy1@example.com', 'Ava Stone', 120, ['fitness', 'health', 'motivation'], 'image_1776214079960.png'],
+    ['creator_dummy_2', 'creatordummy2@example.com', 'Noah Reed', 150, ['business', 'money', 'career'], 'image_1776214145837.png'],
+    ['creator_dummy_3', 'creatordummy3@example.com', 'Maya Chen', 200, ['technology & ai', 'psychology', 'cosmetics'], 'image_1776215721179.png'],
 ];
-foreach ($creators as $creator) {
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :username OR email = :email');
-    $stmt->execute([':username' => $creator['username'], ':email' => $creator['email']]);
-    $existing = $stmt->fetch();
+foreach ($cases as $case) {
+    [$username, $email, $display, $price, $topics, $imageFile] = $case;
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :u OR email = :e');
+    $stmt->execute([':u' => $username, ':e' => $email]);
+    $existing = $stmt->fetch(PDO::FETCH_OBJ);
     if (!$existing) {
-        $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, full_name, user_type, is_active, created_at) VALUES (:username, :email, :password_hash, :full_name, :user_type, 1, NOW()) RETURNING id');
-        $stmt->execute([':username' => $creator['username'], ':email' => $creator['email'], ':password_hash' => password_hash('Password123!', PASSWORD_DEFAULT), ':full_name' => $creator['display_name'], ':user_type' => 'creator']);
-        $user_id = $stmt->fetchColumn();
+        $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:u, :e, :p, 1, 1, NOW(), NOW()) RETURNING id');
+        $stmt->execute([':u' => $username, ':e' => $email, ':p' => password_hash('Password123!', PASSWORD_DEFAULT)]);
+        $userId = $stmt->fetchColumn();
     } else {
-        $user_id = $existing->id;
+        $userId = $existing->id;
     }
-    $stmt = $pdo->prepare('SELECT id FROM creators WHERE applicant_user_id = :user_id');
-    $stmt->execute([':user_id' => $user_id]);
-    $creator_row = $stmt->fetch();
-    if (!$creator_row) {
-        $stmt = $pdo->prepare('INSERT INTO creators (applicant_user_id, handle, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :handle, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
-        $stmt->execute([':user_id' => $user_id, ':handle' => $creator['username'], ':username' => $creator['username'], ':display_name' => $creator['display_name'], ':profile_image' => null, ':bio' => $creator['bio'], ':minimum_topic_price' => $creator['minimum_topic_price'], ':paypal_email' => null, ':venmo_handle' => null, ':video_topics' => json_encode($creator['video_topics'])]);
+    $stmt = $pdo->prepare('SELECT id FROM creators WHERE applicant_user_id = :id');
+    $stmt->execute([':id' => $userId]);
+    $creator = $stmt->fetch(PDO::FETCH_OBJ);
+    if (!$creator) {
+        $source = __DIR__ . '/attached_assets/' . $imageFile;
+        $targetDir = __DIR__ . '/uploads/creators';
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+        $targetFile = 'creator_' . $userId . '_' . time() . '.png';
+        copy($source, $targetDir . '/' . $targetFile);
+        $stmt = $pdo->prepare('INSERT INTO creators (applicant_user_id, handle, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:uid, :handle, :username, :display, :image, :bio, :price, :paypal, :venmo, :topics, 1, NOW())');
+        $stmt->execute([
+            ':uid' => $userId,
+            ':handle' => $username,
+            ':username' => $username,
+            ':display' => $display,
+            ':image' => $targetFile,
+            ':bio' => 'Dummy creator account for testing.',
+            ':price' => $price,
+            ':paypal' => null,
+            ':venmo' => null,
+            ':topics' => json_encode($topics),
+        ]);
     }
 }
-echo "done\n";
+echo "seeded\n";
