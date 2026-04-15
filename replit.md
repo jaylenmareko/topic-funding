@@ -67,3 +67,17 @@ The database schema includes tables: `users`, `creators`, `topics`, `contributio
 - The app was migrated from MySQL to PostgreSQL for Replit compatibility
 - MySQL-specific syntax (DATE_SUB, DATE_ADD, TIMESTAMPDIFF, ENUM, AUTO_INCREMENT) was replaced with PostgreSQL equivalents
 - The `.htaccess` HTTPS redirect was removed to avoid redirect loops in Replit's proxy environment
+
+## Pending Email Notifications (not yet implemented)
+
+The following transactional emails need to be built and wired into the relevant creator actions (`creators/topic_actions.php`, upload handler, etc.):
+
+1. **Creator puts a fully-funded topic on hold** — email all contributors of that topic. Let them know the creator has paused it and that their funds are still held safely.
+
+2. **Creator declines a fully-funded topic** — email all contributors. Include refund information: they will receive a full refund to their original payment method, and typical processing time.
+
+3. **Creator declines an active (not yet fully funded) topic** — email all contributors who have already contributed. Include refund information as above.
+
+4. **Creator uploads / completes a topic** — email all contributors. Let them know the content is ready and include a direct link to the video/content URL.
+
+All emails should be sent via the existing email infrastructure (check `config/` for mailer setup). Use the `email_throttle` table to avoid duplicate sends.
