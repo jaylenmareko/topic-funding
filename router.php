@@ -37,12 +37,22 @@ $parts = explode('/', ltrim($path, '/'));
 $first = $parts[0] ?? '';
 
 if (preg_match('/^\/([a-zA-Z0-9_.-]+)\/topic([0-9]+)$/', $path, $m)) {
-    header('Location: /creators/?select=' . urlencode($m[1]));
+    header('Location: /creators/' . urlencode($m[1]));
     return true;
 }
 if ($first && !in_array($first, $reserved) && preg_match('/^[a-zA-Z0-9_.-]+$/', $first) && count($parts) === 1) {
-    header('Location: /creators/?select=' . urlencode($first));
+    header('Location: /creators/' . urlencode($first));
     return true;
+}
+
+// Handle /creators/{handle} — serve creators index with creator pre-selected
+if (preg_match('/^\/creators\/([a-zA-Z0-9_.-]+)$/', $path, $m)) {
+    $known_creator_pages = ['signup', 'dashboard', 'edit', 'payout'];
+    if (!in_array($m[1], $known_creator_pages)) {
+        $_GET['select'] = $m[1];
+        require __DIR__ . '/creators/index.php';
+        return true;
+    }
 }
 
 // Default: serve index.php

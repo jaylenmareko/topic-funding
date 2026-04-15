@@ -1044,8 +1044,10 @@ try {
                 setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
             });
         });
-        /* Auto-select creator from ?select= query param */
-        const autoSelectHandle = new URLSearchParams(window.location.search).get('select');
+        /* Auto-select creator from /creators/{handle} path */
+        const _pathParts = window.location.pathname.split('/').filter(Boolean);
+        const autoSelectHandle = (_pathParts.length === 2 && _pathParts[0] === 'creators')
+            ? _pathParts[1].toLowerCase() : null;
         if (autoSelectHandle) {
             const match = pickerGrid.querySelector(
                 `.creator-picker-item[data-handle="${CSS.escape(autoSelectHandle.toLowerCase())}"]`
