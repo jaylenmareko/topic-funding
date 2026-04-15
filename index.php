@@ -657,11 +657,17 @@ if ($db_available) {
         .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .strip-avatar-initials { font-size: 13px; font-weight: 600; color: var(--white); }
 
-        .strip-input-field {
+        .strip-input-wrapper {
             flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .strip-input-field {
+            width: 100%;
             background: var(--white);
             border-radius: 8px;
-            padding: 9px 14px;
+            padding: 9px 46px 9px 14px;
             border: 1px solid var(--tl-border);
             font-size: 12px;
             color: var(--text-dark);
@@ -672,6 +678,15 @@ if ($db_available) {
         .strip-input-field::placeholder { color: #bbb; }
         .strip-input-field:focus { border-color: rgba(232,48,90,0.4); }
         .strip-input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+        .strip-input-count {
+            position: absolute;
+            right: 12px;
+            font-size: 11px;
+            color: #ccc;
+            pointer-events: none;
+            white-space: nowrap;
+            line-height: 1;
+        }
 
         .strip-send {
             width: 34px; height: 34px;
@@ -988,12 +1003,14 @@ if ($db_available) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             </button>
             </div>
-            <input type="text" class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100">
+            <div class="strip-input-wrapper">
+                <input type="text" class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100">
+                <span class="strip-input-count" id="topicInputCount"></span>
+            </div>
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
             </button>
         </div>
-        <div style="text-align:right; padding: 4px 30px 0; font-size:11px; color:#bbb;" id="topicInputCount"></div>
 
         <!-- Creator card (shown after selection) -->
         <div class="strip-creator-card" id="stripCreatorCard">
