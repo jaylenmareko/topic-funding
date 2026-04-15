@@ -660,11 +660,11 @@ if ($db_available) {
         .strip-input-wrapper {
             flex: 1;
             position: relative;
-            display: flex;
-            align-items: center;
         }
         .strip-input-field {
             width: 100%;
+            box-sizing: border-box;
+            display: block;
             background: var(--white);
             border-radius: 8px;
             padding: 9px 46px 9px 14px;
@@ -681,11 +681,12 @@ if ($db_available) {
         .strip-input-count {
             position: absolute;
             right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
             font-size: 11px;
             color: #ccc;
             pointer-events: none;
             white-space: nowrap;
-            line-height: 1;
         }
 
         .strip-send {
@@ -929,7 +930,7 @@ if ($db_available) {
             .why-cards { grid-template-columns: 1fr; }
             .creator-strip { padding: 16px 0; }
             .creator-strip .strip-avatar-wrap { margin-left: 20px; }
-            .creator-strip .strip-input-field { margin-right: 20px; }
+            .creator-strip .strip-input-wrapper { margin-right: 20px; }
             .creator-strip .strip-send { margin-right: 20px; }
         }
         @media (max-width: 480px) {
