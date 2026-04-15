@@ -1233,7 +1233,6 @@ if ($queued_count > 0) {
         }
 
         function saveSectionState(key, collapsed) {
-            if (key === 'queued') return; // Up Next always reopens fresh
             const state = getSectionState();
             state[key] = collapsed;
             localStorage.setItem(SECTION_KEY, JSON.stringify(state));
@@ -1255,11 +1254,13 @@ if ($queued_count > 0) {
             }
         }
 
-        // Restore saved section states on load (Up Next always starts open)
+        // Restore saved section states on load
         (function restoreSections() {
             const state = getSectionState();
-            ['onhold', 'active'].forEach(key => {
-                const collapsed = (key in state) ? state[key] : true;
+            // queued defaults open, onhold/active default collapsed
+            const defaults = { queued: false, onhold: true, active: true };
+            ['queued', 'onhold', 'active'].forEach(key => {
+                const collapsed = (key in state) ? state[key] : defaults[key];
                 const label = document.getElementById('label-' + key);
                 const body  = document.getElementById('body-' + key);
                 if (!label || !body) return;
