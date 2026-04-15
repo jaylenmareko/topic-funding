@@ -161,20 +161,41 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         $db->execute();
                         $message = "Topic resumed! Fans can continue contributing to reach the funding goal.";
                     } elseif ($topic->content_deadline !== null) {
-                        // Was fully funded and started (had a deadline) — resume as funded with a fresh deadline
-                        $db->query("
-                            UPDATE topics 
-                            SET status = 'funded',
-                                content_deadline = NOW() + INTERVAL '48 hours',
-                                hold_reason = NULL,
-                                held_at = NULL
-                            WHERE id = :topic_id
-                        ");
-                        $db->bind(':topic_id', $topic_id);
-                        $db->execute();
-                        $message = "Topic resumed! You have 48 hours to create the content.";
+                        // Was previously started — check if another topic is already running
+                        $db->query("SELECT COUNT(*) as cnt FROM topics WHERE creator_id = :creator_id AND status = 'funded'");
+                        $db->bind(':creator_id', $creator->id);
+                        $already_running = $db->single();
+                        
+                        if ((int)$already_running->cnt > 0) {
+                            // Slot is taken — place at front of queue (earliest funded_at so it sorts #1)
+                            $db->query("
+                                UPDATE topics 
+                                SET status = 'queued',
+                                    funded_at = '1970-01-01 00:00:00',
+                                    content_deadline = NULL,
+                                    hold_reason = NULL,
+                                    held_at = NULL
+                                WHERE id = :topic_id
+                            ");
+                            $db->bind(':topic_id', $topic_id);
+                            $db->execute();
+                            $message = "Topic moved to #1 in queue — it will start as soon as the current topic finishes or is held.";
+                        } else {
+                            // Slot is free — start immediately with a fresh deadline
+                            $db->query("
+                                UPDATE topics 
+                                SET status = 'funded',
+                                    content_deadline = NOW() + INTERVAL '48 hours',
+                                    hold_reason = NULL,
+                                    held_at = NULL
+                                WHERE id = :topic_id
+                            ");
+                            $db->bind(':topic_id', $topic_id);
+                            $db->execute();
+                            $message = "Topic started! You have 48 hours to create the content.";
+                        }
                     } else {
-                        // Was fully funded but not yet started (queued) — return to queue
+                        // Was fully funded but never started — return to queue normally
                         $db->query("
                             UPDATE topics 
                             SET status = 'queued',
@@ -184,7 +205,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         ");
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
-                        $message = "Topic returned to your queue. Click 'Start' whenever you're ready to begin.";
+                        $message = "Topic returned to your queue.";
                     }
                     break;
                     
