@@ -693,8 +693,9 @@ try {
         const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
         const stripStep1 = document.getElementById('stripStep1');
 
-        let selectedCreator = null;
-        let activeTopics    = new Set(); // selected filter chips
+        let selectedCreator  = null;
+        let activeTopics     = new Set(); // selected filter chips
+        let activeTopic      = null;      // clicked existing topic {id, title, description}
 
         /* ── Topic filter chips ── */
         document.querySelectorAll('.topic-filter-btn').forEach(btn => {
@@ -755,7 +756,9 @@ try {
             }
             stripTopicsList.innerHTML = topics.map(t => {
                 const pct = Math.min(100, Math.round((t.current_funding / t.funding_threshold) * 100));
-                return `<div class="strip-topic-item">
+                const descAttr = t.description ? t.description.replace(/"/g, '&quot;') : '';
+                const titleAttr = t.title.replace(/"/g, '&quot;');
+                return `<div class="strip-topic-item" data-topic-id="${t.id}" data-topic-title="${titleAttr}" data-topic-desc="${descAttr}">
                     <div class="strip-topic-item-title">${t.title}</div>
                     <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
                     <div class="strip-topic-meta">
@@ -835,9 +838,35 @@ try {
             topicDescCount.textContent = `${topicDesc.value.length}/350`;
         });
 
+        /* Click on an active topic card */
+        stripTopicsList.addEventListener('click', e => {
+            const item = e.target.closest('.strip-topic-item');
+            if (!item || !selectedCreator) return;
+            const topicId    = item.dataset.topicId;
+            const topicTitle = item.dataset.topicTitle;
+            const topicDescription = item.dataset.topicDesc || '';
+            activeTopic = { id: topicId, title: topicTitle, description: topicDescription };
+
+            topicPreview.textContent   = topicTitle;
+            topicModalSub.textContent  = `To: ${selectedCreator.name}`;
+            if (selectedCreator.price > 0) {
+                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
+                topicAmount.min = selectedCreator.price;
+                topicAmount.placeholder = selectedCreator.price;
+            } else {
+                minPriceHint.textContent = '';
+            }
+            topicAmount.value = '';
+            topicDesc.value   = topicDescription;
+            topicDescCount.textContent = `${topicDescription.length}/350`;
+            topicOverlay.classList.add('open');
+            topicAmount.focus();
+        });
+
         /* Open topic details modal */
         stripSend.addEventListener('click', () => {
             if (!selectedCreator || !topicInput.value.trim()) return;
+            activeTopic = null;
             topicPreview.textContent = topicInput.value.trim();
             topicModalSub.textContent = `To: ${selectedCreator.name}`;
             if (selectedCreator.price > 0) {
@@ -861,7 +890,7 @@ try {
         /* Submit: redirect to creator profile with params */
         topicSubmit.addEventListener('click', () => {
             const amount = parseInt(topicAmount.value, 10);
-            const topic  = topicInput.value.trim();
+            const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
             const desc   = topicDesc.value.trim();
 
             if (!amount || amount < 1) {
@@ -879,6 +908,7 @@ try {
 
             const params = new URLSearchParams({ topic, amount });
             if (desc) params.set('desc', desc);
+            if (activeTopic) params.set('topic_id', activeTopic.id);
             window.location.href = `/${encodeURIComponent(selectedCreator.name)}?${params.toString()}`;
         });
     })();
