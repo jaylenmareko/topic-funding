@@ -454,166 +454,182 @@ if ($queued_count > 0) {
         .topic-tile {
             background: white;
             border: 1px solid #E5E5E5;
-            border-radius: 14px;
-            padding: 16px;
-            transition: all 0.2s;
+            border-radius: 10px;
+            padding: 12px 14px;
+            transition: border-color 0.15s;
             cursor: pointer;
             position: relative;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
-        
+
         .topic-tile:hover {
-            border-color: rgba(232,48,90,0.25);
-            box-shadow: 0 8px 24px rgba(232,48,90,0.10);
-            transform: translateY(-2px);
+            border-color: var(--hot-pink);
         }
-        
-        .topic-tile-header {
-            margin-bottom: 12px;
-        }
-        
-        .topic-status-badge {
-            display: inline-block;
-            background: #FAF8F6;
-            color: #888;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            margin-bottom: 10px;
-            border: 1px solid #E5E5E5;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        
-        .topic-status-badge.funded {
+
+        .topic-tile.tile-running {
             background: #F0FDF4;
-            color: #166534;
             border-color: #BBF7D0;
         }
-        
-        .topic-status-badge.on-hold {
-            background: #FFF7ED;
-            color: #9A3412;
-            border-color: #FED7AA;
+
+        .topic-tile.tile-running:hover {
+            border-color: #86EFAC;
         }
-        
-        .topic-tile-title {
-            font-size: 15px;
+
+        .topic-tile.tile-on-hold {
+            background: #FFFBF0;
+            border-color: #FDE68A;
+        }
+
+        .topic-tile.tile-on-hold:hover {
+            border-color: #FCD34D;
+        }
+
+        /* Top row: dot + badge + earnings */
+        .tile-top {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 8px;
+        }
+
+        .tile-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: #D1D5DB;
+        }
+
+        .tile-dot.dot-running { background: #22C55E; }
+        .tile-dot.dot-queued  { background: #3B82F6; }
+        .tile-dot.dot-hold    { background: #F59E0B; }
+        .tile-dot.dot-active  { background: var(--hot-pink); }
+
+        .tile-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .tile-badge.badge-running {
+            background: #DCFCE7;
+            color: #15803D;
+        }
+
+        .tile-badge.badge-queued {
+            background: #DBEAFE;
+            color: #1D4ED8;
+        }
+
+        .tile-badge.badge-hold {
+            background: #FEF3C7;
+            color: #B45309;
+        }
+
+        .tile-badge.badge-active {
+            background: #FCE7F0;
+            color: var(--deep-pink);
+        }
+
+        .tile-earnings-inline {
+            margin-left: auto;
+            font-size: 11px;
             font-weight: 600;
             color: #111010;
-            margin-bottom: 6px;
-            line-height: 1.3;
+        }
+
+        /* Title */
+        .topic-tile-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111010;
+            margin-bottom: 8px;
+            line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
-        .topic-tile-subtitle {
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 12px;
-        }
-        
-        .topic-tile-earnings {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding: 12px;
-            background: #FAF8F6;
-            border-radius: 10px;
-            border: 1px solid #E5E5E5;
-        }
-        
-        .earnings-amount {
-            font-size: 20px;
-            font-weight: 600;
-            color: #111010;
-        }
-        
-        .earnings-label {
-            font-size: 11px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        
-        .topic-tile-progress {
-            margin-bottom: 12px;
-        }
-        
-        .progress-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 6px;
-            text-align: center;
-        }
-        
+
+        /* Progress bar */
         .progress-bar-container {
-            height: 6px;
-            background: #E5E5E5;
-            border-radius: 3px;
+            height: 5px;
+            background: #F0F0F0;
+            border-radius: 4px;
             overflow: hidden;
+            margin-bottom: 5px;
         }
-        
+
         .progress-bar-fill {
             height: 100%;
             background: var(--hot-pink);
-            border-radius: 3px;
+            border-radius: 4px;
             transition: width 0.3s;
         }
-        
+
+        /* Meta row */
+        .tile-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        /* Actions */
         .topic-tile-actions {
             display: flex;
-            gap: 6px;
+            gap: 5px;
         }
-        
+
         .tile-btn {
             flex: 1;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border: 1px solid #E5E5E5;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 500;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
             background: white;
-            color: #111010;
-            transition: all 0.2s;
+            color: #374151;
+            transition: all 0.15s;
         }
-        
+
         .tile-btn:hover {
             border-color: var(--hot-pink);
             color: var(--hot-pink);
         }
-        
+
         .tile-btn.primary {
             background: var(--hot-pink);
             color: white;
             border-color: var(--hot-pink);
         }
-        
+
         .tile-btn.primary:hover {
             background: var(--deep-pink);
+            border-color: var(--deep-pink);
         }
-        
+
         .tile-btn.danger {
             color: #DC2626;
-            border-color: #DC2626;
+            border-color: #FECACA;
         }
-        
+
         .tile-btn.danger:hover {
             background: #DC2626;
             color: white;
+            border-color: #DC2626;
         }
-        
+
         .countdown-timer {
             font-size: 10px;
-            font-weight: 500;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            font-weight: 600;
+            color: #15803D;
         }
         
         /* UPDATED: Earnings section with consistent pink */
@@ -845,64 +861,61 @@ if ($queued_count > 0) {
             <?php else: ?>
                 <div class="topics-grid">
                     <?php foreach ($topics as $topic): ?>
-                        <div class="topic-tile" onclick="openTopicModal(<?php echo $topic->id; ?>)">
-                            <div class="topic-tile-header">
+                        <?php
+                            $tileClass = 'topic-tile';
+                            if ($topic->status === 'funded')  $tileClass .= ' tile-running';
+                            if ($topic->status === 'on_hold') $tileClass .= ' tile-on-hold';
+                            $pct = $topic->funding_threshold > 0
+                                ? min(100, round(($topic->current_funding / $topic->funding_threshold) * 100))
+                                : 0;
+                        ?>
+                        <div class="<?php echo $tileClass; ?>" onclick="openTopicModal(<?php echo $topic->id; ?>)">
+
+                            <!-- Top row: dot + badge + earnings -->
+                            <div class="tile-top">
                                 <?php if ($topic->status === 'funded'): ?>
-                                    <div class="topic-status-badge funded">
-                                        ⏱️ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>">
-                                            <?php
+                                    <div class="tile-dot dot-running"></div>
+                                    <span class="tile-badge badge-running">
+                                        ⏱ <span class="countdown-timer" data-deadline="<?php echo $topic->deadline_timestamp; ?>" id="timer-<?php echo $topic->id; ?>"><?php
                                             $seconds_left = max(0, $topic->seconds_remaining);
-                                            $hours = floor($seconds_left / 3600);
+                                            $hours   = floor($seconds_left / 3600);
                                             $minutes = floor(($seconds_left % 3600) / 60);
-                                            $seconds = $seconds_left % 60;
-                                            echo sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
-                                            ?>
-                                        </span>
-                                    </div>
+                                            $secs    = $seconds_left % 60;
+                                            echo sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+                                        ?></span>
+                                    </span>
                                 <?php elseif ($topic->status === 'queued'): ?>
-                                    <div class="topic-status-badge" style="background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE;">
-                                        #<?php echo $queue_positions[$topic->id] ?? '?'; ?> In Queue
-                                    </div>
+                                    <div class="tile-dot dot-queued"></div>
+                                    <span class="tile-badge badge-queued">#<?php echo $queue_positions[$topic->id] ?? '?'; ?> In Queue</span>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
-                                    <div class="topic-status-badge on-hold">On Hold</div>
+                                    <div class="tile-dot dot-hold"></div>
+                                    <span class="tile-badge badge-hold">On Hold</span>
                                 <?php else: ?>
-                                    <div class="topic-status-badge">Active</div>
+                                    <div class="tile-dot dot-active"></div>
+                                    <span class="tile-badge badge-active">Active</span>
                                 <?php endif; ?>
-                                
-                                <h3 class="topic-tile-title"><?php echo htmlspecialchars($topic->title); ?></h3>
-                                <p class="topic-tile-subtitle">
-                                    Click for details
-                                </p>
+                                <span class="tile-earnings-inline">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?> earnings</span>
                             </div>
-                            
-                            <div class="topic-tile-earnings">
-                                <div>
-                                    <div class="earnings-amount">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?></div>
-                                    <div class="earnings-label">Your Earnings</div>
-                                </div>
-                                <?php if ($topic->status === 'funded' || $topic->status === 'queued'): ?>
-                                    <div style="text-align: right;">
-                                        <div style="font-size: 24px;"><?php echo $topic->status === 'queued' ? '📋' : '✅'; ?></div>
-                                        <div class="earnings-label"><?php echo $topic->status === 'queued' ? 'Queued' : 'Funded'; ?></div>
-                                    </div>
-                                <?php endif; ?>
+
+                            <!-- Title -->
+                            <h3 class="topic-tile-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+
+                            <!-- Progress bar -->
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width:<?php echo $pct; ?>%"></div>
                             </div>
-                            
-                            <?php if ($topic->status === 'active'): ?>
-                            <div class="topic-tile-progress">
-                                <div class="progress-label">
-                                    $<?php echo number_format($topic->current_funding, 0); ?> / $<?php echo number_format($topic->funding_threshold, 0); ?>
-                                </div>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" style="width: <?php echo min(100, ($topic->current_funding / $topic->funding_threshold) * 100); ?>%"></div>
-                                </div>
+
+                            <!-- Meta row -->
+                            <div class="tile-meta">
+                                <span>$<?php echo number_format($topic->current_funding, 0); ?> raised of $<?php echo number_format($topic->funding_threshold, 0); ?></span>
+                                <span><?php echo $pct; ?>%</span>
                             </div>
-                            <?php endif; ?>
-                            
+
+                            <!-- Action buttons -->
                             <div class="topic-tile-actions" onclick="event.stopPropagation();">
                                 <?php if ($topic->status === 'funded'): ?>
                                     <button class="tile-btn primary" onclick="openUploadModal(<?php echo $topic->id; ?>)">Upload</button>
-                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
+                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'queued'): ?>
                                     <?php if ($has_running): ?>
@@ -910,7 +923,7 @@ if ($queued_count > 0) {
                                     <?php else: ?>
                                         <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
                                     <?php endif; ?>
-                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
+                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
                                     <button class="tile-btn primary" onclick="resumeTopic(<?php echo $topic->id; ?>)">Resume</button>
