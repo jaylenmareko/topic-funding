@@ -1226,7 +1226,7 @@ if ($queued_count > 0) {
         }
         
         // Section collapse/expand with localStorage persistence
-        const SECTION_KEY = 'tl_dashboard_sections';
+        const SECTION_KEY = 'tl_dashboard_sections_v2';
 
         function getSectionState() {
             try { return JSON.parse(localStorage.getItem(SECTION_KEY)) || {}; } catch(e) { return {}; }
