@@ -339,7 +339,6 @@ if ($db_available) {
         .creator-strip {
             background: var(--tl-black);
             padding: 20px 0;
-            border-top: 1px solid #1e1e1e;
             display: flex;
             align-items: center;
             gap: 14px;
@@ -909,7 +908,7 @@ if ($db_available) {
     </div>
 
     <!-- Creator strip -->
-    <div style="background:#F0F0F0; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
+    <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">

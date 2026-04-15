@@ -136,6 +136,7 @@ try {
         /* Strip section */
         .strip-section {
             background: var(--tl-off);
+            border-top: 1px solid var(--tl-border);
             border-bottom: 1px solid var(--tl-border);
             padding: 18px 0 40px;
             overflow: visible;
