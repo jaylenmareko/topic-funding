@@ -133,39 +133,6 @@ try {
             margin: 0 auto;
         }
 
-        /* Topic filter chips */
-        .topic-filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 28px;
-        }
-        .topic-filter-btn {
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.4px;
-            border: 1px solid var(--tl-border);
-            background: var(--white);
-            color: var(--tl-muted);
-            cursor: pointer;
-            transition: all 0.15s;
-            white-space: nowrap;
-            font-family: inherit;
-        }
-        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
-        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
-        .active-filter-note {
-            text-align: center;
-            font-size: 11px;
-            color: var(--tl-pink);
-            font-weight: 400;
-            margin-top: 10px;
-            min-height: 16px;
-        }
-
         /* Strip section */
         .strip-section {
             background: var(--tl-off);
@@ -609,14 +576,7 @@ try {
     <!-- Hero -->
     <div class="hero-section">
         <h1 class="hero-title">Browse <em>Creators</em></h1>
-        <div class="topic-filter-row" id="topicFilterRow">
-            <?php
-            $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
-            foreach ($all_topics as $t): ?>
-            <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
-            <?php endforeach; ?>
-        </div>
-        <div class="active-filter-note" id="activeFilterNote"></div>
+        <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
     </div>
 
     <!-- Creator strip -->
@@ -777,7 +737,6 @@ try {
         const minPriceHint  = document.getElementById('minPriceHint');
         const topicDesc     = document.getElementById('topicDesc');
         const topicSubmit   = document.getElementById('topicSubmit');
-        const activeFilterNote = document.getElementById('activeFilterNote');
         const topicDescCount  = document.getElementById('topicDescCount');
         const topicInputCount = document.getElementById('topicInputCount');
         const stripCreatorCard       = document.getElementById('stripCreatorCard');
@@ -793,24 +752,8 @@ try {
         const topicAmountLabel = document.getElementById('topicAmountLabel');
 
         let selectedCreator  = null;
-        let activeTopics     = new Set(); // selected filter chips (hero)
         let pickerTopics     = new Set(); // selected filter chips (modal)
         let activeTopic      = null;      // clicked existing topic {id, title, description}
-
-        /* ── Topic filter chips ── */
-        document.querySelectorAll('.topic-filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const t = btn.dataset.topic.toLowerCase();
-                if (activeTopics.has(t)) {
-                    activeTopics.delete(t);
-                    btn.classList.remove('active');
-                } else {
-                    activeTopics.add(t);
-                    btn.classList.add('active');
-                }
-                updateFilterNote();
-            });
-        });
 
         /* ── Picker modal topic chips ── */
         document.querySelectorAll('.picker-chip').forEach(chip => {
@@ -826,14 +769,6 @@ try {
                 applyPickerFilter(creatorSearch.value.trim().toLowerCase());
             });
         });
-
-        function updateFilterNote() {
-            if (activeTopics.size === 0) {
-                activeFilterNote.textContent = '';
-            } else {
-                activeFilterNote.textContent = `Showing creators for: ${[...activeTopics].join(', ')} — click the avatar to pick one`;
-            }
-        }
 
         /* Open / close creator picker */
         stripAvatar.addEventListener('click', () => {
