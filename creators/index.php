@@ -183,8 +183,10 @@ try {
         .select-creator-hint.hidden { display: none; }
 
         .strip-avatar {
-            width: 44px; height: 44px;
-            border-radius: 50%;
+            height: 40px;
+            border-radius: 50px;
+            padding: 0 18px 0 14px;
+            gap: 8px;
             background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
             display: flex; align-items: center; justify-content: center;
             color: var(--white);
@@ -193,11 +195,19 @@ try {
             cursor: pointer;
             transition: opacity 0.2s, transform 0.15s;
             overflow: hidden;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .strip-avatar.avatar-selected {
+            width: 44px; height: 44px;
+            border-radius: 50%;
             padding: 0;
+            gap: 0;
         }
         .strip-avatar:hover { opacity: 0.85; transform: scale(1.06); }
         .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .strip-avatar-initials { font-size: 16px; font-weight: 600; color: var(--white); }
+        .strip-avatar-label { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.1px; }
 
         .strip-input-field {
             flex: 1;
@@ -588,12 +598,9 @@ try {
     <div class="strip-section">
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
-                <div class="select-creator-hint" id="selectCreatorHint">
-                    <span>Click to Select Creator</span>
-                    <svg class="hint-arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3V18" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round"/><path d="M7 14L11 18L15 14" stroke="#E8305A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
                 <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    <span class="strip-avatar-label">Select a Creator</span>
                 </button>
             </div>
             <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
@@ -724,7 +731,6 @@ try {
         const topicInput    = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
         const stripInputWrapper  = document.getElementById('stripInputWrapper');
-        const selectHint         = document.getElementById('selectCreatorHint');
         const stripActiveTopics = document.getElementById('stripActiveTopics');
         const stripTopicsList   = document.getElementById('stripTopicsList');
         const stripFundedTopics = document.getElementById('stripFundedTopics');
@@ -879,8 +885,7 @@ try {
                 const initial = selectedCreator.name.charAt(0).toUpperCase();
                 stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
             }
-
-            selectHint.classList.add('hidden');
+            stripAvatar.classList.add('avatar-selected');
             stripInputWrapper.style.display = '';
             stripSend.style.display = '';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
@@ -913,8 +918,8 @@ try {
             stripFundedTopics.classList.remove('visible');
             selectedCreator = null;
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
-            stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
-            selectHint.classList.remove('hidden');
+            stripAvatar.classList.remove('avatar-selected');
+            stripAvatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="strip-avatar-label">Select a Creator</span>`;
             stripInputWrapper.style.display = 'none';
             stripSend.style.display = 'none';
             topicInput.placeholder = 'Type your topic idea…';
