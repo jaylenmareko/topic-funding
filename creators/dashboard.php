@@ -742,11 +742,6 @@ foreach ($topics as $topic) {
                     <div class="stat-card-sub">per video topic</div>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-card-label">Completed Videos</div>
-                    <div class="stat-card-value"><?php echo $completed_count; ?></div>
-                    <div class="stat-card-sub">videos delivered</div>
-                </div>
             </div>
             
             <div class="header-buttons">
