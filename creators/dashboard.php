@@ -1096,7 +1096,7 @@ if ($queued_count > 0) {
                     <div class="topic-section section-active">
                         <div class="section-label collapsible collapsed" id="label-active" onclick="toggleSection('active')">
                             <div class="section-label-dot" style="background:var(--hot-pink);"></div>
-                            Collecting Funding
+                            Active Topics
                             <span class="section-label-count"><?php echo count($section_active); ?></span>
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
