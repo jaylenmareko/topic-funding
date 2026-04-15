@@ -207,7 +207,7 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
         /* Page layout */
         .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 72px 30px 80px; min-height: calc(100vh - 57px); }
         .page-header { text-align: center; margin-bottom: 40px; max-width: 700px; }
-        .page-title { font-size: 40px; font-weight: 600; color: var(--black); margin-bottom: 12px; line-height: 1.15; letter-spacing: -0.6px; }
+        .page-title { font-size: 40px; font-weight: 500; color: var(--black); margin-bottom: 12px; line-height: 1.15; letter-spacing: -0.6px; }
         .page-subtitle { font-size: 15px; color: var(--gray-med); line-height: 1.6; }
 
         /* Card */
