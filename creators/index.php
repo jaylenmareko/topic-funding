@@ -22,6 +22,25 @@ try {
 } catch (Exception $e) {
     $creators = [];
 }
+
+// Fetch active topics for all creators, grouped by creator_id
+$creator_topics_map = [];
+try {
+    $db2 = new Database();
+    $db2->query("SELECT id, creator_id, title, description, funding_threshold, current_funding FROM topics WHERE status = 'active' ORDER BY created_at DESC");
+    $all_active_topics = $db2->resultSet();
+    foreach ($all_active_topics as $t) {
+        $creator_topics_map[$t->creator_id][] = [
+            'id'                => $t->id,
+            'title'             => $t->title,
+            'description'       => $t->description,
+            'funding_threshold' => (float)$t->funding_threshold,
+            'current_funding'   => (float)$t->current_funding,
+        ];
+    }
+} catch (Exception $e) {
+    $creator_topics_map = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -251,6 +270,38 @@ try {
         .strip-creator-card-price { background: #FFF0F3; color: var(--tl-pink); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
         .strip-creator-card-x { background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; flex-shrink: 0; transition: color 0.15s; }
         .strip-creator-card-x:hover { color: var(--tl-pink); }
+
+        /* Active topics section */
+        .strip-active-topics {
+            display: none;
+            margin: 10px auto 0;
+            max-width: calc(100% - 60px);
+        }
+        .strip-active-topics.visible { display: block; }
+        .strip-topics-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--tl-muted);
+            margin-bottom: 8px;
+        }
+        .strip-topic-item {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .strip-topic-item:last-child { margin-bottom: 0; }
+        .strip-topic-item:hover { border-color: var(--tl-pink); }
+        .strip-topic-item-title { font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+        .strip-topic-progress-bar { background: #F0F0F0; border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 4px; }
+        .strip-topic-progress-fill { height: 100%; background: var(--tl-pink); border-radius: 4px; transition: width 0.3s; }
+        .strip-topic-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--tl-muted); }
+        .strip-topic-pct { color: var(--tl-pink); font-weight: 600; }
 
         /* Step hint below strip */
         .strip-hint-row {
@@ -515,6 +566,12 @@ try {
             <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
         </div>
 
+        <!-- Active topics for selected creator -->
+        <div class="strip-active-topics" id="stripActiveTopics">
+            <div class="strip-topics-label">Active Topics</div>
+            <div id="stripTopicsList"></div>
+        </div>
+
         <div class="strip-hint-row">
             <div class="strip-hint-step" id="stripStep1"><strong>1</strong> Click the avatar to pick a creator</div>
             <div class="strip-hint-step" id="stripStep2"><strong>2</strong> Type your topic idea</div>
@@ -543,6 +600,7 @@ try {
                     $c_topics_json = htmlspecialchars(json_encode($c_topics), ENT_QUOTES);
                 ?>
                 <button class="creator-picker-item"
+                    data-id="<?php echo (int)$c->id; ?>"
                     data-name="<?php echo htmlspecialchars($c->display_name); ?>"
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
                     data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
@@ -600,11 +658,16 @@ try {
     </div>
 
     <script>
+    const CREATOR_TOPICS = <?php echo json_encode($creator_topics_map, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    </script>
+    <script>
     (function () {
         const stripAvatar   = document.getElementById('stripAvatar');
         const topicInput    = document.getElementById('topicInput');
         const stripSend     = document.getElementById('stripSend');
         const selectHint    = document.getElementById('selectCreatorHint');
+        const stripActiveTopics = document.getElementById('stripActiveTopics');
+        const stripTopicsList   = document.getElementById('stripTopicsList');
 
         const pickerOverlay = document.getElementById('creatorPickerOverlay');
         const closePickerBtn= document.getElementById('closeCreatorPicker');
@@ -684,11 +747,32 @@ try {
             });
         }
 
+        function renderCreatorTopics(creatorId) {
+            const topics = CREATOR_TOPICS[creatorId] || [];
+            if (topics.length === 0) {
+                stripActiveTopics.classList.remove('visible');
+                return;
+            }
+            stripTopicsList.innerHTML = topics.map(t => {
+                const pct = Math.min(100, Math.round((t.current_funding / t.funding_threshold) * 100));
+                return `<div class="strip-topic-item">
+                    <div class="strip-topic-item-title">${t.title}</div>
+                    <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
+                    <div class="strip-topic-meta">
+                        <span>$${Math.round(t.current_funding)} raised of $${Math.round(t.funding_threshold)}</span>
+                        <span class="strip-topic-pct">${pct}%</span>
+                    </div>
+                </div>`;
+            }).join('');
+            stripActiveTopics.classList.add('visible');
+        }
+
         /* Select a creator */
         pickerGrid.addEventListener('click', e => {
             const item = e.target.closest('.creator-picker-item');
             if (!item) return;
             selectedCreator = {
+                id:     parseInt(item.dataset.id, 10) || 0,
                 name:   item.dataset.name,
                 price:  parseInt(item.dataset.price, 10) || 0,
                 image:  item.dataset.image,
@@ -717,6 +801,7 @@ try {
             stripCreatorCardBio.textContent = selectedCreator.bio;
             stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
             stripCreatorCard.classList.add('visible');
+            renderCreatorTopics(selectedCreator.id);
 
             /* Hide step 1 — creator is chosen */
             stripStep1.style.display = 'none';
@@ -730,6 +815,7 @@ try {
         /* X button — remove selected creator */
         stripCreatorCardX.addEventListener('click', () => {
             stripCreatorCard.classList.remove('visible');
+            stripActiveTopics.classList.remove('visible');
             stripStep1.style.display = '';
             selectedCreator = null;
             stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
