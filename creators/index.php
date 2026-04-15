@@ -194,8 +194,6 @@ try {
             color: var(--white);
             flex-shrink: 0;
             border: none;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s;
             overflow: hidden;
             font-family: inherit;
             white-space: nowrap;
@@ -206,7 +204,6 @@ try {
             padding: 0;
             gap: 0;
         }
-        .strip-avatar:hover { opacity: 0.85; transform: scale(1.06); }
         .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .strip-avatar-initials { font-size: 16px; font-weight: 600; color: var(--white); }
         .strip-avatar-label { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.1px; }
@@ -600,9 +597,9 @@ try {
     <div class="strip-section" id="stripSection" style="display:none;">
         <div class="creator-strip" id="creatorStrip">
             <div class="strip-avatar-wrap">
-                <button class="strip-avatar avatar-selected" id="stripAvatar" title="Change creator">
+                <div class="strip-avatar avatar-selected" id="stripAvatar">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                </button>
+                </div>
             </div>
             <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
                 <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
@@ -791,7 +788,6 @@ try {
             creatorSearch.value = '';
             creatorSearch.focus();
         }
-        stripAvatar.addEventListener('click', openPicker);
         document.getElementById('browseCreatorsBtn').addEventListener('click', openPicker);
         closePickerBtn.addEventListener('click', closePicker);
         pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
