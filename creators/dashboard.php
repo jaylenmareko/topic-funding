@@ -736,7 +736,6 @@ foreach ($topics as $topic) {
                         </svg>
                         My Topics
                         <span class="inline-price-card">
-                            <span class="stat-card-label">Your Price</span>
                             <span class="stat-card-value">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
                             <span class="stat-card-sub">per video topic</span>
                         </span>
