@@ -611,7 +611,7 @@ try {
             </div>
             <div style="position:relative; flex:1;">
                 <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
-                <span id="topicInputCount" style="position:absolute; bottom:7px; right:10px; font-size:10px; color:#bbb; pointer-events:none;"></span>
+                <span id="topicInputCount" style="position:absolute; bottom:7px; right:8px; font-size:10px; color:#999; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
             </div>
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
