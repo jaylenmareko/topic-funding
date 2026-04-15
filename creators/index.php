@@ -171,7 +171,7 @@ try {
             background: var(--tl-off);
             border-top: 1px solid var(--tl-border);
             border-bottom: 1px solid var(--tl-border);
-            padding: 36px 0 40px;
+            padding: 18px 0 40px;
             overflow: visible;
         }
 
@@ -364,7 +364,7 @@ try {
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 0;
             padding: 0 30px;
         }
         .strip-hint-step {
