@@ -96,7 +96,7 @@ $creator_funded_map = [];
 if ($db_available) {
     try {
         $db3 = new Database();
-        $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason FROM topics WHERE status IN ('funded','on_hold') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
+        $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason FROM topics WHERE status IN ('funded','on_hold','queued') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
         $all_funded_topics = $db3->resultSet();
         foreach ($all_funded_topics as $t) {
             $creator_funded_map[$t->creator_id][] = [
@@ -741,6 +741,7 @@ if ($db_available) {
         .strip-funded-title { font-size: 12px; font-weight: 600; color: var(--text-dark); flex: 1; }
         .strip-funded-badge { font-size: 10px; font-weight: 600; color: #B45309; background: #FEF3C7; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
         .strip-onhold-badge { color: #6B7280; background: #F3F4F6; }
+        .strip-queued-badge { color: #1D4ED8; background: #DBEAFE; }
 
         /* ── Modals ── */
         .tl-overlay {

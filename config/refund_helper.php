@@ -262,7 +262,7 @@ class RefundManager {
             // Get all active/funded topics for this creator
             $this->db->query("
                 SELECT id, title FROM topics 
-                WHERE creator_id = :creator_id AND status IN ('active', 'funded')
+                WHERE creator_id = :creator_id AND status IN ('active', 'funded', 'queued')
             ");
             $this->db->bind(':creator_id', $creator_id);
             $topics = $this->db->resultSet();

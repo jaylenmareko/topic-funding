@@ -131,11 +131,10 @@ $contributions = $helper->getTopicContributions($topic_id);
                 <?php if ($contribution_result['fully_funded']): ?>
                 <div class="milestone-celebration">
                     <div class="milestone-title">🎉 GOAL REACHED!</div>
-                    <p>This topic is now fully funded! The creator has been automatically notified and has 48 hours to create your requested content.</p>
+                    <p>This topic is now fully funded and has been added to the creator's queue. The creator will start work when they're ready — once they begin, they have 48 hours to upload the content.</p>
                     
                     <div class="countdown-box">
-                        <strong>⏱️ Content Deadline:</strong><br>
-                        <?php echo date('l, M j, Y \a\t g:i A', strtotime($topic->content_deadline)); ?><br>
+                        <strong>📋 Status: In Creator Queue</strong><br>
                         <small>You'll be automatically refunded if content isn't delivered on time</small>
                     </div>
                 </div>
@@ -186,8 +185,8 @@ $contributions = $helper->getTopicContributions($topic_id);
                 <div class="next-steps">
                     <h4>📋 What happens next:</h4>
                     <ul style="text-align: left; margin: 10px 0;">
-                        <?php if ($topic->status === 'funded'): ?>
-                            <li><strong>Creator notified:</strong> They have 48 hours to create content</li>
+                        <?php if ($topic->status === 'queued' || $topic->status === 'funded'): ?>
+                            <li><strong>Creator notified:</strong> Your topic is in their queue</li>
                             <li><strong>Content delivery:</strong> You'll be notified when it's ready</li>
                             <li><strong>Automatic protection:</strong> Full refund if content isn't delivered on time</li>
                         <?php else: ?>

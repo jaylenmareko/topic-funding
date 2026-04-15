@@ -42,10 +42,29 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
             $db->beginTransaction();
             
             switch ($action) {
+                case 'start':
+                    // Move a queued topic to funded and start the 48-hour clock
+                    if ($topic->status !== 'queued') {
+                        throw new Exception("Can only start topics that are in the queue.");
+                    }
+                    
+                    $db->query("
+                        UPDATE topics 
+                        SET status = 'funded',
+                            content_deadline = NOW() + INTERVAL '48 hours',
+                            funded_at = COALESCE(funded_at, NOW())
+                        WHERE id = :topic_id
+                    ");
+                    $db->bind(':topic_id', $topic_id);
+                    $db->execute();
+                    
+                    $message = "Topic started! You have 48 hours to create and upload the content.";
+                    break;
+                    
                 case 'decline':
-                    // UPDATED: Allow decline for active, funded, or on_hold topics
-                    if (!in_array($topic->status, ['active', 'funded', 'on_hold'])) {
-                        throw new Exception("Can only decline active, funded, or held topics.");
+                    // Allow decline for active, queued, funded, or on_hold topics
+                    if (!in_array($topic->status, ['active', 'queued', 'funded', 'on_hold'])) {
+                        throw new Exception("Can only decline active, queued, funded, or held topics.");
                     }
                     
                     // Process full refunds for all contributors
@@ -66,9 +85,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     break;
                     
                 case 'hold':
-                    // UPDATED: Allow hold for active or funded topics
-                    if (!in_array($topic->status, ['active', 'funded'])) {
-                        throw new Exception("Can only put active or funded topics on hold.");
+                    // Allow hold for active, queued, or funded topics
+                    if (!in_array($topic->status, ['active', 'queued', 'funded'])) {
+                        throw new Exception("Can only put active, queued, or funded topics on hold.");
                     }
                     
                     $hold_reason = trim($_POST['hold_reason'] ?? 'Working on other content first');
@@ -87,6 +106,8 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     
                     if ($topic->status === 'funded') {
                         $message = "Topic put on hold. The 48-hour deadline is paused.";
+                    } elseif ($topic->status === 'queued') {
+                        $message = "Topic put on hold. It will return to your queue when you resume it.";
                     } else {
                         $message = "Topic put on hold. Fans can still contribute but you'll review it later.";
                     }
@@ -97,23 +118,8 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         throw new Exception("Can only resume topics that are on hold.");
                     }
                     
-                    // Determine what status to resume to based on funding
-                    $new_status = ($topic->current_funding >= $topic->funding_threshold) ? 'funded' : 'active';
-                    
-                    if ($new_status === 'funded') {
-                        // Resume as funded - set new 48-hour deadline from now
-                        $db->query("
-                            UPDATE topics 
-                            SET status = 'funded',
-                                content_deadline = NOW() + INTERVAL '48 hours',
-                                hold_reason = NULL,
-                                held_at = NULL,
-                                funded_at = NOW()
-                            WHERE id = :topic_id
-                        ");
-                        $message = "Topic resumed! You have 48 hours to create the content.";
-                    } else {
-                        // Resume as active - continue collecting funding
+                    if ($topic->current_funding < $topic->funding_threshold) {
+                        // Not fully funded — resume as active
                         $db->query("
                             UPDATE topics 
                             SET status = 'active',
@@ -121,10 +127,35 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                                 held_at = NULL
                             WHERE id = :topic_id
                         ");
+                        $db->bind(':topic_id', $topic_id);
+                        $db->execute();
                         $message = "Topic resumed! Fans can continue contributing to reach the funding goal.";
+                    } elseif ($topic->content_deadline !== null) {
+                        // Was fully funded and started (had a deadline) — resume as funded with a fresh deadline
+                        $db->query("
+                            UPDATE topics 
+                            SET status = 'funded',
+                                content_deadline = NOW() + INTERVAL '48 hours',
+                                hold_reason = NULL,
+                                held_at = NULL
+                            WHERE id = :topic_id
+                        ");
+                        $db->bind(':topic_id', $topic_id);
+                        $db->execute();
+                        $message = "Topic resumed! You have 48 hours to create the content.";
+                    } else {
+                        // Was fully funded but not yet started (queued) — return to queue
+                        $db->query("
+                            UPDATE topics 
+                            SET status = 'queued',
+                                hold_reason = NULL,
+                                held_at = NULL
+                            WHERE id = :topic_id
+                        ");
+                        $db->bind(':topic_id', $topic_id);
+                        $db->execute();
+                        $message = "Topic returned to your queue. Click 'Start' whenever you're ready to begin.";
                     }
-                    $db->bind(':topic_id', $topic_id);
-                    $db->execute();
                     break;
                     
                 default:

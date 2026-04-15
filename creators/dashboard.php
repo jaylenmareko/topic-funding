@@ -114,11 +114,11 @@ $db->query("
            (t.funding_threshold * 0.9) as potential_earnings
     FROM topics t 
     WHERE t.creator_id = :creator_id 
-    AND t.status IN ('active', 'funded', 'on_hold') 
+    AND t.status IN ('active', 'funded', 'queued', 'on_hold') 
     AND (t.content_url IS NULL OR t.content_url = '')
     AND (t.status != 'funded' OR t.content_deadline IS NULL OR t.content_deadline >= NOW())
     ORDER BY 
-        CASE WHEN t.status = 'funded' THEN 1 WHEN t.status = 'active' THEN 2 WHEN t.status = 'on_hold' THEN 3 END, 
+        CASE WHEN t.status = 'funded' THEN 1 WHEN t.status = 'queued' THEN 2 WHEN t.status = 'active' THEN 3 WHEN t.status = 'on_hold' THEN 4 END, 
         potential_earnings DESC, t.funded_at ASC, t.created_at DESC
 ");
 $db->bind(':creator_id', $creator->id);
@@ -126,11 +126,25 @@ $topics = $db->resultSet();
 
 $funded_count = 0;
 $active_count = 0;
+$queued_count = 0;
 foreach ($topics as $topic) {
     if ($topic->status === 'funded') {
         $funded_count++;
     } elseif ($topic->status === 'active') {
         $active_count++;
+    } elseif ($topic->status === 'queued') {
+        $queued_count++;
+    }
+}
+
+// Fetch queue positions for queued topics
+$queue_positions = [];
+if ($queued_count > 0) {
+    $db->query("SELECT id, ROW_NUMBER() OVER (ORDER BY funded_at ASC, id ASC) as queue_pos FROM topics WHERE creator_id = :creator_id AND status = 'queued'");
+    $db->bind(':creator_id', $creator->id);
+    $queue_rows = $db->resultSet();
+    foreach ($queue_rows as $row) {
+        $queue_positions[$row->id] = (int)$row->queue_pos;
     }
 }
 ?>
@@ -740,7 +754,7 @@ foreach ($topics as $topic) {
                             <span class="stat-card-sub">per topic</span>
                         </span>
                     </h1>
-                    <p class="page-subtitle"><?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
+                    <p class="page-subtitle"><?php echo $funded_count; ?> funded, <?php echo $queued_count; ?> in queue, <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
             </div>
             
@@ -825,6 +839,10 @@ foreach ($topics as $topic) {
                                             ?>
                                         </span>
                                     </div>
+                                <?php elseif ($topic->status === 'queued'): ?>
+                                    <div class="topic-status-badge" style="background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE;">
+                                        #<?php echo $queue_positions[$topic->id] ?? '?'; ?> In Queue
+                                    </div>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
                                     <div class="topic-status-badge on-hold">On Hold</div>
                                 <?php else: ?>
@@ -842,10 +860,10 @@ foreach ($topics as $topic) {
                                     <div class="earnings-amount">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?></div>
                                     <div class="earnings-label">Your Earnings</div>
                                 </div>
-                                <?php if ($topic->status === 'funded'): ?>
+                                <?php if ($topic->status === 'funded' || $topic->status === 'queued'): ?>
                                     <div style="text-align: right;">
-                                        <div style="font-size: 24px;">✅</div>
-                                        <div class="earnings-label">Funded</div>
+                                        <div style="font-size: 24px;"><?php echo $topic->status === 'queued' ? '📋' : '✅'; ?></div>
+                                        <div class="earnings-label"><?php echo $topic->status === 'queued' ? 'Queued' : 'Funded'; ?></div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -864,6 +882,10 @@ foreach ($topics as $topic) {
                             <div class="topic-tile-actions" onclick="event.stopPropagation();">
                                 <?php if ($topic->status === 'funded'): ?>
                                     <button class="tile-btn primary" onclick="openUploadModal(<?php echo $topic->id; ?>)">Upload</button>
+                                    <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
+                                    <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
+                                <?php elseif ($topic->status === 'queued'): ?>
+                                    <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
                                     <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
@@ -1160,9 +1182,21 @@ foreach ($topics as $topic) {
             form.submit();
         }
         
+        function startTopic(id) {
+            event.stopPropagation();
+            if (confirm('Start this topic now? Your 48-hour content deadline will begin immediately.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'topic_actions.php';
+                form.innerHTML = `<input type="hidden" name="action" value="start"><input type="hidden" name="topic_id" value="${id}">`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
         function resumeTopic(id) {
             event.stopPropagation();
-            if (confirm('Resume this topic? The 48-hour deadline will restart.')) {
+            if (confirm('Resume this topic?')) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'topic_actions.php';

@@ -62,6 +62,27 @@ The database schema includes tables: `users`, `creators`, `topics`, `contributio
 - `.htaccess` - URL rewriting rules (for Apache deployment)
 - `router.php` - URL routing for PHP built-in server
 
+## Topic Lifecycle / Status Flow
+
+Topics go through the following status transitions:
+
+1. **`active`** — Open for fan contributions (until funding threshold is met)
+2. **`queued`** — Fully funded; waiting in creator's queue. 48-hour clock has NOT started yet. `funded_at` is set. `content_deadline` is NULL.
+3. **`funded`** — Creator clicked "Start"; 48-hour `content_deadline` is running. Creator must upload content URL before deadline.
+4. **`on_hold`** — Creator paused the topic (from `active`, `queued`, or `funded`). Resume returns to the appropriate prior state:
+   - If `content_deadline IS NOT NULL` → resumes to `funded` with fresh deadline
+   - If fully funded but no deadline → resumes to `queued`
+   - If not fully funded → resumes to `active`
+5. **`completed`** — Content uploaded successfully; payment processing triggered
+6. **`cancelled`** — Creator declined; full refunds issued
+7. **`failed`** — Auto-refund triggered (deadline expired without upload)
+
+Key files for status transitions:
+- `config/funding_processor.php` — Sets `queued` when threshold is hit
+- `config/notification_system.php` — Also sets `queued` + sends notifications
+- `creators/topic_actions.php` — `start` (queued→funded), `hold`, `resume`, `decline`
+- `cron/auto_refund.php` — Only runs on `funded` topics with expired `content_deadline`
+
 ## Notes
 
 - The app was migrated from MySQL to PostgreSQL for Replit compatibility

@@ -381,7 +381,7 @@ class DatabaseHelper {
             if ($topic_after->current_funding >= $topic_after->funding_threshold) {
                 $this->db->query("
                     UPDATE topics 
-                    SET status = 'funded', funded_at = NOW(), content_deadline = NOW() + INTERVAL '48 hours'
+                    SET status = 'queued', funded_at = NOW()
                     WHERE id = :topic_id
                 ");
                 $this->db->bind(':topic_id', $topic_id);

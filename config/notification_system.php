@@ -196,43 +196,29 @@ Support: support@topiclaunch.com";
             error_log("Current status: " . $topic->status);
             error_log("Current funding: $" . $topic->current_funding);
             
-            // CRITICAL: Set content deadline (48 hours from now)
-            $deadline = date('Y-m-d H:i:s', strtotime('+48 hours'));
+            // Topic threshold reached — queue it (deadline only starts when creator manually starts it)
             $funded_at = date('Y-m-d H:i:s');
-            
-            error_log("Setting deadline to: " . $deadline);
             error_log("Setting funded_at to: " . $funded_at);
             
             // FIXED: Use explicit column names and ensure values are set
             $this->db->query("
                 UPDATE topics 
                 SET 
-                    content_deadline = :deadline, 
                     funded_at = :funded_at,
-                    status = 'funded'
+                    status = 'queued'
                 WHERE id = :topic_id
             ");
-            $this->db->bind(':deadline', $deadline);
             $this->db->bind(':funded_at', $funded_at);
             $this->db->bind(':topic_id', $topic_id);
             $result = $this->db->execute();
             
             error_log("UPDATE query executed. Rows affected: " . ($result ? "SUCCESS" : "FAILED"));
             
-            // VERIFICATION: Check if deadline was actually set
-            $this->db->query('SELECT content_deadline, funded_at, status FROM topics WHERE id = :topic_id');
+            // VERIFICATION: Check topic is now queued
+            $this->db->query('SELECT funded_at, status FROM topics WHERE id = :topic_id');
             $this->db->bind(':topic_id', $topic_id);
             $verify = $this->db->single();
-            
-            if (!$verify || !$verify->content_deadline) {
-                error_log("❌ CRITICAL ERROR: Deadline was NOT set in database!");
-                error_log("Verification result: " . json_encode($verify));
-                throw new Exception("Failed to set content_deadline in database");
-            }
-            
-            error_log("✅ VERIFIED: Deadline successfully set to: " . $verify->content_deadline);
-            error_log("✅ VERIFIED: funded_at set to: " . $verify->funded_at);
-            error_log("✅ VERIFIED: status set to: " . $verify->status);
+            error_log("VERIFIED: funded_at=" . ($verify->funded_at ?? "null") . " status=" . ($verify->status ?? "null"));
             
             // Process platform fees with error handling
             $fee_result = null;
@@ -276,15 +262,14 @@ Support: support@topiclaunch.com";
             error_log("Sending funded notifications...");
             
             // 1. Notify Creator (with net amount after 10% fee)
-            $creator_result = $this->sendCreatorFundedNotification($topic, $deadline, $fee_result);
+            $creator_result = $this->sendCreatorFundedNotification($topic, $fee_result);
             error_log("Creator notification result: " . ($creator_result ? 'SUCCESS' : 'FAILED'));
             
             // 2. Notify All Contributors
-            $contributor_result = $this->sendContributorFundedNotifications($topic_id, $topic, $deadline);
+            $contributor_result = $this->sendContributorFundedNotifications($topic_id, $topic);
             error_log("Contributor notifications result: " . ($contributor_result ? 'SUCCESS' : 'FAILED'));
             
-            // 3. Schedule auto-refund check
-            $this->scheduleAutoRefundCheck($topic_id, $deadline);
+            // Auto-refund is scheduled when creator starts the topic (not at queue time)
             
             error_log("========================================");
             error_log("TOPIC FUNDED HANDLING COMPLETE");
@@ -292,7 +277,6 @@ Support: support@topiclaunch.com";
             
             return [
                 'success' => true, 
-                'deadline' => $deadline,
                 'funded_at' => $funded_at,
                 'fee_info' => $fee_result,
                 'creator_notified' => $creator_result,
@@ -312,7 +296,7 @@ Support: support@topiclaunch.com";
     /**
      * Send notification to creator when topic is funded
      */
-    private function sendCreatorFundedNotification($topic, $deadline, $fee_info) {
+    private function sendCreatorFundedNotification($topic, $fee_info) {
         $creator_email = $topic->creator_user_email ?: $topic->creator_email;
         
         if (!$creator_email) {
@@ -333,20 +317,17 @@ Topic: " . $topic->title . "
 Total Funding: $" . number_format($topic->current_funding, 2) . "
 Your Earnings: $" . number_format($fee_info['creator_amount'], 2) . " (after 10% platform fee)
 
-CONTENT DEADLINE:
-" . date('F j, Y \a\t g:i A', strtotime($deadline)) . "
-
 NEXT STEPS:
-1. Create your content for the requested topic
-2. Upload the content URL to mark as completed
-3. Upload before the deadline to receive payment
+1. Go to your dashboard and click 'Start' when you are ready to begin
+2. Once you start, you will have 48 hours to create and upload the content
+3. Your payment will be processed after successful content delivery
 
-Upload here: https://topiclaunch.com/creators/dashboard.php
+Dashboard: https://topiclaunch.com/creators/dashboard.php
 
 IMPORTANT NOTES:
-- Content must be uploaded within 48 hours of this notification
-- If content is not delivered on time, contributors will receive refunds
-- Your payment will be processed after successful content delivery
+- The 48-hour countdown only starts when you click 'Start' on your dashboard
+- If content is not delivered on time, contributors will receive automatic refunds
+- You can hold the topic from your dashboard if you need more time before starting
 
 Thank you for participating in TopicLaunch.
 
@@ -370,7 +351,7 @@ Support: support@topiclaunch.com";
     /**
      * Send notifications to all contributors when topic is funded
      */
-    private function sendContributorFundedNotifications($topic_id, $topic, $deadline) {
+    private function sendContributorFundedNotifications($topic_id, $topic) {
         // Get all contributors
         $this->db->query("
             SELECT DISTINCT u.email, u.username, c.amount, u.id as user_id
@@ -396,14 +377,11 @@ Title: " . $topic->title . "
 Creator: " . $topic->creator_name . "
 Your Contribution: $" . number_format($contributor->amount, 2) . "
 
-CONTENT DEADLINE:
-" . date('F j, Y \a\t g:i A', strtotime($deadline)) . "
-
 WHAT HAPPENS NEXT:
-The creator now has 48 hours to create and upload the requested content. You'll be notified when the content is ready.
+Your topic has been added to the creator's queue. The creator will start work when they're ready — once they click 'Start' they have 48 hours to create and upload the content. You'll be notified when the content is ready.
 
 REFUND PROTECTION:
-If the creator doesn't deliver content within 48 hours, you'll automatically receive a 90% refund ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs and delivery guarantee services.
+If the creator doesn't deliver content within 48 hours of starting, you'll automatically receive a 90% refund ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs and delivery guarantee services.
 
 Track progress: https://topiclaunch.com/topics/view.php?id=" . $topic_id . "
 
@@ -425,7 +403,7 @@ Support: support@topiclaunch.com";
             
             // Log notification for each contributor
             $this->logNotification($contributor->user_id ?? 0, 'contributor', 'topic_funded', 
-                "Funded topic '" . $topic->title . "' - Content deadline set", $topic_id);
+                "Topic '" . $topic->title . "' fully funded and added to creator queue", $topic_id);
         }
         
         error_log("Contributor notifications: {$success_count}/" . count($contributors) . " sent successfully");
@@ -508,7 +486,6 @@ Support: support@topiclaunch.com";
                 ON DUPLICATE KEY UPDATE deadline = :deadline, status = 'scheduled'
             ");
             $this->db->bind(':topic_id', $topic_id);
-            $this->db->bind(':deadline', $deadline);
             $this->db->execute();
             
             error_log("Auto-refund scheduled for topic {$topic_id} at {$deadline}");
