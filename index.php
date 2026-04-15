@@ -1068,13 +1068,10 @@ if ($db_available) {
         pickerGrid.addEventListener('click', e => {
             const item = e.target.closest('.creator-picker-item');
             if (!item) return;
-            let topics = [];
-            try { topics = JSON.parse(item.dataset.topics || '[]'); } catch(e) {}
             selectedCreator = {
                 name:   item.dataset.name,
                 price:  parseInt(item.dataset.price, 10) || 0,
                 image:  item.dataset.image,
-                topics: topics,
                 bio: item.dataset.bio || ''
             };
 
