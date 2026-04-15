@@ -244,6 +244,8 @@ try {
             resize: none;
             height: 96px;
             line-height: 1.5;
+            word-break: break-word;
+            overflow-y: auto;
         }
         .strip-input-field::placeholder { color: #bbb; }
         .strip-input-field:focus { border-color: rgba(232,48,90,0.4); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
