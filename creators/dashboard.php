@@ -902,7 +902,7 @@ if ($queued_count > 0) {
                             <span class="stat-card-sub">per topic</span>
                         </span>
                     </h1>
-                    <p class="page-subtitle"><?php echo $funded_count; ?> funded, <?php echo $queued_count; ?> in queue, <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
+                    <p class="page-subtitle"><?php echo $funded_count; ?> running, <?php echo $queued_count; ?> in queue, <?php echo count($section_on_hold); ?> on hold, <?php echo $active_count; ?> active.</p>
                 </div>
             </div>
             
