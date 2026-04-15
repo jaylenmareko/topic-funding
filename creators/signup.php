@@ -313,7 +313,6 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
     <div class="page-wrapper">
         <div class="page-header">
             <h1 class="page-title">Start Earning Today</h1>
-            <p class="page-subtitle">Set your price. You're the CEO here.</p>
         </div>
         <div class="signup-container">
             <?php if ($error): ?><div class="error-message"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
