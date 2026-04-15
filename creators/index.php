@@ -242,7 +242,7 @@ try {
             transition: border-color 0.2s, opacity 0.2s;
             box-shadow: 0 1px 4px rgba(0,0,0,0.04);
             resize: none;
-            height: 116px;
+            height: 96px;
             line-height: 1.5;
         }
         .strip-input-field::placeholder { color: #bbb; }
