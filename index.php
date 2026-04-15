@@ -294,8 +294,7 @@ if ($db_available) {
         }
         .hero-stat { flex: 1; text-align: center; max-width: 160px; display: flex; flex-direction: column; align-items: center; }
         .hero-stat-step { width: 24px; height: 24px; border-radius: 50%; background: var(--tl-pink); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
-        .hero-stat-n { font-size: 15px; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; }
-        .hero-stat-n span { color: var(--tl-pink); }
+        .hero-stat-n { font-size: 15px; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; white-space: nowrap; }
         .hero-stat-divider { color: var(--tl-muted); font-size: 18px; display: flex; align-items: center; align-self: center; margin: 0 12px; padding-bottom: 4px; }
 
         /* ── Why section (cards) ── */
@@ -893,17 +892,17 @@ if ($db_available) {
             <div class="hero-stat-row">
                 <div class="hero-stat">
                     <div class="hero-stat-step">1</div>
-                    <div class="hero-stat-n">Fans Fund<span> Topic</span></div>
+                    <div class="hero-stat-n">Fans Fund Topic</div>
                 </div>
                 <div class="hero-stat-divider">→</div>
                 <div class="hero-stat">
                     <div class="hero-stat-step">2</div>
-                    <div class="hero-stat-n">You<span> Deliver</span></div>
+                    <div class="hero-stat-n">You Deliver</div>
                 </div>
                 <div class="hero-stat-divider">→</div>
                 <div class="hero-stat">
                     <div class="hero-stat-step">3</div>
-                    <div class="hero-stat-n">Receive<span> $</span></div>
+                    <div class="hero-stat-n">Receive $</div>
                 </div>
             </div>
         </div>
