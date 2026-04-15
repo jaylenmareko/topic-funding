@@ -933,9 +933,15 @@ try {
             topicModalSub.textContent  = `For: ${selectedCreator.name}`;
             minPriceHint.textContent   = '';
             topicAmount.min            = 1;
-            topicAmount.placeholder    = '0';
+            topicAmount.max            = remaining > 0 ? remaining : '';
+            topicAmount.placeholder    = remaining > 0 ? Math.round(remaining) : '0';
             topicAmount.value          = '';
-            topicDescField.style.display = 'none';
+            topicDesc.value            = topicDescription;
+            topicDescCount.textContent = `${topicDescription.length}/350`;
+            topicDesc.setAttribute('readonly', true);
+            topicDesc.style.background = '#F5F5F5';
+            topicDesc.style.color      = '#888';
+            topicDescField.style.display = '';
             topicFundingInfo.style.display = 'block';
             topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> raised &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong style="color:#333;">$${Math.round(remaining)}</strong> still needed`;
             topicOverlay.classList.add('open');
@@ -948,6 +954,7 @@ try {
             activeTopic = null;
             topicModalTitle.textContent = 'Send your request';
             topicAmountLabel.textContent = 'Your offer amount';
+            topicAmount.removeAttribute('max');
             topicPreview.textContent = topicInput.value.trim();
             topicModalSub.textContent = `To: ${selectedCreator.name}`;
             if (selectedCreator.price > 0) {
@@ -983,6 +990,13 @@ try {
                 topicAmount.style.borderColor = '#E8305A';
                 topicAmount.focus();
                 setTimeout(() => topicAmount.style.borderColor = '', 1500);
+                return;
+            }
+            if (activeTopic && topicAmount.max && amount > parseFloat(topicAmount.max)) {
+                minPriceHint.textContent = `Maximum contribution is $${Math.round(topicAmount.max)} (remaining needed)`;
+                minPriceHint.style.color = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
                 return;
             }
             if (!activeTopic && selectedCreator.price > 0 && amount < selectedCreator.price) {
