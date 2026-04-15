@@ -177,12 +177,12 @@ try {
 
         .creator-strip {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 14px;
             width: 100%;
         }
-        .creator-strip .strip-avatar-wrap { margin-left: 30px; }
-        .creator-strip .strip-send { margin-right: 30px; }
+        .creator-strip .strip-avatar-wrap { margin-left: 30px; padding-top: 10px; }
+        .creator-strip .strip-send { margin-right: 30px; margin-top: 10px; flex-shrink: 0; }
 
         /* hint label above avatar */
         .strip-avatar-wrap {
@@ -241,6 +241,9 @@ try {
             outline: none;
             transition: border-color 0.2s, opacity 0.2s;
             box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            resize: none;
+            height: 88px;
+            line-height: 1.5;
         }
         .strip-input-field::placeholder { color: #bbb; }
         .strip-input-field:focus { border-color: rgba(232,48,90,0.4); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
@@ -604,7 +607,7 @@ try {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 </button>
             </div>
-            <input type="text" class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100">
+            <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
             </button>
@@ -904,7 +907,11 @@ try {
         });
 
         /* Enable send only when input has text + live counter */
+        topicInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); if (selectedCreator && topicInput.value.trim()) stripSend.click(); }
+        });
         topicInput.addEventListener('input', () => {
+            topicInput.value = topicInput.value.replace(/\n/g, '');
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
             const len = topicInput.value.length;
             topicInputCount.textContent = len > 0 ? `${len}/100` : '';
