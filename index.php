@@ -379,7 +379,7 @@ if ($db_available) {
             background: var(--tl-black);
             padding: 20px 0;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             gap: 14px;
             width: 100%;
             max-width: none;
@@ -670,9 +670,12 @@ if ($db_available) {
             padding: 9px 46px 9px 14px;
             border: 1px solid var(--tl-border);
             font-size: 12px;
+            line-height: 1.5;
             color: var(--text-dark);
             font-family: inherit;
             outline: none;
+            resize: none;
+            overflow: hidden;
             transition: border-color 0.2s, opacity 0.2s;
         }
         .strip-input-field::placeholder { color: #bbb; }
@@ -681,8 +684,7 @@ if ($db_available) {
         .strip-input-count {
             position: absolute;
             right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
+            bottom: 9px;
             font-size: 11px;
             color: #ccc;
             pointer-events: none;
@@ -1005,7 +1007,7 @@ if ($db_available) {
             </button>
             </div>
             <div class="strip-input-wrapper">
-                <input type="text" class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100">
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
                 <span class="strip-input-count" id="topicInputCount"></span>
             </div>
             <button class="strip-send" id="stripSend" disabled>
@@ -1317,12 +1319,19 @@ if ($db_available) {
             stripSend.disabled = true;
         });
 
+        /* ── Auto-grow textarea helper ── */
+        function autoGrowTopicInput() {
+            topicInput.style.height = 'auto';
+            topicInput.style.height = topicInput.scrollHeight + 'px';
+        }
+
         /* ── Enable send + live counter ── */
         topicInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') { e.preventDefault(); if (selectedCreator && topicInput.value.trim()) stripSend.click(); }
         });
         topicInput.addEventListener('input', () => {
             topicInput.value = topicInput.value.replace(/\n/g, '');
+            autoGrowTopicInput();
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
             const len = topicInput.value.length;
             topicInputCount.textContent = `${len}/100`;
