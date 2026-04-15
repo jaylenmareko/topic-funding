@@ -864,7 +864,12 @@ try {
                 minPriceHint.textContent = '';
             }
             topicAmount.value = '';
-            topicDescField.style.display = 'none';
+            topicDesc.value = topicDescription;
+            topicDescCount.textContent = `${topicDescription.length}/350`;
+            topicDesc.setAttribute('readonly', true);
+            topicDesc.style.background = '#F5F5F5';
+            topicDesc.style.color = '#888';
+            topicDescField.style.display = '';
             topicFundingInfo.style.display = 'block';
             topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> already funded &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong>$${Math.round(remaining)}</strong> still needed`;
             topicOverlay.classList.add('open');
@@ -887,6 +892,9 @@ try {
             topicAmount.value = '';
             topicDesc.value = '';
             topicDescCount.textContent = '0/350';
+            topicDesc.removeAttribute('readonly');
+            topicDesc.style.background = '';
+            topicDesc.style.color = '';
             topicDescField.style.display = '';
             topicFundingInfo.style.display = 'none';
             topicOverlay.classList.add('open');
