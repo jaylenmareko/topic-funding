@@ -39,7 +39,7 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $username = trim($_POST['username'] ?? '');
-        $bio = trim($_POST['bio'] ?? '');
+        $bio = mb_substr(trim($_POST['bio'] ?? ''), 0, 100);
         $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
         $paypal_email = trim($_POST['paypal_email'] ?? '');
         $venmo_handle = trim($_POST['venmo_handle'] ?? '');
@@ -269,8 +269,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <div class="form-group">
-                    <label for="bio">Bio (Optional)</label>
-                    <textarea id="bio" name="bio" placeholder="Tell your audience about yourself..."><?php echo htmlspecialchars($creator->bio ?? ''); ?></textarea>
+                    <label for="bio">Bio <span style="font-weight:400; color:#aaa;">(Optional)</span></label>
+                    <div style="position:relative;">
+                        <textarea id="bio" name="bio" placeholder="Tell your audience about yourself..." maxlength="100" style="padding-bottom:22px;"><?php echo htmlspecialchars($creator->bio ?? ''); ?></textarea>
+                        <span id="bioCount" style="position:absolute; bottom:8px; right:10px; font-size:10px; color:#aaa; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -323,6 +326,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             reader.readAsDataURL(file);
         }
     });
+    </script>
+    <script>
+    (function() {
+        const bio = document.getElementById('bio');
+        const bioCount = document.getElementById('bioCount');
+        function update() { bioCount.textContent = bio.value.length + '/100'; }
+        bio.addEventListener('input', update);
+        update();
+    })();
     </script>
 </body>
 </html>
