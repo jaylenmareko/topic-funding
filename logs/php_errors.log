@@ -310,3 +310,22 @@ Stack trace:
 #0 /home/runner/workspace/router.php(17): require()
 #1 {main}
   thrown in /home/runner/workspace/index.php on line 8
+[15-Apr-2026 02:28:03 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "creators" does not exist
+LINE 1: ...ROM information_schema.columns WHERE table_name = creators O...
+                                                             ^ in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->query('SELECT column_n...')
+#1 {main}
+  thrown in Command line code on line 1
+[15-Apr-2026 02:28:36 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[08P01]: <<Unknown error>>: 7 ERROR:  bind message supplies 0 parameters, but prepared statement "pdo_stmt_00000001" requires 2 in /home/runner/workspace/tmp_seed_creators.php:32
+Stack trace:
+#0 /home/runner/workspace/tmp_seed_creators.php(32): PDO->query('SELECT id FROM ...')
+#1 {main}
+  thrown in /home/runner/workspace/tmp_seed_creators.php on line 32
+[15-Apr-2026 02:28:54 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "user_type" of relation "users" does not exist
+LINE 1: ...users (username, email, password_hash, full_name, user_type,...
+                                                             ^ in /home/runner/workspace/tmp_seed_creators.php:15
+Stack trace:
+#0 /home/runner/workspace/tmp_seed_creators.php(15): PDOStatement->execute(Array)
+#1 {main}
+  thrown in /home/runner/workspace/tmp_seed_creators.php on line 15
