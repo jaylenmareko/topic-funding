@@ -210,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 16px;
             padding: 36px;
             width: 100%;
-            max-width: 440px;
+            max-width: 360px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
 
