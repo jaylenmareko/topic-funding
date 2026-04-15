@@ -292,12 +292,11 @@ if ($db_available) {
             border-top: 1px solid var(--tl-border);
             padding-top: 32px;
         }
-        .hero-stat { flex: 1; text-align: center; max-width: 150px; display: flex; flex-direction: column; align-items: center; }
-        .hero-stat-n { font-size: 26px; font-weight: 600; color: var(--text-dark); min-height: 38px; display: flex; align-items: center; justify-content: center; }
+        .hero-stat { flex: 1; text-align: center; max-width: 160px; display: flex; flex-direction: column; align-items: center; }
+        .hero-stat-step { width: 24px; height: 24px; border-radius: 50%; background: var(--tl-pink); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+        .hero-stat-n { font-size: 15px; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; }
         .hero-stat-n span { color: var(--tl-pink); }
-        .hero-stat-n--sm { font-size: 17px; }
-        .hero-stat-label { font-size: 11px; color: var(--tl-muted); margin-top: 4px; }
-        .hero-stat-divider { width: 1px; background: var(--tl-border); align-self: stretch; margin: 0 10px; }
+        .hero-stat-divider { color: var(--tl-muted); font-size: 18px; display: flex; align-items: center; align-self: center; margin: 0 12px; padding-bottom: 4px; }
 
         /* ── Why section (cards) ── */
         .why-section {
@@ -893,18 +892,18 @@ if ($db_available) {
 
             <div class="hero-stat-row">
                 <div class="hero-stat">
-                    <div class="hero-stat-n">90<span>%</span></div>
-                    <div class="hero-stat-label">Creator Keeps</div>
+                    <div class="hero-stat-step">1</div>
+                    <div class="hero-stat-n">Fans Fund<span> Topic</span></div>
                 </div>
-                <div class="hero-stat-divider"></div>
+                <div class="hero-stat-divider">→</div>
                 <div class="hero-stat">
-                    <div class="hero-stat-n">0<span>$</span></div>
-                    <div class="hero-stat-label">Cost to sign up</div>
+                    <div class="hero-stat-step">2</div>
+                    <div class="hero-stat-n">You<span> Deliver</span></div>
                 </div>
-                <div class="hero-stat-divider"></div>
+                <div class="hero-stat-divider">→</div>
                 <div class="hero-stat">
-                    <div class="hero-stat-n hero-stat-n--sm">Your<span> Price</span></div>
-                    <div class="hero-stat-label">Your Terms</div>
+                    <div class="hero-stat-step">3</div>
+                    <div class="hero-stat-n">Receive<span> $</span></div>
                 </div>
             </div>
         </div>
