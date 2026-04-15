@@ -880,7 +880,7 @@ if ($db_available) {
                 <span class="hero-eyebrow-dot"></span>
                 CREATORS KEEP 90%
             </div>
-            <h1>
+            <h1 style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500;">
                 Your fans <span class="pink">commission</span><br>your best work.
             </h1>
             <p class="hero-subhead">
