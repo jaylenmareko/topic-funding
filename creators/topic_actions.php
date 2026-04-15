@@ -48,6 +48,14 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         throw new Exception("Can only start topics that are in the queue.");
                     }
                     
+                    // Block if a topic is already running
+                    $db->query("SELECT COUNT(*) as cnt FROM topics WHERE creator_id = :creator_id AND status = 'funded'");
+                    $db->bind(':creator_id', $creator->id);
+                    $running = $db->single();
+                    if ((int)$running->cnt > 0) {
+                        throw new Exception("You already have a topic in progress. Finish or hold that one before starting another.");
+                    }
+                    
                     $db->query("
                         UPDATE topics 
                         SET status = 'funded',
@@ -105,7 +113,29 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     $db->execute();
                     
                     if ($topic->status === 'funded') {
-                        $message = "Topic put on hold. The 48-hour deadline is paused.";
+                        // Auto-start the next topic in the queue
+                        $db->query("
+                            SELECT id FROM topics 
+                            WHERE creator_id = :creator_id AND status = 'queued'
+                            ORDER BY funded_at ASC, id ASC
+                            LIMIT 1
+                        ");
+                        $db->bind(':creator_id', $creator->id);
+                        $next = $db->single();
+                        
+                        if ($next) {
+                            $db->query("
+                                UPDATE topics 
+                                SET status = 'funded',
+                                    content_deadline = NOW() + INTERVAL '48 hours'
+                                WHERE id = :next_id
+                            ");
+                            $db->bind(':next_id', $next->id);
+                            $db->execute();
+                            $message = "Topic put on hold. The next topic in your queue has been started automatically.";
+                        } else {
+                            $message = "Topic put on hold. No topics in queue — your slot is open when you resume.";
+                        }
                     } elseif ($topic->status === 'queued') {
                         $message = "Topic put on hold. It will return to your queue when you resume it.";
                     } else {

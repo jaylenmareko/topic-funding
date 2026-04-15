@@ -87,6 +87,25 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
                         
+                        // Auto-start the next queued topic now that the slot is open
+                        $db->query("
+                            SELECT id FROM topics 
+                            WHERE creator_id = :creator_id AND status = 'queued'
+                            ORDER BY funded_at ASC, id ASC
+                            LIMIT 1
+                        ");
+                        $db->bind(':creator_id', $creator->id);
+                        $next_queued = $db->single();
+                        if ($next_queued) {
+                            $db->query("
+                                UPDATE topics 
+                                SET status = 'funded', content_deadline = NOW() + INTERVAL '48 hours'
+                                WHERE id = :next_id
+                            ");
+                            $db->bind(':next_id', $next_queued->id);
+                            $db->execute();
+                        }
+                        
                         try {
                             if (file_exists('../config/notification_system.php')) {
                                 require_once __DIR__ . '/../config/notification_system.php';
@@ -136,6 +155,7 @@ foreach ($topics as $topic) {
         $queued_count++;
     }
 }
+$has_running = $funded_count > 0;
 
 // Fetch queue positions for queued topics
 $queue_positions = [];
@@ -885,7 +905,11 @@ if ($queued_count > 0) {
                                     <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'queued'): ?>
-                                    <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
+                                    <?php if ($has_running): ?>
+                                        <button class="tile-btn" disabled style="opacity:0.45;cursor:not-allowed;flex:1;" title="Finish the current running topic first">Auto-queued</button>
+                                    <?php else: ?>
+                                        <button class="tile-btn primary" onclick="startTopic(<?php echo $topic->id; ?>)">Start</button>
+                                    <?php endif; ?>
                                     <button class="tile-btn" onclick="holdTopic(<?php echo $topic->id; ?>)" style="background: #FFF7ED; color: #9A3412; border-color: #FED7AA;">Hold</button>
                                     <button class="tile-btn danger" onclick="declineTopic(<?php echo $topic->id; ?>)">Decline</button>
                                 <?php elseif ($topic->status === 'on_hold'): ?>
