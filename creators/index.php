@@ -856,13 +856,9 @@ try {
 
             topicPreview.textContent   = topicTitle;
             topicModalSub.textContent  = `To: ${selectedCreator.name}`;
-            if (selectedCreator.price > 0) {
-                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
-                topicAmount.min = selectedCreator.price;
-                topicAmount.placeholder = selectedCreator.price;
-            } else {
-                minPriceHint.textContent = '';
-            }
+            minPriceHint.textContent   = '';
+            topicAmount.min            = 1;
+            topicAmount.placeholder    = '0';
             topicAmount.value = '';
             topicDesc.value = topicDescription;
             topicDescCount.textContent = `${topicDescription.length}/350`;
@@ -917,7 +913,7 @@ try {
                 setTimeout(() => topicAmount.style.borderColor = '', 1500);
                 return;
             }
-            if (selectedCreator.price > 0 && amount < selectedCreator.price) {
+            if (!activeTopic && selectedCreator.price > 0 && amount < selectedCreator.price) {
                 minPriceHint.style.color = '#E8305A';
                 topicAmount.focus();
                 setTimeout(() => minPriceHint.style.color = '', 1500);
