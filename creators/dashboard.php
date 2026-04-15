@@ -955,7 +955,7 @@ if ($queued_count > 0) {
                         </svg>
                         Request Payout
                     </button>
-                    <div class="payout-note">Min. $15</div>
+                    <div class="payout-note">Min. $50</div>
                 </div>
             </div>
         </div>
@@ -1311,8 +1311,8 @@ if ($queued_count > 0) {
         function requestPayout() {
             const availableBalance = <?php echo $creator->available_balance ?? 0; ?>;
             
-            if (availableBalance < 15) {
-                alert('Minimum payout amount is $15. Your current available balance is $' + availableBalance.toFixed(2));
+            if (availableBalance < 50) {
+                alert('Minimum payout amount is $50. Your current available balance is $' + availableBalance.toFixed(2));
                 return;
             }
             
