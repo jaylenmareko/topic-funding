@@ -638,10 +638,33 @@ if ($queued_count > 0) {
         /* Topic sections */
         .topic-section {
             margin-bottom: 28px;
+            border-radius: 10px;
+            border: 1.5px solid #E5E5E5;
+            padding: 14px 16px;
         }
 
         .topic-section:last-child {
             margin-bottom: 0;
+        }
+
+        .topic-section.section-running {
+            border-color: #BBF7D0;
+            background: #F0FDF4;
+        }
+
+        .topic-section.section-queued {
+            border-color: #BFDBFE;
+            background: #EFF6FF;
+        }
+
+        .topic-section.section-onhold {
+            border-color: #FDE68A;
+            background: #FFFBEB;
+        }
+
+        .topic-section.section-active {
+            border-color: #FBCFE8;
+            background: #FDF2F8;
         }
 
         .section-label {
@@ -1026,7 +1049,7 @@ if ($queued_count > 0) {
                 <?php $first_section = true; ?>
 
                 <?php if (!empty($section_running)): ?>
-                    <div class="topic-section">
+                    <div class="topic-section section-running">
                         <div class="section-label">
                             <div class="section-label-dot" style="background:#22C55E;"></div>
                             Now Running
@@ -1035,12 +1058,10 @@ if ($queued_count > 0) {
                             <?php foreach ($section_running as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
                         </div>
                     </div>
-                    <?php $first_section = false; ?>
                 <?php endif; ?>
 
                 <?php if (!empty($section_queued)): ?>
-                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
-                    <div class="topic-section">
+                    <div class="topic-section section-queued">
                         <div class="section-label collapsible" id="label-queued" onclick="toggleSection('queued')">
                             <div class="section-label-dot" style="background:#3B82F6;"></div>
                             Up Next
@@ -1048,17 +1069,15 @@ if ($queued_count > 0) {
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body" id="body-queued">
-                            <div class="topics-grid">
+                            <div class="topics-grid" style="margin-top:10px;">
                                 <?php foreach ($section_queued as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
                             </div>
                         </div>
                     </div>
-                    <?php $first_section = false; ?>
                 <?php endif; ?>
 
                 <?php if (!empty($section_on_hold)): ?>
-                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
-                    <div class="topic-section">
+                    <div class="topic-section section-onhold">
                         <div class="section-label collapsible collapsed" id="label-onhold" onclick="toggleSection('onhold')">
                             <div class="section-label-dot" style="background:#F59E0B;"></div>
                             On Hold
@@ -1066,17 +1085,15 @@ if ($queued_count > 0) {
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body collapsed" id="body-onhold">
-                            <div class="topics-grid">
+                            <div class="topics-grid" style="margin-top:10px;">
                                 <?php foreach ($section_on_hold as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
                             </div>
                         </div>
                     </div>
-                    <?php $first_section = false; ?>
                 <?php endif; ?>
 
                 <?php if (!empty($section_active)): ?>
-                    <?php if (!$first_section): ?><hr class="section-divider"><?php endif; ?>
-                    <div class="topic-section">
+                    <div class="topic-section section-active">
                         <div class="section-label collapsible collapsed" id="label-active" onclick="toggleSection('active')">
                             <div class="section-label-dot" style="background:var(--hot-pink);"></div>
                             Collecting Funding
@@ -1084,7 +1101,7 @@ if ($queued_count > 0) {
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body collapsed" id="body-active">
-                            <div class="topics-grid">
+                            <div class="topics-grid" style="margin-top:10px;">
                                 <?php foreach ($section_active as $topic): renderTopicTile($topic, $queue_positions, $has_running); endforeach; ?>
                             </div>
                         </div>
