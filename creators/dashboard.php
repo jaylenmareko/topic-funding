@@ -736,7 +736,7 @@ foreach ($topics as $topic) {
                         </svg>
                         My Topics
                     </h1>
-                    <p class="page-subtitle">Welcome back, <?php echo htmlspecialchars($creator->display_name); ?>! You have <?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
+                    <p class="page-subtitle"><?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
                 
                 <div class="stat-card">
