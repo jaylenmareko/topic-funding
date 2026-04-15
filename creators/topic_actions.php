@@ -93,9 +93,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     break;
                     
                 case 'hold':
-                    // Allow hold for active, queued, or funded topics
-                    if (!in_array($topic->status, ['active', 'queued', 'funded'])) {
-                        throw new Exception("Can only put active, queued, or funded topics on hold.");
+                    // Allow hold for queued or funded topics only (active topics can only be declined)
+                    if (!in_array($topic->status, ['queued', 'funded'])) {
+                        throw new Exception("Can only put queued or funded topics on hold.");
                     }
                     
                     $hold_reason = trim($_POST['hold_reason'] ?? 'Working on other content first');
@@ -138,8 +138,6 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         }
                     } elseif ($topic->status === 'queued') {
                         $message = "Topic put on hold. It will return to your queue when you resume it.";
-                    } else {
-                        $message = "Topic put on hold. Fans can still contribute but you'll review it later.";
                     }
                     break;
                     
