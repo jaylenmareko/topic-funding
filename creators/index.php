@@ -592,7 +592,7 @@ try {
 
     <!-- Hero -->
     <div class="hero-section">
-        <button id="browseCreatorsBtn" class="hero-title" style="background:linear-gradient(135deg,#E8305A,#B01F3F);color:#fff;border:none;border-radius:50px;padding:12px 36px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Browse <em style="color:#fff;">Creators</em></button>
+        <button id="browseCreatorsBtn" style="height:36px;border-radius:50px;padding:0 16px 0 12px;gap:7px;background:linear-gradient(135deg,#E8305A,#B01F3F);display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;border:none;cursor:pointer;transition:opacity 0.2s,transform 0.15s;font-family:inherit;white-space:nowrap;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0;flex-shrink:0;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span style="font-size:13px;font-weight:600;letter-spacing:0.1px;">Browse Creators</span></button>
         <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
     </div>
 
