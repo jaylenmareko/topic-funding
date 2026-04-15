@@ -461,6 +461,28 @@ try {
         }
         .tl-modal-search input::placeholder { color: #bbb; }
 
+        .picker-chips-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+        }
+        .picker-chip {
+            font-size: 11px;
+            padding: 4px 11px;
+            border-radius: 20px;
+            border: 1px solid #E5E5E5;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .picker-chip:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .picker-chip.active { background: var(--tl-pink); border-color: var(--tl-pink); color: #fff; }
+
         .creator-picker-grid {
             overflow-y: auto;
             display: grid;
@@ -653,6 +675,11 @@ try {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input type="text" id="creatorSearch" placeholder="Search creators…">
             </div>
+            <div class="picker-chips-row" id="pickerChipsRow">
+                <?php foreach ($all_topics as $t): ?>
+                <button class="picker-chip" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+                <?php endforeach; ?>
+            </div>
             <div class="creator-picker-grid" id="creatorPickerGrid">
                 <?php foreach ($creators as $c):
                     $c_topics = [];
@@ -766,7 +793,8 @@ try {
         const topicAmountLabel = document.getElementById('topicAmountLabel');
 
         let selectedCreator  = null;
-        let activeTopics     = new Set(); // selected filter chips
+        let activeTopics     = new Set(); // selected filter chips (hero)
+        let pickerTopics     = new Set(); // selected filter chips (modal)
         let activeTopic      = null;      // clicked existing topic {id, title, description}
 
         /* ── Topic filter chips ── */
@@ -781,6 +809,21 @@ try {
                     btn.classList.add('active');
                 }
                 updateFilterNote();
+            });
+        });
+
+        /* ── Picker modal topic chips ── */
+        document.querySelectorAll('.picker-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const t = chip.dataset.topic.toLowerCase();
+                if (pickerTopics.has(t)) {
+                    pickerTopics.delete(t);
+                    chip.classList.remove('active');
+                } else {
+                    pickerTopics.add(t);
+                    chip.classList.add('active');
+                }
+                applyPickerFilter(creatorSearch.value.trim().toLowerCase());
             });
         });
 
@@ -801,7 +844,13 @@ try {
         });
         closePickerBtn.addEventListener('click', closePicker);
         pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
-        function closePicker() { pickerOverlay.classList.remove('open'); creatorSearch.value = ''; applyPickerFilter(''); }
+        function closePicker() {
+            pickerOverlay.classList.remove('open');
+            creatorSearch.value = '';
+            pickerTopics.clear();
+            document.querySelectorAll('.picker-chip').forEach(c => c.classList.remove('active'));
+            applyPickerFilter('');
+        }
 
         /* Creator search inside picker */
         creatorSearch.addEventListener('input', () => applyPickerFilter(creatorSearch.value.trim().toLowerCase()));
@@ -812,11 +861,11 @@ try {
                 let   topics = [];
                 try { topics = JSON.parse(btn.dataset.topics || '[]'); } catch(e) {}
 
-                const matchesSearch = !q || name.includes(q);
-                const matchesTopic  = activeTopics.size === 0 ||
-                    [...activeTopics].some(t => topics.includes(t));
+                const matchesSearch  = !q || name.includes(q);
+                const matchesHero    = activeTopics.size === 0 || [...activeTopics].some(t => topics.includes(t));
+                const matchesPicker  = pickerTopics.size === 0 || [...pickerTopics].some(t => topics.includes(t));
 
-                btn.classList.toggle('hidden', !matchesSearch || !matchesTopic);
+                btn.classList.toggle('hidden', !matchesSearch || !matchesHero || !matchesPicker);
             });
         }
 
