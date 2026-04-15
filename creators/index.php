@@ -592,7 +592,7 @@ try {
 
     <!-- Hero -->
     <div class="hero-section">
-        <button id="browseCreatorsBtn" style="background:linear-gradient(135deg,#E8305A,#B01F3F);color:#fff;border:none;border-radius:50px;padding:16px 40px;font-size:32px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity 0.2s;letter-spacing:-0.5px;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Browse <span style="font-style:italic;">Creators</span></button>
+        <button id="browseCreatorsBtn" class="hero-title" style="background:linear-gradient(135deg,#E8305A,#B01F3F);color:#fff;border:none;border-radius:50px;padding:12px 36px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Browse <em style="color:#fff;">Creators</em></button>
         <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
     </div>
 
