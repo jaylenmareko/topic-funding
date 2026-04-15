@@ -2,12 +2,12 @@
 require_once __DIR__ . '/config/database.php';
 $pdo = $db;
 $cases = [
-    ['creator_dummy_1', 'creatordummy1@example.com', 'Ava Stone', 120, ['fitness', 'health', 'motivation'], 'image_1776214079960.png'],
-    ['creator_dummy_2', 'creatordummy2@example.com', 'Noah Reed', 150, ['business', 'money', 'career'], 'image_1776214145837.png'],
-    ['creator_dummy_3', 'creatordummy3@example.com', 'Maya Chen', 200, ['technology & ai', 'psychology', 'cosmetics'], 'image_1776215721179.png'],
+    ['creator_dummy_1', 'creatordummy1@example.com', 'Ava Stone', 120, ['fitness', 'health', 'motivation'], 'image_1776214079960.png', 'Ava creates motivational wellness content that helps busy people build healthier routines, stay consistent, and feel better every week.'],
+    ['creator_dummy_2', 'creatordummy2@example.com', 'Noah Reed', 150, ['business', 'money', 'career'], 'image_1776214145837.png', 'Noah shares practical business and money advice for ambitious people who want to grow income, build useful habits, and make smarter career decisions.'],
+    ['creator_dummy_3', 'creatordummy3@example.com', 'Maya Chen', 200, ['technology & ai', 'psychology', 'cosmetics'], 'image_1776215721179.png', 'Maya explores technology, psychology, and beauty in a thoughtful way, creating detailed content that blends useful insight with creative storytelling.'],
 ];
 foreach ($cases as $case) {
-    [$username, $email, $display, $price, $topics, $imageFile] = $case;
+    [$username, $email, $display, $price, $topics, $imageFile, $bio] = $case;
     $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :u OR email = :e');
     $stmt->execute([':u' => $username, ':e' => $email]);
     $existing = $stmt->fetch(PDO::FETCH_OBJ);
@@ -36,7 +36,7 @@ foreach ($cases as $case) {
             ':username' => $username,
             ':display' => $display,
             ':image' => $targetFile,
-            ':bio' => 'Dummy creator account for testing.',
+            ':bio' => $bio,
             ':price' => $price,
             ':paypal' => null,
             ':venmo' => null,
