@@ -985,7 +985,7 @@ if ($db_available) {
             </p>
             <div class="hero-cta-row">
                 <a href="creators/signup.php" class="hero-cta">Launch your page</a>
-                <a href="/creators/index.php" class="hero-cta-ghost">Browse Creators</a>
+                <button class="hero-cta-ghost" id="browseCreatorsBtn">Browse Creators</button>
             </div>
 
             <div class="hero-stat-row">
@@ -1008,12 +1008,11 @@ if ($db_available) {
     </div>
 
     <!-- Creator strip -->
-    <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
-        <div class="creator-strip no-creator" id="creatorStrip">
+    <div id="stripSection" style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible; display:none;">
+        <div class="creator-strip" id="creatorStrip">
             <div class="strip-avatar-wrap">
-            <button class="strip-avatar" id="stripAvatar" title="Choose a creator">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                <span class="strip-avatar-label">Select a Creator</span>
+            <button class="strip-avatar avatar-selected" id="stripAvatar" title="Change creator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             </button>
             </div>
             <div class="strip-input-wrapper" id="stripInputWrapper" style="display:none;">
@@ -1152,7 +1151,7 @@ if ($db_available) {
     <script>
     (function () {
         const stripAvatar        = document.getElementById('stripAvatar');
-        const creatorStrip       = document.getElementById('creatorStrip');
+        const stripSection       = document.getElementById('stripSection');
         const topicInput         = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
         const stripInputWrapper  = document.getElementById('stripInputWrapper');
@@ -1209,12 +1208,14 @@ if ($db_available) {
         });
 
         /* ── Open / close creator picker ── */
-        stripAvatar.addEventListener('click', () => {
+        function openPicker() {
             pickerOverlay.classList.add('open');
             applyPickerFilter('');
             creatorSearch.value = '';
             creatorSearch.focus();
-        });
+        }
+        stripAvatar.addEventListener('click', openPicker);
+        document.getElementById('browseCreatorsBtn').addEventListener('click', openPicker);
         closePickerBtn.addEventListener('click', closePicker);
         pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
         function closePicker() {
@@ -1306,8 +1307,7 @@ if ($db_available) {
             } else {
                 stripAvatar.innerHTML = `<span class="strip-avatar-initials">${selectedCreator.name.charAt(0).toUpperCase()}</span>`;
             }
-            stripAvatar.classList.add('avatar-selected');
-            creatorStrip.classList.remove('no-creator');
+            stripSection.style.display = '';
             stripInputWrapper.style.display = '';
             stripSend.style.display = '';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
@@ -1338,9 +1338,7 @@ if ($db_available) {
             stripFundedTopics.classList.remove('visible');
             selectedCreator = null;
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
-            stripAvatar.classList.remove('avatar-selected');
-            creatorStrip.classList.add('no-creator');
-            stripAvatar.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="strip-avatar-label">Select a Creator</span>`;
+            stripSection.style.display = 'none';
             stripInputWrapper.style.display = 'none';
             stripSend.style.display = 'none';
             topicInput.placeholder = 'Type your topic idea…';
