@@ -934,7 +934,6 @@ if ($db_available) {
             <div class="strip-creator-card-avatar" id="stripCreatorCardAvatar"></div>
             <div class="strip-creator-card-info">
                 <div class="strip-creator-card-name" id="stripCreatorCardName"></div>
-                <div class="strip-creator-card-topics" id="stripCreatorCardTopics"></div>
                 <div class="strip-creator-card-bio" id="stripCreatorCardBio"></div>
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
@@ -1061,7 +1060,6 @@ if ($db_available) {
         const stripCreatorCard       = document.getElementById('stripCreatorCard');
         const stripCreatorCardAvatar = document.getElementById('stripCreatorCardAvatar');
         const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
-        const stripCreatorCardTopics = document.getElementById('stripCreatorCardTopics');
         const stripCreatorCardBio = document.getElementById('stripCreatorCardBio');
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
         const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
@@ -1102,7 +1100,6 @@ if ($db_available) {
                 stripCreatorCardAvatar.innerHTML = selectedCreator.name.charAt(0).toUpperCase();
             }
             stripCreatorCardName.textContent   = selectedCreator.name;
-            stripCreatorCardTopics.textContent = topics.length ? topics.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' · ') : '';
             stripCreatorCardBio.textContent = selectedCreator.bio;
             stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
             stripCreatorCard.classList.add('visible');
