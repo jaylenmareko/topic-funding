@@ -623,4 +623,17 @@ function renderFundingWidget($topic, $contributions = [], $analytics = null) {
     echo '</div>';
     echo '</div>';
 }
+
+// Raw PDO connection available as $db for files that use native PDO syntax.
+// Files that need the Database class simply reassign: $db = new Database();
+try {
+    $db = new PDO(
+        'pgsql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME,
+        DB_USER,
+        DB_PASS,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ]
+    );
+} catch (PDOException $e) {
+    $db = null;
+}
 ?>
