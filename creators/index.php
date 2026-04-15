@@ -639,7 +639,7 @@ try {
                     <label class="tl-label">Your topic idea</label>
                     <div class="tl-topic-preview" id="topicPreview"></div>
                 </div>
-                <div class="tl-field">
+                <div class="tl-field" id="topicDescField">
                     <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
                     <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3" maxlength="350"></textarea>
                     <div class="tl-char-count" id="topicDescCount">0/350</div>
@@ -650,6 +650,7 @@ try {
                         <span class="tl-prefix">$</span>
                         <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
                     </div>
+                    <div id="topicFundingInfo" style="display:none; margin-top:6px; background:#FFF0F3; border-radius:8px; padding:8px 12px; font-size:12px; color:#555; line-height:1.5;"></div>
                     <div class="tl-hint" id="minPriceHint"></div>
                 </div>
                 <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
@@ -692,6 +693,8 @@ try {
         const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
         const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
         const stripStep1 = document.getElementById('stripStep1');
+        const topicDescField   = document.getElementById('topicDescField');
+        const topicFundingInfo = document.getElementById('topicFundingInfo');
 
         let selectedCreator  = null;
         let activeTopics     = new Set(); // selected filter chips
@@ -758,7 +761,7 @@ try {
                 const pct = Math.min(100, Math.round((t.current_funding / t.funding_threshold) * 100));
                 const descAttr = t.description ? t.description.replace(/"/g, '&quot;') : '';
                 const titleAttr = t.title.replace(/"/g, '&quot;');
-                return `<div class="strip-topic-item" data-topic-id="${t.id}" data-topic-title="${titleAttr}" data-topic-desc="${descAttr}">
+                return `<div class="strip-topic-item" data-topic-id="${t.id}" data-topic-title="${titleAttr}" data-topic-desc="${descAttr}" data-current-funding="${t.current_funding}" data-funding-threshold="${t.funding_threshold}">
                     <div class="strip-topic-item-title">${t.title}</div>
                     <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
                     <div class="strip-topic-meta">
@@ -842,9 +845,13 @@ try {
         stripTopicsList.addEventListener('click', e => {
             const item = e.target.closest('.strip-topic-item');
             if (!item || !selectedCreator) return;
-            const topicId    = item.dataset.topicId;
-            const topicTitle = item.dataset.topicTitle;
+            const topicId          = item.dataset.topicId;
+            const topicTitle       = item.dataset.topicTitle;
             const topicDescription = item.dataset.topicDesc || '';
+            const currentFunding   = parseFloat(item.dataset.currentFunding) || 0;
+            const fundingThreshold = parseFloat(item.dataset.fundingThreshold) || 0;
+            const pct = fundingThreshold > 0 ? Math.min(100, Math.round((currentFunding / fundingThreshold) * 100)) : 0;
+            const remaining = Math.max(0, fundingThreshold - currentFunding);
             activeTopic = { id: topicId, title: topicTitle, description: topicDescription };
 
             topicPreview.textContent   = topicTitle;
@@ -857,8 +864,9 @@ try {
                 minPriceHint.textContent = '';
             }
             topicAmount.value = '';
-            topicDesc.value   = topicDescription;
-            topicDescCount.textContent = `${topicDescription.length}/350`;
+            topicDescField.style.display = 'none';
+            topicFundingInfo.style.display = 'block';
+            topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> already funded &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong>$${Math.round(remaining)}</strong> still needed`;
             topicOverlay.classList.add('open');
             topicAmount.focus();
         });
@@ -879,6 +887,8 @@ try {
             topicAmount.value = '';
             topicDesc.value = '';
             topicDescCount.textContent = '0/350';
+            topicDescField.style.display = '';
+            topicFundingInfo.style.display = 'none';
             topicOverlay.classList.add('open');
             topicDesc.focus();
         });
