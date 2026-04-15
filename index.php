@@ -96,7 +96,7 @@ $creator_funded_map = [];
 if ($db_available) {
     try {
         $db3 = new Database();
-        $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold FROM topics WHERE status = 'funded' ORDER BY funded_at DESC");
+        $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason FROM topics WHERE status IN ('funded','on_hold') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
         $all_funded_topics = $db3->resultSet();
         foreach ($all_funded_topics as $t) {
             $creator_funded_map[$t->creator_id][] = [
@@ -104,6 +104,8 @@ if ($db_available) {
                 'title'             => $t->title,
                 'current_funding'   => (float)$t->current_funding,
                 'funding_threshold' => (float)$t->funding_threshold,
+                'status'            => $t->status,
+                'hold_reason'       => $t->hold_reason ?? '',
             ];
         }
     } catch (Exception $e) {}
@@ -738,6 +740,7 @@ if ($db_available) {
         .strip-funded-dot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; }
         .strip-funded-title { font-size: 12px; font-weight: 600; color: var(--text-dark); flex: 1; }
         .strip-funded-badge { font-size: 10px; font-weight: 600; color: #B45309; background: #FEF3C7; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+        .strip-onhold-badge { color: #6B7280; background: #F3F4F6; }
 
         /* ── Modals ── */
         .tl-overlay {
@@ -1227,13 +1230,18 @@ if ($db_available) {
         function renderFundedTopics(creatorId) {
             const topics = CREATOR_FUNDED[creatorId] || [];
             if (topics.length === 0) { stripFundedTopics.classList.remove('visible'); return; }
-            stripFundedList.innerHTML = topics.map(t =>
-                `<div class="strip-funded-item">
-                    <div class="strip-funded-dot"></div>
+            stripFundedList.innerHTML = topics.map(t => {
+                const isOnHold = t.status === 'on_hold';
+                const dotColor = isOnHold ? 'background:#9CA3AF;' : '';
+                const badge    = isOnHold
+                    ? `<div class="strip-funded-badge strip-onhold-badge">On Hold</div>`
+                    : `<div class="strip-funded-badge">Waiting Upload</div>`;
+                return `<div class="strip-funded-item">
+                    <div class="strip-funded-dot" style="${dotColor}"></div>
                     <div class="strip-funded-title">${t.title}</div>
-                    <div class="strip-funded-badge">Waiting Upload</div>
-                </div>`
-            ).join('');
+                    ${badge}
+                </div>`;
+            }).join('');
             stripFundedTopics.classList.add('visible');
         }
 
