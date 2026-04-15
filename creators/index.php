@@ -281,12 +281,14 @@ try {
         }
         .strip-active-topics.visible { display: block; }
         .strip-topics-label {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
-            color: var(--tl-muted);
-            margin-bottom: 8px;
+            color: #fff;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
         }
         .strip-topic-item {
             background: var(--white);
@@ -314,12 +316,14 @@ try {
         }
         .strip-funded-topics.visible { display: block; }
         .strip-funded-label {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
-            color: #B45309;
-            margin-bottom: 8px;
+            color: #F59E0B;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(245,158,11,0.25);
         }
         .strip-funded-item {
             background: #FFFBF0;

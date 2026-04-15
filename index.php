@@ -750,7 +750,7 @@ if ($db_available) {
         /* Active topics section */
         .strip-active-topics { display: none; margin: 10px auto 0; max-width: calc(100% - 60px); }
         .strip-active-topics.visible { display: block; }
-        .strip-topics-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--tl-muted); margin-bottom: 8px; }
+        .strip-topics-label { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #fff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.12); }
         .strip-topic-item { background: var(--white); border: 1px solid var(--tl-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s; }
         .strip-topic-item:last-child { margin-bottom: 0; }
         .strip-topic-item:hover { border-color: var(--tl-pink); }
@@ -764,7 +764,7 @@ if ($db_available) {
         /* Funded / waiting for upload section */
         .strip-funded-topics { display: none; margin: 10px auto 0; max-width: calc(100% - 60px); }
         .strip-funded-topics.visible { display: block; }
-        .strip-funded-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #B45309; margin-bottom: 8px; }
+        .strip-funded-label { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #F59E0B; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(245,158,11,0.25); }
         .strip-funded-item { background: #FFFBF0; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
         .strip-funded-item:last-child { margin-bottom: 0; }
         .strip-funded-dot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; }
