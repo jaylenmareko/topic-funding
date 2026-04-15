@@ -609,12 +609,14 @@ try {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 </button>
             </div>
-            <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
+            <div style="position:relative; flex:1;">
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
+                <span id="topicInputCount" style="position:absolute; bottom:7px; right:10px; font-size:10px; color:#bbb; pointer-events:none;"></span>
+            </div>
             <button class="strip-send" id="stripSend" disabled>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
             </button>
         </div>
-        <div style="text-align:right; padding: 4px 30px 0; font-size:11px; color:#bbb;" id="topicInputCount"></div>
 
         <!-- Creator card (shown after selection) -->
         <div class="strip-creator-card" id="stripCreatorCard">
@@ -916,7 +918,7 @@ try {
             topicInput.value = topicInput.value.replace(/\n/g, '');
             stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
             const len = topicInput.value.length;
-            topicInputCount.textContent = len > 0 ? `${len}/100` : '';
+            topicInputCount.textContent = `${len}/100`;
         });
 
         topicDesc.addEventListener('input', () => {
@@ -1059,6 +1061,9 @@ try {
                 setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
             });
         });
+        /* Init character counter */
+        topicInputCount.textContent = '0/100';
+
         /* Auto-select creator from /creators/{handle} path */
         const _pathParts = window.location.pathname.split('/').filter(Boolean);
         const autoSelectHandle = (_pathParts.length === 2 && _pathParts[0] === 'creators')
