@@ -493,6 +493,31 @@ if ($db_available) {
         }
 
         .creator-topics { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+        .topic-filter-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 18px 0 0; }
+        .topic-filter-btn {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            border: 1px solid var(--tl-border);
+            background: var(--white);
+            color: var(--tl-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .topic-filter-btn:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .topic-filter-btn.active { background: var(--tl-pink); border-color: var(--tl-pink); color: var(--white); }
+        .active-filter-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--tl-pink);
+            font-weight: 400;
+            margin-top: 10px;
+            min-height: 16px;
+        }
 
         .creator-topic-tag {
             font-size: 11px;
@@ -886,6 +911,14 @@ if ($db_available) {
             <p class="hero-subhead">
                 TopicLaunch connects creators with fans who want custom content — on their terms, at your price.
             </p>
+            <div class="topic-filter-row" id="topicFilterRow">
+                <?php
+                $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
+                foreach ($all_topics as $t): ?>
+                <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+                <?php endforeach; ?>
+            </div>
+            <div class="active-filter-note" id="activeFilterNote"></div>
             <div class="hero-cta-row">
                 <a href="creators/signup.php" class="hero-cta">Launch your page</a>
                 <a href="/creators/index.php" class="hero-cta-ghost">Browse Creators</a>

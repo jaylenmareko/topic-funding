@@ -475,11 +475,7 @@ try {
     <!-- Hero -->
     <div class="hero-section">
         <h1 class="hero-title">Browse <em>Creators</em></h1>
-    </div>
-
-    <!-- Creator strip -->
-    <div class="strip-section">
-        <div class="topic-filter-row" id="topicFilterRow" style="margin-top: 0; margin-bottom: 14px;">
+        <div class="topic-filter-row" id="topicFilterRow">
             <?php
             $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
             foreach ($all_topics as $t): ?>
@@ -487,6 +483,10 @@ try {
             <?php endforeach; ?>
         </div>
         <div class="active-filter-note" id="activeFilterNote"></div>
+    </div>
+
+    <!-- Creator strip -->
+    <div class="strip-section">
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
