@@ -321,7 +321,7 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
                     <label for="username">Username</label>
                     <div class="username-input-wrapper">
                         <span class="username-prefix">@</span>
-                        <input type="text" id="username" name="username" class="username-input" placeholder="username" pattern="[a-zA-Z0-9_]{3,30}" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
+                        <input type="text" id="username" name="username" class="username-input" placeholder="username" pattern="[a-zA-Z0-9_]{3,30}" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required oninput="this.value=this.value.replace(/\s/g,'')">
                     </div>
                     <div class="username-url-preview">Your profile: <span class="url-domain">topiclaunch.com/</span><span class="url-username" id="usernamePreview">username</span></div>
                 </div>
