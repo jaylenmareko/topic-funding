@@ -76,7 +76,7 @@ try {
         }
         .hero-title {
             font-size: 42px;
-            font-weight: 700;
+            font-weight: 500;
             color: var(--text-dark);
             letter-spacing: -1px;
             line-height: 1.1;
