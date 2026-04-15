@@ -737,7 +737,7 @@ foreach ($topics as $topic) {
                         My Topics
                         <span class="inline-price-card">
                             <span class="stat-card-value">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
-                            <span class="stat-card-sub">per video topic</span>
+                            <span class="stat-card-sub">per topic</span>
                         </span>
                     </h1>
                     <p class="page-subtitle"><?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
