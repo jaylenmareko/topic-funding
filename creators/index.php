@@ -593,6 +593,12 @@ try {
 
     <!-- Creator strip -->
     <div class="strip-section">
+        <div class="strip-hint-row">
+            <div class="strip-hint-step" id="stripStep1"><strong>1</strong> Click the avatar to pick a creator</div>
+            <div class="strip-hint-step" id="stripStep2"><strong>2</strong> Type your topic idea</div>
+            <div class="strip-hint-step" id="stripStep3"><strong>3</strong> Add details &amp; fund the video</div>
+        </div>
+
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
@@ -619,12 +625,6 @@ try {
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
             <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
-        </div>
-
-        <div class="strip-hint-row">
-            <div class="strip-hint-step" id="stripStep1"><strong>1</strong> Click the avatar to pick a creator</div>
-            <div class="strip-hint-step" id="stripStep2"><strong>2</strong> Type your topic idea</div>
-            <div class="strip-hint-step" id="stripStep3"><strong>3</strong> Add details &amp; fund the video</div>
         </div>
 
         <!-- Active topics for selected creator -->
