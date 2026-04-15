@@ -380,17 +380,16 @@ if ($db_available) {
             background: var(--tl-black);
             padding: 20px 0;
             display: flex;
-            align-items: flex-end;
-            gap: 14px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             width: 100%;
             max-width: none;
             margin: 0;
         }
-        .creator-strip .strip-avatar-wrap { margin-left: 30px; }
-        .creator-strip.no-creator { justify-content: center; }
-        .creator-strip.no-creator .strip-avatar-wrap { margin-left: 0; }
+        .creator-strip .strip-avatar-wrap { margin-left: 0; }
         .creator-strip .strip-input-field { max-width: none; }
-        .creator-strip .strip-send { margin-right: 30px; }
+        #stripInputRow { display: none; width: 100%; align-items: flex-end; gap: 14px; padding: 0 30px; box-sizing: border-box; }
 
         /* ── Creators browse section ── */
         .creators-section {
@@ -944,9 +943,7 @@ if ($db_available) {
             .creators-grid { grid-template-columns: 1fr; }
             .why-cards { grid-template-columns: 1fr; }
             .creator-strip { padding: 16px 0; }
-            .creator-strip .strip-avatar-wrap { margin-left: 20px; }
-            .creator-strip .strip-input-wrapper { margin-right: 20px; }
-            .creator-strip .strip-send { margin-right: 20px; }
+            #stripInputRow { padding: 0 20px; }
         }
         @media (max-width: 480px) {
             .hero-cta-row { flex-direction: column; align-items: stretch; }
@@ -1016,13 +1013,15 @@ if ($db_available) {
                 <span class="strip-avatar-label">Select a Creator</span>
             </button>
             </div>
-            <div class="strip-input-wrapper" id="stripInputWrapper" style="display:none;">
-                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
-                <span class="strip-input-count" id="topicInputCount"></span>
+            <div id="stripInputRow" style="display:none;">
+                <div class="strip-input-wrapper" id="stripInputWrapper">
+                    <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
+                    <span class="strip-input-count" id="topicInputCount"></span>
+                </div>
+                <button class="strip-send" id="stripSend" disabled>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+                </button>
             </div>
-            <button class="strip-send" id="stripSend" disabled style="display:none;">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
-            </button>
         </div>
 
         <!-- Creator card (shown after selection) -->
@@ -1156,6 +1155,7 @@ if ($db_available) {
         const topicInput         = document.getElementById('topicInput');
         const stripSend          = document.getElementById('stripSend');
         const stripInputWrapper  = document.getElementById('stripInputWrapper');
+        const stripInputRow      = document.getElementById('stripInputRow');
         const stripActiveTopics  = document.getElementById('stripActiveTopics');
         const stripTopicsList    = document.getElementById('stripTopicsList');
         const stripFundedTopics  = document.getElementById('stripFundedTopics');
@@ -1302,8 +1302,7 @@ if ($db_available) {
             };
 
             creatorStrip.classList.remove('no-creator');
-            stripInputWrapper.style.display = '';
-            stripSend.style.display = '';
+            stripInputRow.style.display = 'flex';
             topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
@@ -1333,8 +1332,7 @@ if ($db_available) {
             selectedCreator = null;
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             creatorStrip.classList.add('no-creator');
-            stripInputWrapper.style.display = 'none';
-            stripSend.style.display = 'none';
+            stripInputRow.style.display = 'none';
             topicInput.placeholder = 'Type your topic idea…';
             topicInput.value = '';
             stripSend.disabled = true;
