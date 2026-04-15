@@ -31,23 +31,14 @@ if (file_exists(__DIR__ . $path) && pathinfo($path, PATHINFO_EXTENSION) === 'php
     return true;
 }
 
-// Handle vanity username/topic URLs (mimics .htaccess rewrite)
-// Pattern: /username/topicN
-if (preg_match('/^\/([a-zA-Z0-9_.-]+)\/topic([0-9]+)$/', $path, $m)) {
-    $_GET['username'] = $m[1];
-    $_GET['topic_num'] = $m[2];
-    require __DIR__ . '/username.php';
-    return true;
-}
-
-// Pattern: /username (but not reserved paths)
+// Handle vanity username/topic URLs — redirect to creators index
 $reserved = ['auth', 'creators', 'topics', 'admin', 'uploads', 'config', 'api', 'webhooks', 'cron'];
 $parts = explode('/', ltrim($path, '/'));
 $first = $parts[0] ?? '';
 
-if ($first && !in_array($first, $reserved) && preg_match('/^[a-zA-Z0-9_.-]+$/', $first) && count($parts) === 1) {
-    $_GET['username'] = $first;
-    require __DIR__ . '/username.php';
+if (preg_match('/^\/([a-zA-Z0-9_.-]+)\/topic([0-9]+)$/', $path, $m) ||
+    ($first && !in_array($first, $reserved) && preg_match('/^[a-zA-Z0-9_.-]+$/', $first) && count($parts) === 1)) {
+    header('Location: /creators/');
     return true;
 }
 

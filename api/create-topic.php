@@ -112,7 +112,7 @@ try {
         ]],
         'mode' => 'payment',
         'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment-success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
-        'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/' . $creator->display_name,
+        'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/creators/',
         'metadata' => [
             'type' => 'topic_creation',
             'creator_id' => $creator_id,

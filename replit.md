@@ -30,8 +30,7 @@ TopicLaunch is a crowdfunding-style platform where:
 /vendor         - Composer dependencies (Stripe PHP SDK)
 /webhooks       - Stripe webhook handlers
 index.php       - Main landing page
-username.php    - Vanity URL handler for creator profiles
-router.php      - PHP built-in server router (handles URL rewriting)
+router.php      - PHP built-in server router (handles URL rewriting, vanity URLs redirect to /creators/)
 ```
 
 ## Running the App

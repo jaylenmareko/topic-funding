@@ -41,6 +41,24 @@ try {
 } catch (Exception $e) {
     $creator_topics_map = [];
 }
+
+// Fetch funded (waiting for upload) topics for all creators, grouped by creator_id
+$creator_funded_map = [];
+try {
+    $db3 = new Database();
+    $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold FROM topics WHERE status = 'funded' ORDER BY funded_at DESC");
+    $all_funded_topics = $db3->resultSet();
+    foreach ($all_funded_topics as $t) {
+        $creator_funded_map[$t->creator_id][] = [
+            'id'                => $t->id,
+            'title'             => $t->title,
+            'current_funding'   => (float)$t->current_funding,
+            'funding_threshold' => (float)$t->funding_threshold,
+        ];
+    }
+} catch (Exception $e) {
+    $creator_funded_map = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -302,6 +320,43 @@ try {
         .strip-topic-progress-fill { height: 100%; background: var(--tl-pink); border-radius: 4px; transition: width 0.3s; }
         .strip-topic-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--tl-muted); }
         .strip-topic-pct { color: var(--tl-pink); font-weight: 600; }
+
+        /* Funded / waiting for upload section */
+        .strip-funded-topics {
+            display: none;
+            margin: 10px auto 0;
+            max-width: calc(100% - 60px);
+        }
+        .strip-funded-topics.visible { display: block; }
+        .strip-funded-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #B45309;
+            margin-bottom: 8px;
+        }
+        .strip-funded-item {
+            background: #FFFBF0;
+            border: 1px solid #FDE68A;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .strip-funded-item:last-child { margin-bottom: 0; }
+        .strip-funded-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #F59E0B; flex-shrink: 0;
+        }
+        .strip-funded-title { font-size: 12px; font-weight: 600; color: var(--text-dark); flex: 1; }
+        .strip-funded-badge {
+            font-size: 10px; font-weight: 600;
+            color: #B45309; background: #FEF3C7;
+            padding: 2px 8px; border-radius: 20px; flex-shrink: 0;
+        }
 
         /* Step hint below strip */
         .strip-hint-row {
@@ -577,6 +632,12 @@ try {
             <div class="strip-topics-label">Active Topics</div>
             <div id="stripTopicsList"></div>
         </div>
+
+        <!-- Funded (waiting for upload) topics -->
+        <div class="strip-funded-topics" id="stripFundedTopics">
+            <div class="strip-funded-label">Waiting for Upload</div>
+            <div id="stripFundedList"></div>
+        </div>
     </div>
 
     <!-- Creator Picker Modal -->
@@ -659,7 +720,8 @@ try {
     </div>
 
     <script>
-    const CREATOR_TOPICS = <?php echo json_encode($creator_topics_map, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const CREATOR_TOPICS  = <?php echo json_encode($creator_topics_map,  JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const CREATOR_FUNDED  = <?php echo json_encode($creator_funded_map,  JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
     <script>
     (function () {
@@ -669,6 +731,8 @@ try {
         const selectHint    = document.getElementById('selectCreatorHint');
         const stripActiveTopics = document.getElementById('stripActiveTopics');
         const stripTopicsList   = document.getElementById('stripTopicsList');
+        const stripFundedTopics = document.getElementById('stripFundedTopics');
+        const stripFundedList   = document.getElementById('stripFundedList');
 
         const pickerOverlay = document.getElementById('creatorPickerOverlay');
         const closePickerBtn= document.getElementById('closeCreatorPicker');
@@ -773,6 +837,19 @@ try {
             stripActiveTopics.classList.add('visible');
         }
 
+        function renderFundedTopics(creatorId) {
+            const topics = CREATOR_FUNDED[creatorId] || [];
+            if (topics.length === 0) { stripFundedTopics.classList.remove('visible'); return; }
+            stripFundedList.innerHTML = topics.map(t =>
+                `<div class="strip-funded-item">
+                    <div class="strip-funded-dot"></div>
+                    <div class="strip-funded-title">${t.title}</div>
+                    <div class="strip-funded-badge">Waiting Upload</div>
+                </div>`
+            ).join('');
+            stripFundedTopics.classList.add('visible');
+        }
+
         /* Select a creator */
         pickerGrid.addEventListener('click', e => {
             const item = e.target.closest('.creator-picker-item');
@@ -808,6 +885,7 @@ try {
             stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
             stripCreatorCard.classList.add('visible');
             renderCreatorTopics(selectedCreator.id);
+            renderFundedTopics(selectedCreator.id);
 
             /* Hide step 1 — creator is chosen */
             stripStep1.style.display = 'none';
@@ -822,6 +900,7 @@ try {
         stripCreatorCardX.addEventListener('click', () => {
             stripCreatorCard.classList.remove('visible');
             stripActiveTopics.classList.remove('visible');
+            stripFundedTopics.classList.remove('visible');
             stripStep1.style.display = '';
             selectedCreator = null;
             stripAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
@@ -901,9 +980,9 @@ try {
         topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
         function closeTopic() { topicOverlay.classList.remove('open'); }
 
-        /* Submit: redirect to creator profile with params */
+        /* Submit: call Stripe API directly */
         topicSubmit.addEventListener('click', () => {
-            const amount = parseInt(topicAmount.value, 10);
+            const amount = parseFloat(topicAmount.value);
             const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
             const desc   = topicDesc.value.trim();
 
@@ -920,10 +999,49 @@ try {
                 return;
             }
 
-            const params = new URLSearchParams({ topic, amount });
-            if (desc) params.set('desc', desc);
-            if (activeTopic) params.set('topic_id', activeTopic.id);
-            window.location.href = `/${encodeURIComponent(selectedCreator.name)}?${params.toString()}`;
+            topicSubmit.disabled = true;
+            topicSubmit.textContent = 'Processing…';
+
+            let endpoint, payload;
+            if (activeTopic) {
+                endpoint = '/api/get-topic.php';
+                payload  = { topic_id: parseInt(activeTopic.id, 10), amount };
+            } else {
+                endpoint = '/api/create-topic.php';
+                payload  = {
+                    creator_id:    selectedCreator.id,
+                    title:         topic,
+                    description:   desc || topic,
+                    funding_goal:  amount,
+                    initial_amount: amount
+                };
+            }
+
+            fetch(endpoint, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    topicSubmit.disabled = false;
+                    topicSubmit.textContent = 'Continue to payment →';
+                    const errMsg = data.error || 'Something went wrong. Please try again.';
+                    minPriceHint.textContent = errMsg;
+                    minPriceHint.style.color = '#E8305A';
+                    setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+                }
+            })
+            .catch(() => {
+                topicSubmit.disabled = false;
+                topicSubmit.textContent = 'Continue to payment →';
+                minPriceHint.textContent = 'Network error. Please try again.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+            });
         });
     })();
     </script>
