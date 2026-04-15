@@ -349,3 +349,27 @@ Stack trace:
 [15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.654988" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
 [15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.652407" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
 [15-Apr-2026 05:31:33 UTC] PHP Deprecated:  Implicit conversion from float-string "172697.652407" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.240066" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.240066" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.448346" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.448346" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.445765" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:44:59 UTC] PHP Deprecated:  Implicit conversion from float-string "171891.445765" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:06 UTC] Topic action error: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "hold_reason" of relation "topics" does not exist
+LINE 4:                             hold_reason = $1,
+                                    ^
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.642702" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.642702" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.850982" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.850982" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.848401" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:06 UTC] PHP Deprecated:  Implicit conversion from float-string "171884.848401" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:25 UTC] Topic action error: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "hold_reason" of relation "topics" does not exist
+LINE 4:                             hold_reason = $1,
+                                    ^
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.360217" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.360217" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.568497" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.568497" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.565916" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 822
+[15-Apr-2026 05:45:25 UTC] PHP Deprecated:  Implicit conversion from float-string "171865.565916" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 823
