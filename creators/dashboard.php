@@ -735,16 +735,14 @@ foreach ($topics as $topic) {
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                         </svg>
                         My Topics
+                        <span class="inline-price-card">
+                            <span class="stat-card-label">Your Price</span>
+                            <span class="stat-card-value">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></span>
+                            <span class="stat-card-sub">per video topic</span>
+                        </span>
                     </h1>
                     <p class="page-subtitle"><?php echo $funded_count; ?> fully funded topic<?php echo $funded_count != 1 ? 's' : ''; ?> and <?php echo $active_count; ?> active topic<?php echo $active_count != 1 ? 's' : ''; ?>.</p>
                 </div>
-                
-                <div class="stat-card">
-                    <div class="stat-card-label">Your Price</div>
-                    <div class="stat-card-value">$<?php echo number_format($creator->minimum_topic_price ?? 100, 2); ?></div>
-                    <div class="stat-card-sub">per video topic</div>
-                </div>
-                
             </div>
             
             <div class="header-buttons">
