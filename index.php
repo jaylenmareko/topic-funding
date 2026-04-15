@@ -909,7 +909,7 @@ if ($db_available) {
     </div>
 
     <!-- Creator strip -->
-    <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
+    <div style="background:#F0F0F0; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
