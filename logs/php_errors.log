@@ -336,3 +336,10 @@ Stack trace:
 #0 Command line code(1): PDOStatement->execute(Array)
 #1 {main}
   thrown in Command line code on line 1
+[15-Apr-2026 03:29:42 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42703]: Undefined column: 7 ERROR:  column "approval_status" of relation "topics" does not exist
+LINE 2: ...tion, funding_threshold, current_funding, status, approval_s...
+                                                             ^ in /home/runner/workspace/tmp_seed_topics_jaylen.php:57
+Stack trace:
+#0 /home/runner/workspace/tmp_seed_topics_jaylen.php(57): PDOStatement->execute(Array)
+#1 {main}
+  thrown in /home/runner/workspace/tmp_seed_topics_jaylen.php on line 57
