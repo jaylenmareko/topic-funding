@@ -594,8 +594,7 @@ try {
     <!-- Creator strip -->
     <div class="strip-section">
         <div class="strip-hint-row">
-            <div class="strip-hint-step" id="stripStep2"><strong>1</strong> Type your topic idea</div>
-            <div class="strip-hint-step" id="stripStep3"><strong>2</strong> Add details &amp; fund the video</div>
+            <div class="strip-hint-step" id="stripStep3"><strong>1</strong> Add details &amp; fund the video</div>
         </div>
 
         <div class="creator-strip">
