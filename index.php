@@ -945,14 +945,6 @@ if ($db_available) {
 
     <!-- Creator strip -->
     <div style="background:#F0F0F0; border-top:1px solid #E5E5E5; border-bottom:1px solid #E5E5E5; padding-top:18px; overflow:visible;">
-        <div class="topic-filter-row" id="topicFilterRow" style="margin: 0 0 16px;">
-            <?php
-            $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI'];
-            foreach ($all_topics as $t): ?>
-            <button class="topic-filter-btn" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
-            <?php endforeach; ?>
-        </div>
-        <div class="active-filter-note" id="activeFilterNote"></div>
         <div class="creator-strip">
             <div class="strip-avatar-wrap">
                 <div class="select-creator-hint" id="selectCreatorHint">
