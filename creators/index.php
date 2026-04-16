@@ -151,9 +151,7 @@ try {
             gap: 14px;
             width: 100%;
         }
-        .creator-strip .strip-avatar-wrap { margin-left: 30px; padding-top: 10px; }
-        .creator-strip.no-creator { justify-content: center; }
-        .creator-strip.no-creator .strip-avatar-wrap { margin-left: 0; padding-top: 0; }
+
 
 
         /* hint label above avatar */
@@ -566,8 +564,7 @@ try {
             .hero-section { padding: 56px 20px 40px; }
             .hero-title { font-size: 30px; }
             .strip-section { padding: 28px 0 32px; }
-            .creator-strip .strip-avatar-wrap { margin-left: 20px; }
-            .creator-strip .strip-send { margin-right: 20px; }
+
             .strip-hint-row { gap: 16px; flex-wrap: wrap; }
         }
     </style>
@@ -599,14 +596,6 @@ try {
 
     <!-- Creator strip -->
     <div class="strip-section" id="stripSection" style="display:none;">
-        <div class="creator-strip" id="creatorStrip">
-            <div class="strip-avatar-wrap">
-                <div class="strip-avatar avatar-selected" id="stripAvatar">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                </div>
-            </div>
-        </div>
-
         <!-- Creator card (shown after selection) -->
         <div class="strip-creator-card" id="stripCreatorCard">
             <div class="strip-creator-card-avatar" id="stripCreatorCardAvatar"></div>
@@ -887,11 +876,13 @@ try {
                 bio: item.dataset.bio || ''
             };
 
-            if (selectedCreator.image) {
-                stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
-            } else {
-                const initial = selectedCreator.name.charAt(0).toUpperCase();
-                stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+            if (stripAvatar) {
+                if (selectedCreator.image) {
+                    stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+                } else {
+                    const initial = selectedCreator.name.charAt(0).toUpperCase();
+                    stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+                }
             }
             stripSection.style.display = '';
             stripInputWrapper.style.display = '';
