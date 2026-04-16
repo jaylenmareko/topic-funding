@@ -797,6 +797,69 @@ if ($queued_count > 0) {
             margin-top: 6px;
         }
 
+        .connect-alert {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #FFF8E6;
+            border: 1px solid #F5D98A;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 16px;
+        }
+        .connect-alert-icon {
+            flex: 0 0 auto;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #F5B93A;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .connect-alert-content {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .connect-alert-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+        .connect-alert-text {
+            font-size: 13px;
+            color: #6b6b6b;
+            line-height: 1.4;
+        }
+        .connect-alert-btn {
+            flex: 0 0 auto;
+            background: #635BFF;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s ease;
+        }
+        .connect-alert-btn:hover {
+            background: #5248E0;
+        }
+        @media (max-width: 640px) {
+            .connect-alert {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+            }
+            .connect-alert-btn {
+                width: 100%;
+            }
+        }
+
         /* Unified stat card — used in both header and earnings section */
         .stat-card {
             background: white;
@@ -957,6 +1020,20 @@ if ($queued_count > 0) {
                     </button>
                     <div class="payout-note">Min. $50</div>
                 </div>
+            </div>
+
+            <div class="connect-alert">
+                <div class="connect-alert-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="connect-alert-content">
+                    <div class="connect-alert-title">Connect your payout account</div>
+                    <div class="connect-alert-text">Set up Stripe to receive your earnings automatically when topics complete.</div>
+                </div>
+                <button class="connect-alert-btn" onclick="connectStripeAccount()">Connect Account</button>
             </div>
         </div>
 
@@ -1308,6 +1385,10 @@ if ($queued_count > 0) {
             });
         }
         
+        function connectStripeAccount() {
+            alert('Stripe Connect onboarding coming next — this button will send you to Stripe to set up payouts.');
+        }
+
         function requestPayout() {
             const availableBalance = <?php echo $creator->available_balance ?? 0; ?>;
             
