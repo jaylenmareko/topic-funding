@@ -90,10 +90,9 @@ try {
     }
     
     require_once '../vendor/autoload.php';
-    
-    $stripe_key = '***REMOVED***';
-    
-    \Stripe\Stripe::setApiKey($stripe_key);
+    require_once '../config/stripe-keys.php';
+
+    \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
     
     // Create Stripe checkout FIRST (before creating topic in database)
     // Pass all topic data in metadata so webhook can create it after payment

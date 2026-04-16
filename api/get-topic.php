@@ -129,9 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         require_once '../vendor/autoload.php';
-        
-        $stripe_key = '***REMOVED***';
-        \Stripe\Stripe::setApiKey($stripe_key);
+        require_once '../config/stripe-keys.php';
+
+        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
         // Create metadata for both logged-in and guest users
         $metadata = [

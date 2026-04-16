@@ -1,6 +1,7 @@
 <?php
 // config/funding_processor.php - UPDATED FOR NEW FLOW
 require_once 'database.php';
+require_once __DIR__ . '/stripe-keys.php';
 
 class FundingProcessor {
     private $db;
@@ -23,8 +24,7 @@ class FundingProcessor {
             }
             
             // Get payment intent from Stripe
-            $stripe_key = '***REMOVED***';
-            \Stripe\Stripe::setApiKey($stripe_key);
+            \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
             $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
             
             error_log("Payment amount: " . ($payment_intent->amount / 100));
