@@ -105,7 +105,31 @@ try {
             $session = $event['data']['object'];
             file_put_contents(__DIR__ . '/webhook-calls.txt', "Checkout completed: " . $session['id'] . "\n", FILE_APPEND);
             break;
-            
+
+        case 'account.updated':
+            $account = $event['data']['object'];
+            $stripe_account_id = $account['id'];
+            $charges_enabled   = $account['charges_enabled']  ?? false;
+            $payouts_enabled   = $account['payouts_enabled']   ?? false;
+
+            file_put_contents(__DIR__ . '/webhook-calls.txt', "account.updated: $stripe_account_id charges=$charges_enabled payouts=$payouts_enabled\n", FILE_APPEND);
+
+            if ($charges_enabled && $payouts_enabled) {
+                $db = new Database();
+                $db->query("UPDATE creators SET stripe_account_status = 'active', updated_at = NOW() WHERE stripe_account_id = :account_id");
+                $db->bind(':account_id', $stripe_account_id);
+                $db->execute();
+                $rows = $db->rowCount();
+                file_put_contents(__DIR__ . '/webhook-calls.txt', "Marked active: $rows row(s) updated\n", FILE_APPEND);
+            } else {
+                $db = new Database();
+                $db->query("UPDATE creators SET stripe_account_status = 'pending', updated_at = NOW() WHERE stripe_account_id = :account_id AND stripe_account_status != 'active'");
+                $db->bind(':account_id', $stripe_account_id);
+                $db->execute();
+                file_put_contents(__DIR__ . '/webhook-calls.txt', "Account still pending verification\n", FILE_APPEND);
+            }
+            break;
+
         default:
             file_put_contents(__DIR__ . '/webhook-calls.txt', "Unhandled event: " . $event['type'] . "\n", FILE_APPEND);
     }
