@@ -5,11 +5,7 @@ session_start();
 $session_id = $_GET['session_id'] ?? '';
 $type = $_GET['type'] ?? '';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: auth/login.php');
-    exit;
-}
+// No session check needed — payment is processed by webhook independently
 ?>
 <!DOCTYPE html>
 <html>
