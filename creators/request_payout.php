@@ -48,9 +48,14 @@ $success = '';
 // Handle payout request
 if ($_POST && isset($_POST['request_payout'])) {
     $requested_amount = (float)$_POST['amount'];
-    
+
+    $has_paypal = !empty(trim($creator->paypal_email ?? ''));
+    $has_venmo  = !empty(trim($creator->venmo_handle ?? ''));
+
     // Validation
-    if ($requested_amount < $minimum_threshold) {
+    if (!$has_paypal && !$has_venmo) {
+        $errors[] = "Please add either a PayPal email or Venmo handle to your profile before requesting a payout.";
+    } elseif ($requested_amount < $minimum_threshold) {
         $errors[] = "Minimum payout amount is $" . number_format($minimum_threshold, 2);
     } elseif ($requested_amount > $available_balance) {
         $errors[] = "Requested amount exceeds available balance";
@@ -69,28 +74,33 @@ if ($_POST && isset($_POST['request_payout'])) {
     
     if (empty($errors)) {
         try {
+            // Prefer PayPal when both are present
+            $payout_method_label = $has_paypal ? 'PayPal' : 'Venmo';
+
             // Create payout request
             $db->query("
-                INSERT INTO payout_requests (creator_id, amount, paypal_email, status, requested_at)
-                VALUES (:creator_id, :amount, :paypal_email, 'pending', NOW())
+                INSERT INTO payout_requests (creator_id, amount, paypal_email, venmo_handle, payout_method, status, requested_at)
+                VALUES (:creator_id, :amount, :paypal_email, :venmo_handle, :payout_method, 'pending', NOW())
             ");
             $db->bind(':creator_id', $creator->id);
             $db->bind(':amount', $requested_amount);
-            $db->bind(':paypal_email', $creator->paypal_email);
+            $db->bind(':paypal_email', $has_paypal ? $creator->paypal_email : null);
+            $db->bind(':venmo_handle', $has_venmo  ? $creator->venmo_handle : null);
+            $db->bind(':payout_method', $payout_method_label);
             $db->execute();
-            
-            $success = "Payout request submitted successfully! You'll receive $" . number_format($requested_amount, 2) . " via PayPal within 3-5 business days.";
-            
+            $success = "Payout request submitted successfully! You'll receive $" . number_format($requested_amount, 2) . " via {$payout_method_label} within 3-5 business days.";
+
             // Send notification email to admin
             $admin_subject = "New Payout Request - " . $creator->display_name;
             $admin_message = "
                 New payout request submitted:
-                
+
                 Creator: " . $creator->display_name . "
                 Amount: $" . number_format($requested_amount, 2) . "
-                PayPal: " . $creator->paypal_email . "
-                
-                Process this payout manually via PayPal and mark as completed in admin.
+                PayPal: " . ($has_paypal ? $creator->paypal_email : '(not set)') . "
+                Venmo:  " . ($has_venmo  ? '@' . $creator->venmo_handle : '(not set)') . "
+
+                Process this payout manually and mark as completed in admin.
             ";
             
             if ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false) {
@@ -123,6 +133,8 @@ $db->query("
         creator_id INT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         paypal_email VARCHAR(255),
+        venmo_handle VARCHAR(255),
+        payout_method VARCHAR(20),
         status VARCHAR(50) DEFAULT 'pending',
         requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         processed_at TIMESTAMP NULL,
@@ -130,6 +142,12 @@ $db->query("
         transaction_id VARCHAR(255)
     )
 ");
+$db->execute();
+
+// Backfill columns on existing tables
+$db->query("ALTER TABLE payout_requests ADD COLUMN IF NOT EXISTS venmo_handle VARCHAR(255)");
+$db->execute();
+$db->query("ALTER TABLE payout_requests ADD COLUMN IF NOT EXISTS payout_method VARCHAR(20)");
 $db->execute();
 ?>
 <!DOCTYPE html>
@@ -182,7 +200,7 @@ $db->execute();
 
         <div class="header">
             <h1>💰 Request Payout</h1>
-            <p>Request manual PayPal payouts for your earnings</p>
+            <p>Request manual payouts (PayPal or Venmo) for your earnings</p>
         </div>
 
         <?php if (!empty($errors)): ?>
@@ -195,11 +213,23 @@ $db->execute();
             <div class="success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
 
+        <?php
+            $has_paypal_view = !empty(trim($creator->paypal_email ?? ''));
+            $has_venmo_view  = !empty(trim($creator->venmo_handle ?? ''));
+        ?>
         <div class="balance-info">
             <div class="balance-amount">$<?php echo number_format($available_balance, 2); ?></div>
             <div style="color: #666;">Available for Payout</div>
             <div style="margin-top: 10px; font-size: 14px;">
-                <strong>PayPal Email:</strong> <?php echo htmlspecialchars($creator->paypal_email); ?><br>
+                <?php if ($has_paypal_view): ?>
+                    <strong>PayPal Email:</strong> <?php echo htmlspecialchars($creator->paypal_email); ?><br>
+                <?php endif; ?>
+                <?php if ($has_venmo_view): ?>
+                    <strong>Venmo Handle:</strong> @<?php echo htmlspecialchars($creator->venmo_handle); ?><br>
+                <?php endif; ?>
+                <?php if (!$has_paypal_view && !$has_venmo_view): ?>
+                    <span style="color:#B91C1C;"><strong>No payout method set.</strong> <a href="edit.php?id=<?php echo $creator->id; ?>">Add PayPal or Venmo</a> to enable payouts.</span><br>
+                <?php endif; ?>
                 <strong>Minimum Payout:</strong> $<?php echo number_format($minimum_threshold, 2); ?>
             </div>
         </div>
@@ -211,7 +241,7 @@ $db->execute();
             <div class="info-box">
                 <strong>📋 How it works:</strong><br>
                 • Enter the amount you want to withdraw<br>
-                • We'll process your PayPal payment within 3-5 business days<br>
+                • We'll send your payment via <?php echo $has_paypal_view ? 'PayPal' : 'Venmo'; ?> within 3-5 business days<br>
                 • You'll receive an email confirmation when payment is sent
             </div>
 
@@ -228,11 +258,16 @@ $db->execute();
                 </div>
 
                 <div class="form-group">
-                    <label for="paypal_email">PayPal Email:</label>
-                    <input type="email" id="paypal_email" name="paypal_email" 
-                           value="<?php echo htmlspecialchars($creator->paypal_email); ?>" 
-                           readonly style="background: #f8f9fa;">
-                    <small>To change your PayPal email, <a href="../creators/edit.php?id=<?php echo $creator->id; ?>">edit your profile</a></small>
+                    <label>Payout Method:</label>
+                    <div style="padding:10px 12px; background:#f8f9fa; border:1px solid #e5e5e5; border-radius:6px; font-size:14px;">
+                        <?php if ($has_paypal_view): ?>
+                            PayPal: <strong><?php echo htmlspecialchars($creator->paypal_email); ?></strong><br>
+                        <?php endif; ?>
+                        <?php if ($has_venmo_view): ?>
+                            Venmo: <strong>@<?php echo htmlspecialchars($creator->venmo_handle); ?></strong>
+                        <?php endif; ?>
+                    </div>
+                    <small>To update your payout details, <a href="edit.php?id=<?php echo $creator->id; ?>">edit your profile</a></small>
                 </div>
 
                 <button type="submit" name="request_payout" class="btn" id="submitBtn">
@@ -300,11 +335,11 @@ $db->execute();
         
         if (amount > available) {
             e.preventDefault();
-            alert('Amount exceeds available balance of  + available.toFixed(2));
+            alert('Amount exceeds available balance of $' + available.toFixed(2));
             return;
         }
         
-        if (!confirm('Request payout of  + amount.toFixed(2) + ' to your PayPal account?\n\nThis will be processed within 3-5 business days.')) {
+        if (!confirm('Request payout of $' + amount.toFixed(2) + ' via <?php echo $has_paypal_view ? "PayPal" : "Venmo"; ?>?\n\nThis will be processed within 3-5 business days.')) {
             e.preventDefault();
             return;
         }
