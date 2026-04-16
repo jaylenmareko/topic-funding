@@ -37,11 +37,12 @@ try {
             $admin_message .= "  Amount: $" . number_format($result['total_refunded'], 2) . "\n\n";
         }
         
-        // For localhost - log admin email
-        if ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false) {
+        // Detect CLI / localhost — log instead of email
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        $is_cli_or_local = (PHP_SAPI === 'cli') || $host === 'localhost' || strpos($host, '127.0.0.1') !== false;
+        if ($is_cli_or_local) {
             error_log("ADMIN AUTO-REFUND REPORT: " . $admin_message);
         } else {
-            // Send to admin email on live server
             mail('admin@topiclaunch.com', 'Auto-Refund Report - TopicLaunch', $admin_message, 'From: system@topiclaunch.com');
         }
         
