@@ -610,7 +610,7 @@ try {
         <!-- Commission input (shown below creator card after selection) -->
         <div style="display:flex; align-items:flex-end; gap:14px; padding:0 30px; box-sizing:border-box; width:100%;">
             <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
-                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your video idea here" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
                 <span id="topicInputCount" style="position:absolute; bottom:7px; right:8px; font-size:10px; color:#999; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
             </div>
             <button class="strip-send" id="stripSend" disabled style="display:none; margin-bottom:0;">
@@ -887,7 +887,7 @@ try {
             stripSection.style.display = '';
             stripInputWrapper.style.display = '';
             stripSend.style.display = '';
-            topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
+            topicInput.placeholder = 'Type your video idea here';
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
 
@@ -920,7 +920,7 @@ try {
             stripSection.style.display = 'none';
             stripInputWrapper.style.display = 'none';
             stripSend.style.display = 'none';
-            topicInput.placeholder = 'Type your topic idea…';
+            topicInput.placeholder = 'Type your video idea here';
             topicInput.value = '';
             stripSend.disabled = true;
         });

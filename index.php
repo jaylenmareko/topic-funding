@@ -1029,7 +1029,7 @@ if ($db_available) {
         <!-- Commission input (shown below creator card after selection) -->
         <div id="stripInputRow" style="display:none;">
             <div class="strip-input-wrapper" id="stripInputWrapper">
-                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your video idea here" maxlength="100" rows="1"></textarea>
                 <span class="strip-input-count" id="topicInputCount"></span>
             </div>
             <button class="strip-send" id="stripSend" disabled>
@@ -1305,7 +1305,7 @@ if ($db_available) {
 
             creatorStrip.classList.remove('no-creator');
             stripInputRow.style.display = 'flex';
-            topicInput.placeholder = `Commission a video from ${selectedCreator.name}…`;
+            topicInput.placeholder = 'Type your video idea here';
             topicInput.focus();
             stripSend.disabled = !topicInput.value.trim();
 
@@ -1335,7 +1335,7 @@ if ($db_available) {
             pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
             creatorStrip.classList.add('no-creator');
             stripInputRow.style.display = 'none';
-            topicInput.placeholder = 'Type your topic idea…';
+            topicInput.placeholder = 'Type your video idea here';
             topicInput.value = '';
             stripSend.disabled = true;
         });
