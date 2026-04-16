@@ -51,6 +51,27 @@ if (isset($_GET['upload_success']) && isset($_GET['topic_id'])) {
     $upload_message = "✅ Content uploaded successfully!";
 }
 
+// Stripe Connect state
+$stripe_account_id     = $creator->stripe_account_id ?? null;
+$stripe_account_status = $creator->stripe_account_status ?? null;
+
+if (!empty($stripe_account_id) && $stripe_account_status === 'active') {
+    $stripe_connect_state = 'active';
+} elseif (!empty($stripe_account_id)) {
+    $stripe_connect_state = 'pending';
+} else {
+    $stripe_connect_state = 'not_connected';
+}
+
+$stripe_return_message = '';
+if (isset($_GET['stripe_return'])) {
+    if ($stripe_connect_state === 'active') {
+        $stripe_return_message = 'success';
+    } else {
+        $stripe_return_message = 'pending';
+    }
+}
+
 if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && isset($_POST['content_url'])) {
     $topic_id = (int)$_POST['topic_id'];
     $content_url = trim($_POST['content_url']);
@@ -807,6 +828,14 @@ if ($queued_count > 0) {
             padding: 16px 20px;
             margin-top: 16px;
         }
+        .connect-alert.connect-alert-pending {
+            background: #EFF6FF;
+            border-color: #BFDBFE;
+        }
+        .connect-alert.connect-alert-active {
+            background: #F0FDF4;
+            border-color: #BBF7D0;
+        }
         .connect-alert-icon {
             flex: 0 0 auto;
             width: 40px;
@@ -1022,7 +1051,8 @@ if ($queued_count > 0) {
                 </div>
             </div>
 
-            <div class="connect-alert">
+            <?php if ($stripe_connect_state === 'not_connected'): ?>
+            <div class="connect-alert" id="connectAlert">
                 <div class="connect-alert-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="5" width="20" height="14" rx="2"></rect>
@@ -1033,8 +1063,47 @@ if ($queued_count > 0) {
                     <div class="connect-alert-title">Connect your payout account</div>
                     <div class="connect-alert-text">Set up Stripe to receive your earnings automatically when topics complete.</div>
                 </div>
-                <button class="connect-alert-btn" onclick="connectStripeAccount()">Connect Account</button>
+                <button class="connect-alert-btn" onclick="connectStripeAccount(this)">Connect Account</button>
             </div>
+            <?php elseif ($stripe_connect_state === 'pending'): ?>
+            <div class="connect-alert connect-alert-pending" id="connectAlert">
+                <div class="connect-alert-icon" style="background:#3B82F6;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="connect-alert-content">
+                    <div class="connect-alert-title">Payout account verification in progress</div>
+                    <div class="connect-alert-text">Stripe is reviewing your information. This usually takes a few minutes. If you haven't finished onboarding, click to continue.</div>
+                </div>
+                <button class="connect-alert-btn" style="background:#3B82F6;" onclick="connectStripeAccount(this)">Continue Setup</button>
+            </div>
+            <?php elseif ($stripe_connect_state === 'active'): ?>
+            <div class="connect-alert connect-alert-active" id="connectAlert">
+                <div class="connect-alert-icon" style="background:#22C55E;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <div class="connect-alert-content">
+                    <div class="connect-alert-title">Payout account connected</div>
+                    <div class="connect-alert-text">Your Stripe account is active. Earnings will transfer automatically when topics complete.</div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($stripe_return_message === 'pending'): ?>
+            <div id="stripeReturnBanner" style="margin-top:12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:14px 18px;font-size:13px;color:#1E40AF;display:flex;align-items:center;gap:10px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span>Thanks for completing onboarding! Stripe is finishing verification — we'll update your status automatically.</span>
+            </div>
+            <?php elseif ($stripe_return_message === 'success'): ?>
+            <div id="stripeReturnBanner" style="margin-top:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 18px;font-size:13px;color:#166534;display:flex;align-items:center;gap:10px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Payout account connected successfully! You're all set to receive earnings.</span>
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="content-box">
@@ -1385,8 +1454,31 @@ if ($queued_count > 0) {
             });
         }
         
-        function connectStripeAccount() {
-            alert('Stripe Connect onboarding coming next — this button will send you to Stripe to set up payouts.');
+        function connectStripeAccount(btn) {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Loading…';
+            }
+            fetch('/api/stripe-connect-onboard.php', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        alert('Could not start Stripe onboarding: ' + (data.error || 'Unknown error'));
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = btn.dataset.label || 'Connect Account';
+                        }
+                    }
+                })
+                .catch(() => {
+                    alert('Network error — please try again.');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = btn.dataset.label || 'Connect Account';
+                    }
+                });
         }
 
         function requestPayout() {
