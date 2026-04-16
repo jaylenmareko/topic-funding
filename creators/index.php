@@ -154,7 +154,7 @@ try {
         .creator-strip .strip-avatar-wrap { margin-left: 30px; padding-top: 10px; }
         .creator-strip.no-creator { justify-content: center; }
         .creator-strip.no-creator .strip-avatar-wrap { margin-left: 0; padding-top: 0; }
-        .creator-strip .strip-send { margin-right: 30px; margin-top: 10px; flex-shrink: 0; }
+
 
         /* hint label above avatar */
         .strip-avatar-wrap {
@@ -605,13 +605,6 @@ try {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 </div>
             </div>
-            <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
-                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
-                <span id="topicInputCount" style="position:absolute; bottom:7px; right:8px; font-size:10px; color:#999; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
-            </div>
-            <button class="strip-send" id="stripSend" disabled style="display:none;">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
-            </button>
         </div>
 
         <!-- Creator card (shown after selection) -->
@@ -623,6 +616,17 @@ try {
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
             <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
+        </div>
+
+        <!-- Commission input (shown below creator card after selection) -->
+        <div style="display:flex; align-items:flex-end; gap:14px; padding:0 30px; box-sizing:border-box; width:100%;">
+            <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
+                <span id="topicInputCount" style="position:absolute; bottom:7px; right:8px; font-size:10px; color:#999; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
+            </div>
+            <button class="strip-send" id="stripSend" disabled style="display:none; margin-bottom:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+            </button>
         </div>
 
         <!-- Active topics for selected creator -->
