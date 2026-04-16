@@ -742,7 +742,7 @@ if ($db_available) {
         .strip-creator-card-info { flex: 1; min-width: 0; }
         .strip-creator-card-name { font-weight: 600; font-size: 13px; color: #111; }
         .strip-creator-card-topics { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .strip-creator-card-bio { font-size: 11px; color: #777; margin-top: 1px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .strip-creator-card-bio { font-size: 11px; color: #777; margin-top: 1px; line-height: 1.35; }
         .strip-creator-card-price { background: #FFF0F3; color: var(--tl-pink); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
         .strip-creator-card-x { background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; flex-shrink: 0; transition: color 0.15s; }
         .strip-creator-card-x:hover { color: var(--tl-pink); }
