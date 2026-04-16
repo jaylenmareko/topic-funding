@@ -750,7 +750,7 @@ if ($db_available) {
         /* Active topics section */
         .strip-active-topics { display: none; margin: 10px auto 0; max-width: calc(100% - 60px); }
         .strip-active-topics.visible { display: block; }
-        .strip-topics-label { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #fff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+        .strip-topics-label { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #E8305A; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(232,48,90,0.25); }
         .strip-topic-item { background: var(--white); border: 1px solid var(--tl-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s; }
         .strip-topic-item:last-child { margin-bottom: 0; }
         .strip-topic-item:hover { border-color: var(--tl-pink); }

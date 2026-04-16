@@ -285,10 +285,10 @@ try {
             font-weight: 700;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            color: #fff;
+            color: #E8305A;
             margin-bottom: 10px;
             padding-bottom: 6px;
-            border-bottom: 1px solid rgba(255,255,255,0.12);
+            border-bottom: 1px solid rgba(232,48,90,0.25);
         }
         .strip-topic-item {
             background: var(--white);
