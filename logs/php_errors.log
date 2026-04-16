@@ -509,3 +509,5 @@ LINE 4:                             hold_reason = $1,
 [16-Apr-2026 21:13:03 UTC] PHP Deprecated:  Implicit conversion from float-string "62309.150995" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1141
 [16-Apr-2026 21:13:37 UTC] Stripe keys not configured. Set STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET as environment secrets.
 [16-Apr-2026 21:13:37 UTC] Stripe Connect onboard error: No API key provided.  (HINT: set your API key using "Stripe::setApiKey(<API-KEY>)".  You can generate API keys from the Stripe web interface.  See https://stripe.com/api for details, or email support@stripe.com if you have any questions.
+[16-Apr-2026 21:16:34 UTC] PHP Deprecated:  Implicit conversion from float-string "62098.047084" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1209
+[16-Apr-2026 21:16:34 UTC] PHP Deprecated:  Implicit conversion from float-string "62098.047084" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1210

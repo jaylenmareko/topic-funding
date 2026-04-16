@@ -107,7 +107,76 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                         $db->bind(':content_url', $content_url);
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
-                        
+
+                        // --- Stripe Connect auto-payout (90% to creator) ---
+                        try {
+                            $payout_already_exists = false;
+                            $db->query("SELECT id FROM creator_payouts WHERE topic_id = :topic_id LIMIT 1");
+                            $db->bind(':topic_id', $topic_id);
+                            if ($db->single()) {
+                                $payout_already_exists = true;
+                            }
+
+                            if (!$payout_already_exists) {
+                                $gross        = floatval($topic_check->current_funding);
+                                $platform_fee = round($gross * 0.10, 2);
+                                $payout_amt   = round($gross * 0.90, 2);
+
+                                $transfer_id     = null;
+                                $payout_status   = 'pending';
+
+                                if (!empty($creator->stripe_account_id) && $creator->stripe_account_status === 'active') {
+                                    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
+                                        throw new Exception('Stripe library missing');
+                                    }
+                                    require_once __DIR__ . '/../vendor/autoload.php';
+                                    require_once __DIR__ . '/../config/stripe-keys.php';
+                                    \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+
+                                    $transfer = \Stripe\Transfer::create([
+                                        'amount'      => (int)round($payout_amt * 100),
+                                        'currency'    => 'usd',
+                                        'destination' => $creator->stripe_account_id,
+                                        'description' => 'TopicLaunch payout — topic #' . $topic_id,
+                                        'metadata'    => [
+                                            'topic_id'   => $topic_id,
+                                            'creator_id' => $creator->id,
+                                        ],
+                                    ]);
+
+                                    $transfer_id   = $transfer->id;
+                                    $payout_status = 'completed';
+                                    error_log("Stripe Transfer created: $transfer_id — \$$payout_amt to {$creator->stripe_account_id}");
+                                }
+
+                                $db->query("INSERT INTO creator_payouts (creator_id, topic_id, amount, platform_fee, stripe_transfer_id, status, created_at, processed_at)
+                                            VALUES (:creator_id, :topic_id, :amount, :platform_fee, :transfer_id, :status, NOW(), " . ($payout_status === 'completed' ? 'NOW()' : 'NULL') . ")");
+                                $db->bind(':creator_id',   $creator->id);
+                                $db->bind(':topic_id',     $topic_id);
+                                $db->bind(':amount',       $payout_amt);
+                                $db->bind(':platform_fee', $platform_fee);
+                                $db->bind(':transfer_id',  $transfer_id);
+                                $db->bind(':status',       $payout_status);
+                                $db->execute();
+                            }
+                        } catch (Exception $payout_ex) {
+                            error_log("Auto-payout failed for topic $topic_id: " . $payout_ex->getMessage());
+                            // Record the failure so it can be retried manually
+                            try {
+                                $gross        = floatval($topic_check->current_funding);
+                                $platform_fee = round($gross * 0.10, 2);
+                                $payout_amt   = round($gross * 0.90, 2);
+                                $db->query("INSERT INTO creator_payouts (creator_id, topic_id, amount, platform_fee, stripe_transfer_id, status, created_at)
+                                            VALUES (:creator_id, :topic_id, :amount, :platform_fee, NULL, 'failed', NOW())");
+                                $db->bind(':creator_id',   $creator->id);
+                                $db->bind(':topic_id',     $topic_id);
+                                $db->bind(':amount',       $payout_amt);
+                                $db->bind(':platform_fee', $platform_fee);
+                                $db->execute();
+                            } catch (Exception $e2) {}
+                        }
+                        // --- End auto-payout ---
+
                         // Auto-start the next queued topic now that the slot is open
                         $db->query("
                             SELECT id FROM topics 
