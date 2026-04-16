@@ -1013,15 +1013,6 @@ if ($db_available) {
                 <span class="strip-avatar-label">Select a Creator</span>
             </button>
             </div>
-            <div id="stripInputRow" style="display:none;">
-                <div class="strip-input-wrapper" id="stripInputWrapper">
-                    <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
-                    <span class="strip-input-count" id="topicInputCount"></span>
-                </div>
-                <button class="strip-send" id="stripSend" disabled>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
-                </button>
-            </div>
         </div>
 
         <!-- Creator card (shown after selection) -->
@@ -1033,6 +1024,17 @@ if ($db_available) {
             </div>
             <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
             <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
+        </div>
+
+        <!-- Commission input (shown below creator card after selection) -->
+        <div id="stripInputRow" style="display:none;">
+            <div class="strip-input-wrapper" id="stripInputWrapper">
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your topic idea…" maxlength="100" rows="1"></textarea>
+                <span class="strip-input-count" id="topicInputCount"></span>
+            </div>
+            <button class="strip-send" id="stripSend" disabled>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+            </button>
         </div>
 
         <!-- Active topics for selected creator -->
