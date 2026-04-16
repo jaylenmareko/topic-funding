@@ -914,7 +914,7 @@ if ($queued_count > 0) {
             <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
                 🔗 Copy Profile Link
             </button>
-            <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 10px;">Share this with your fans to start getting requests</p>
+            <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 10px;">Share this link with your fans to start getting requests</p>
         </div>
 
         <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink); margin-bottom: 32px;">
