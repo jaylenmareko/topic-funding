@@ -23,7 +23,7 @@ $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
 if (!$creator) {
-    header('Location: ../dashboard/index.php');
+    header('Location: dashboard.php');
     exit;
 }
 
@@ -176,8 +176,8 @@ $db->execute();
 
     <div class="container">
         <div class="nav">
-            <a href="../dashboard/index.php">← Back to Dashboard</a>
-            <a href="../creators/edit.php?id=<?php echo $creator->id; ?>">Edit Profile</a>
+            <a href="dashboard.php">← Back to Dashboard</a>
+            <a href="edit.php?id=<?php echo $creator->id; ?>">Edit Profile</a>
         </div>
 
         <div class="header">

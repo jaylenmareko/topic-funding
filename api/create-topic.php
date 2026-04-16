@@ -111,7 +111,7 @@ try {
             'quantity' => 1,
         ]],
         'mode' => 'payment',
-        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment-success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
+        'success_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_creation',
         'cancel_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/creators/',
         'metadata' => [
             'type' => 'topic_creation',
