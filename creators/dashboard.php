@@ -1113,21 +1113,9 @@ if ($queued_count > 0) {
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-card-label">Available Balance</div>
-                    <div class="stat-card-value balance">$<?php echo number_format($creator->available_balance ?? 0, 2); ?></div>
-                    <div class="stat-card-sub">ready to withdraw</div>
-                </div>
-                
-                <div class="stat-card">
                     <div class="stat-card-label">Pending Payout</div>
                     <div class="stat-card-value pending">$<?php echo number_format($creator->pending_payout ?? 0, 2); ?></div>
                     <div class="stat-card-sub">in progress</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-card-label">Paid Out</div>
-                    <div class="stat-card-value paid">$<?php echo number_format($creator->paid_out ?? 0, 2); ?></div>
-                    <div class="stat-card-sub">total withdrawn</div>
                 </div>
                 
             </div>
