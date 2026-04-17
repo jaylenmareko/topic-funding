@@ -715,8 +715,9 @@ try {
                 </div>
                 <div class="tl-field" id="topicEmailField">
                     <label class="tl-label">Your email</label>
-                    <input type="email" id="topicEmail" class="tl-input" placeholder="you@example.com">
-                    <div class="tl-hint">We'll send you updates on your request.</div>
+                    <div class="tl-input-prefix-wrap">
+                        <input type="email" id="topicEmail" class="tl-input" placeholder="you@example.com">
+                    </div>
                 </div>
                 <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
             </div>

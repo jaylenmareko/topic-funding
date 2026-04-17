@@ -1,5 +1,7 @@
 <?php
 // index.php - FOR THE NEXT GENERATION
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 session_start();
 
 // Try to load database config
@@ -1130,6 +1132,12 @@ if ($db_available) {
                     <div id="topicFundingInfo" style="display:none; margin-top:6px; background:#FFF0F3; border-radius:8px; padding:8px 12px; font-size:12px; color:#555; line-height:1.5;"></div>
                     <div class="tl-hint" id="minPriceHint"></div>
                 </div>
+                <div class="tl-field" id="topicEmailField">
+                    <label class="tl-label">Your email</label>
+                    <div class="tl-input-prefix-wrap">
+                        <input type="email" id="topicEmail" class="tl-input" placeholder="you@example.com">
+                    </div>
+                </div>
                 <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
             </div>
         </div>
@@ -1176,6 +1184,7 @@ if ($db_available) {
         const minPriceHint   = document.getElementById('minPriceHint');
         const topicDesc      = document.getElementById('topicDesc');
         const topicSubmit    = document.getElementById('topicSubmit');
+        const topicEmail     = document.getElementById('topicEmail');
         const topicDescCount   = document.getElementById('topicDescCount');
         const topicInputCount  = document.getElementById('topicInputCount');
 
@@ -1384,6 +1393,7 @@ if ($db_available) {
             topicAmount.max                = remaining > 0 ? remaining : '';
             topicAmount.placeholder        = remaining > 0 ? Math.round(remaining) : '0';
             topicAmount.value              = '';
+            topicEmail.value               = '';
             topicDesc.value                = topicDescription;
             topicDescCount.textContent     = `${topicDescription.length}/350`;
             topicDesc.setAttribute('readonly', true);
@@ -1413,6 +1423,7 @@ if ($db_available) {
                 minPriceHint.textContent = '';
             }
             topicAmount.value          = '';
+            topicEmail.value           = '';
             topicDesc.value            = '';
             topicDescCount.textContent = '0/350';
             topicDesc.removeAttribute('readonly');
@@ -1433,6 +1444,7 @@ if ($db_available) {
             const amount = parseFloat(topicAmount.value);
             const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
             const desc   = topicDesc.value.trim();
+            const email  = topicEmail.value.trim();
 
             if (!amount || amount < 1) {
                 topicAmount.style.borderColor = '#E8305A';
@@ -1453,6 +1465,14 @@ if ($db_available) {
                 setTimeout(() => minPriceHint.style.color = '', 1500);
                 return;
             }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                topicEmail.parentElement.style.borderColor = '#E8305A';
+                topicEmail.focus();
+                minPriceHint.textContent = 'Please enter a valid email address.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { topicEmail.parentElement.style.borderColor = ''; minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 3000);
+                return;
+            }
 
             topicSubmit.disabled     = true;
             topicSubmit.textContent  = 'Processing…';
@@ -1460,11 +1480,12 @@ if ($db_available) {
             let endpoint, payload;
             if (activeTopic) {
                 endpoint = '/api/get-topic.php';
-                payload  = { topic_id: parseInt(activeTopic.id, 10), amount };
+                payload  = { topic_id: parseInt(activeTopic.id, 10), amount, email };
             } else {
                 endpoint = '/api/create-topic.php';
                 payload  = {
                     creator_id:     selectedCreator.id,
+                    email:          email,
                     title:          topic,
                     description:    desc || topic,
                     funding_goal:   amount,
