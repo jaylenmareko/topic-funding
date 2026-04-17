@@ -516,3 +516,14 @@ LINE 4:                             hold_reason = $1,
 [16-Apr-2026 21:48:57 UTC] PHP Deprecated:  Implicit conversion from float-string "60154.649269" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1209
 [16-Apr-2026 21:48:57 UTC] PHP Deprecated:  Implicit conversion from float-string "60154.649269" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1210
 [17-Apr-2026 17:34:56 UTC] create-topic.php: creator_id=1 min_price=5.00 funding_goal=5 initial_amount=1
+[17-Apr-2026 19:50:52 UTC] PHP Deprecated:  Implicit conversion from float-string "34.454931" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1291
+[17-Apr-2026 19:50:52 UTC] PHP Deprecated:  Implicit conversion from float-string "34.454931" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1292
+[17-Apr-2026 19:50:52 UTC] PHP Deprecated:  Implicit conversion from float-string "54.953448" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1291
+[17-Apr-2026 19:50:52 UTC] PHP Deprecated:  Implicit conversion from float-string "54.953448" to int loses precision in /home/runner/workspace/creators/dashboard.php on line 1292
+[17-Apr-2026 19:51:52 UTC] TopicLaunch Auto-refund cron job started at 2026-04-17 19:51:52 (PID: 28084)
+[17-Apr-2026 19:51:52 UTC] Auto-refund cron error: SQLSTATE[42703]: Undefined column: 7 ERROR:  column c.email does not exist
+LINE 2: ...      SELECT t.*, c.display_name as creator_name, c.email as...
+                                                             ^
+HINT:  Perhaps you meant to reference the column "u.email".
+[17-Apr-2026 19:51:52 UTC] 📧 EMAIL TO: admin@topiclaunch.com | SUBJECT: Auto-Refund CRON FAILED - TopicLaunch
+[17-Apr-2026 19:51:52 UTC] TopicLaunch Auto-refund cron job completed at 2026-04-17 19:51:52 (PID: 28084)
