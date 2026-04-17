@@ -200,8 +200,8 @@ class FundingProcessor {
             if ($creator_row && $funding_threshold < floatval($creator_row->minimum_topic_price)) {
                 throw new Exception("funding_threshold ($funding_threshold) below creator minimum ({$creator_row->minimum_topic_price})");
             }
-            if ($initial_amount >= $funding_threshold) {
-                throw new Exception("initial_amount ($initial_amount) must be less than funding_threshold ($funding_threshold) — refusing to auto-fund");
+            if ($initial_amount > $funding_threshold) {
+                throw new Exception("initial_amount ($initial_amount) exceeds funding_threshold ($funding_threshold)");
             }
             
             // Calculate fees

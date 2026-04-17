@@ -86,10 +86,6 @@ try {
         exit;
     }
 
-    if ($initial_amount >= $funding_goal) {
-        echo json_encode(['error' => 'Your contribution must be less than the funding goal so other fans can chip in']);
-        exit;
-    }
 
     error_log("create-topic.php: creator_id=$creator_id min_price={$creator->minimum_topic_price} funding_goal=$funding_goal initial_amount=$initial_amount");
     
