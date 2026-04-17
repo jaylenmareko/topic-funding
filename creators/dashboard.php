@@ -32,9 +32,16 @@ if (!in_array($current_script, $allowed_pages)) {
 }
 
 function validateContentUrl($url) {
-    $isYouTube = stripos($url, 'youtube.com/watch') !== false || stripos($url, 'youtube.com/shorts') !== false || stripos($url, 'youtu.be/') !== false;
-    $isInstagram = stripos($url, 'instagram.com/reel') !== false || stripos($url, 'instagram.com/reels') !== false || stripos($url, 'instagram.com/p/') !== false;
-    $isTikTok = stripos($url, 'tiktok.com/@') !== false && stripos($url, '/video/') !== false;
+    $isYouTube = stripos($url, 'youtube.com/watch') !== false
+             || stripos($url, 'youtube.com/shorts') !== false
+             || stripos($url, 'youtube.com/live') !== false
+             || stripos($url, 'youtu.be/') !== false;
+    $isInstagram = stripos($url, 'instagram.com/reel') !== false
+                || stripos($url, 'instagram.com/p/') !== false
+                || stripos($url, 'instagram.com/tv/') !== false;
+    $isTikTok = (stripos($url, 'tiktok.com/@') !== false && stripos($url, '/video/') !== false)
+             || stripos($url, 'vm.tiktok.com/') !== false
+             || stripos($url, 'vt.tiktok.com/') !== false;
     
     if (!$isYouTube && !$isInstagram && !$isTikTok) {
         return ["Must be a valid YouTube, Instagram, or TikTok URL"];
