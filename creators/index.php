@@ -993,8 +993,7 @@ try {
             topicPreview.textContent = topicInput.value.trim();
             topicModalSub.textContent = `To: ${selectedCreator.name}`;
             if (selectedCreator.price > 0) {
-                minPriceHint.textContent = `Minimum price: $${selectedCreator.price}`;
-                topicAmount.min = selectedCreator.price;
+                minPriceHint.textContent = `Funding goal: $${selectedCreator.price}`;
                 topicAmount.placeholder = selectedCreator.price;
             } else {
                 minPriceHint.textContent = '';
@@ -1036,12 +1035,6 @@ try {
                 minPriceHint.style.color = '#E8305A';
                 topicAmount.focus();
                 setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
-                return;
-            }
-            if (!activeTopic && selectedCreator.price > 0 && amount < selectedCreator.price) {
-                minPriceHint.style.color = '#E8305A';
-                topicAmount.focus();
-                setTimeout(() => minPriceHint.style.color = '', 1500);
                 return;
             }
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

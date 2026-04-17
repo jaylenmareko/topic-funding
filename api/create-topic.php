@@ -70,11 +70,6 @@ try {
         exit;
     }
     
-    // Check if funding goal meets minimum price
-    if ($funding_goal < $creator->minimum_topic_price) {
-        echo json_encode(['error' => 'Funding goal must be at least $' . number_format($creator->minimum_topic_price, 2)]);
-        exit;
-    }
     
     if ($funding_goal > 10000) {
         echo json_encode(['error' => 'Funding goal cannot exceed $10,000']);
