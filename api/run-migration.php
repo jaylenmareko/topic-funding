@@ -11,14 +11,29 @@ header('Content-Type: text/plain');
 
 $db = new Database();
 
-// Delete all contributions, topics, creators, users
-$db->query("DELETE FROM contributions"); $db->execute();
-$db->query("DELETE FROM auto_refund_processed"); $db->execute();
-$db->query("DELETE FROM topics"); $db->execute();
-$db->query("DELETE FROM creators"); $db->execute();
-$db->query("DELETE FROM users"); $db->execute();
+$tables = [
+    'refund_log',
+    'auto_refund_processed',
+    'creator_payouts',
+    'payouts',
+    'payout_requests',
+    'contributions',
+    'topics',
+    'creators',
+    'users',
+];
 
-$db->query("SELECT count(*) as cnt FROM users"); 
+foreach ($tables as $table) {
+    try {
+        $db->query("DELETE FROM $table");
+        $db->execute();
+        echo "Cleared: $table\n";
+    } catch (Exception $e) {
+        echo "Skipped $table: " . $e->getMessage() . "\n";
+    }
+}
+
+$db->query("SELECT count(*) as cnt FROM users");
 $result = $db->single();
-echo "Users remaining: " . $result->cnt . "\n";
-echo "Done — database is clean.\n";
+echo "\nUsers remaining: " . $result->cnt . "\n";
+echo "Done.\n";
