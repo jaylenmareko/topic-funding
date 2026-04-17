@@ -791,18 +791,30 @@ Your refund will appear in your original payment method within 5-10 business day
             return false;
         }
 
-        // Build plain-text + simple HTML version
-        $html = '<pre style="font-family:Arial,sans-serif;font-size:14px;white-space:pre-wrap">'
-              . htmlspecialchars($body)
-              . '</pre>';
+        // Build a properly structured HTML email (better deliverability than raw <pre>)
+        $safe_body = htmlspecialchars($body, ENT_QUOTES, 'UTF-8');
+        $html_body = nl2br($safe_body);
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</title></head>'
+              . '<body style="margin:0;padding:0;background:#FAF8F6;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Arial,sans-serif;color:#222;">'
+              . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAF8F6;padding:32px 16px;">'
+              . '<tr><td align="center">'
+              . '<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:12px;padding:32px;">'
+              . '<tr><td style="font-size:15px;line-height:1.6;color:#222;">' . $html_body . '</td></tr>'
+              . '</table>'
+              . '<p style="font-size:12px;color:#888;margin-top:24px;">TopicLaunch · <a href="https://topiclaunch.com" style="color:#888;text-decoration:underline;">topiclaunch.com</a></p>'
+              . '</td></tr></table></body></html>';
 
         $from_domain = getenv('EMAIL_FROM_ADDRESS') ?: 'onboarding@resend.dev';
         $payload = json_encode([
-            'from'    => 'TopicLaunch <' . $from_domain . '>',
-            'to'      => [$to],
-            'subject' => $subject,
-            'text'    => $body,
-            'html'    => $html,
+            'from'     => 'TopicLaunch <' . $from_domain . '>',
+            'reply_to' => 'support@topiclaunch.com',
+            'to'       => [$to],
+            'subject'  => $subject,
+            'text'     => $body,
+            'html'     => $html,
+            'headers'  => [
+                'List-Unsubscribe' => '<mailto:unsubscribe@topiclaunch.com>',
+            ],
         ]);
 
         $ch = curl_init('https://api.resend.com/emails');
@@ -948,7 +960,7 @@ Your refund will appear in your original payment method within 5-10 business day
                     . "Title: " . $topic->title . "\n"
                     . "Creator: " . $topic->creator_name . "\n\n"
                     . "REFUND:\n"
-                    . "A full refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
+                    . "A refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
                     . "— TopicLaunch"
                 );
                 $emailed[] = $topic->fan_email;
@@ -973,7 +985,7 @@ Your refund will appear in your original payment method within 5-10 business day
                     . "Title: " . $topic->title . "\n"
                     . "Creator: " . $topic->creator_name . "\n\n"
                     . "REFUND:\n"
-                    . "A full refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
+                    . "A refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
                     . "— TopicLaunch"
                 );
                 $emailed[] = $fan->email;

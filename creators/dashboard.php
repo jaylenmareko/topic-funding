@@ -1293,7 +1293,7 @@ if ($queued_count > 0) {
                                 <span class="tile-badge badge-hold">On Hold</span>
                             <?php else: ?>
                                 <div class="tile-dot dot-active"></div>
-                                <span class="tile-badge badge-active">Active</span>
+                                <span class="tile-badge badge-active">Open for Funding</span>
                             <?php endif; ?>
                             <span class="tile-earnings-inline">$<?php echo number_format($topic->funding_threshold * 0.9, 0); ?> earnings</span>
                         </div>
@@ -1387,7 +1387,7 @@ if ($queued_count > 0) {
                     <div class="topic-section section-active">
                         <div class="section-label collapsible collapsed" id="label-active" onclick="toggleSection('active')">
                             <div class="section-label-dot" style="background:var(--hot-pink);"></div>
-                            Active Topics
+                            Open for Funding
                             <span class="section-label-count"><?php echo count($section_active); ?></span>
                             <span class="section-hint">click to open</span>
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
