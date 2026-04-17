@@ -432,7 +432,7 @@ function createRequiredTables() {
     // Add failed_at column to topics table if not exists
     $db->query("
         ALTER TABLE topics 
-        ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP NULL AFTER completed_at
+        ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP NULL
     ");
     $db->execute();
 }
