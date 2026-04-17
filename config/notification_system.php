@@ -412,6 +412,127 @@ Support: support@topiclaunch.com";
     }
     
     /**
+     * Send emails when a topic goes active (not yet fully funded)
+     * Called from the webhook after processTopicCreation
+     */
+    public function sendTopicActiveEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       cu.email as creator_email,
+                       u.email as fan_email, u.username as fan_name
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users cu ON c.applicant_user_id = cu.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            // Notify creator of new topic request
+            if ($topic->creator_email) {
+                $this->sendEmail($topic->creator_email,
+                    "New Topic Request — " . $topic->title,
+                    "Hello " . $topic->creator_name . ",\n\n"
+                    . "A fan has commissioned a new topic for your channel:\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Description: " . $topic->description . "\n"
+                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n"
+                    . "Funded So Far: $" . number_format($topic->current_funding, 2) . "\n\n"
+                    . "Once it reaches the goal, you'll have 48 hours to create the content and earn 90% of the funding.\n\n"
+                    . "View your dashboard: https://topiclaunch.com/creators/dashboard.php\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+
+            // Notify fan their topic is live
+            if ($topic->fan_email) {
+                $this->sendEmail($topic->fan_email,
+                    "Your Topic is Live — " . $topic->title,
+                    "Hello " . $topic->fan_name . ",\n\n"
+                    . "Your topic request is now live and accepting community funding:\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n"
+                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n"
+                    . "Your Contribution: $" . number_format($topic->current_funding, 2) . "\n\n"
+                    . "Share it to help it reach the goal faster!\n\n"
+                    . "If the creator doesn't deliver within 48 hours of funding, you'll receive a 90% refund automatically.\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+        } catch (Exception $e) {
+            error_log("sendTopicActiveEmails error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send funded emails (no DB writes) — called from webhook after topic reaches goal
+     */
+    public function sendFundedEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       cu.email as creator_email
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users cu ON c.applicant_user_id = cu.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            $creator_earnings = $topic->funding_threshold * 0.9;
+
+            // Email creator
+            if ($topic->creator_email) {
+                $this->sendEmail($topic->creator_email,
+                    "Topic Funded — Start Creating: " . $topic->title,
+                    "Hello " . $topic->creator_name . ",\n\n"
+                    . "Your topic has been fully funded and is now running!\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Total Funded: $" . number_format($topic->current_funding, 2) . "\n"
+                    . "Your Earnings: $" . number_format($creator_earnings, 2) . " (after 10% platform fee)\n"
+                    . "Deadline: 48 hours from now\n\n"
+                    . "Go to your dashboard to upload the content before the deadline:\n"
+                    . "https://topiclaunch.com/creators/dashboard.php\n\n"
+                    . "If content is not delivered on time, contributors will be automatically refunded.\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+
+            // Email all contributors
+            $this->db->query("
+                SELECT DISTINCT u.email, u.username, c.amount
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+            ");
+            $this->db->bind(':id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            foreach ($contributors as $fan) {
+                if (!$fan->email) continue;
+                $this->sendEmail($fan->email,
+                    "Topic Fully Funded — " . $topic->title,
+                    "Hello " . $fan->username . ",\n\n"
+                    . "The topic you supported has been fully funded!\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n"
+                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n\n"
+                    . $topic->creator_name . " now has 48 hours to create and upload the content. You'll get an email as soon as it's delivered.\n\n"
+                    . "If the creator misses the deadline, you'll automatically receive a 90% refund ($" . number_format($fan->amount * 0.9, 2) . ").\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+        } catch (Exception $e) {
+            error_log("sendFundedEmails error: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Send content delivered notifications
      */
     public function sendContentDeliveredNotifications($topic_id, $content_url) {

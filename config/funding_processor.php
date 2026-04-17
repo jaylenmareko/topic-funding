@@ -2,6 +2,7 @@
 // config/funding_processor.php - UPDATED FOR NEW FLOW
 require_once 'database.php';
 require_once __DIR__ . '/stripe-keys.php';
+require_once __DIR__ . '/notification_system.php';
 
 class FundingProcessor {
     private $db;
@@ -140,7 +141,17 @@ class FundingProcessor {
             }
             
             error_log("=== PAYMENT PROCESSED SUCCESSFULLY ===");
-            
+
+            // Send funded emails if topic just reached its goal
+            if ($fully_funded) {
+                try {
+                    $notifier = new NotificationSystem();
+                    $notifier->sendFundedEmails($topic_id);
+                } catch (Exception $e) {
+                    error_log("Notification error (non-fatal): " . $e->getMessage());
+                }
+            }
+
             return [
                 'success' => true, 
                 'contribution_id' => $contribution_id,
@@ -257,7 +268,19 @@ class FundingProcessor {
             }
             
             error_log("=== TOPIC CREATION PROCESSED SUCCESSFULLY ===");
-            
+
+            // Send email notifications
+            try {
+                $notifier = new NotificationSystem();
+                if ($fully_funded) {
+                    $notifier->sendFundedEmails($topic_id);
+                } else {
+                    $notifier->sendTopicActiveEmails($topic_id);
+                }
+            } catch (Exception $e) {
+                error_log("Notification error (non-fatal): " . $e->getMessage());
+            }
+
             return [
                 'success' => true, 
                 'topic_id' => $topic_id,

@@ -49,3 +49,8 @@ externalPort = 3000
 [deployment]
 deploymentTarget = "autoscale"
 run = ["php", "-S", "0.0.0.0:5000", "router.php"]
+
+[userenv]
+
+[userenv.shared]
+EMAIL_FROM_ADDRESS = "notifications@topiclaunch.com"
