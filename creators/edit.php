@@ -150,14 +150,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
         .nav-logo { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 500; color: #111010; text-decoration: none; letter-spacing: -0.3px; }
         .nav-logo span { color: #E8305A; }
-        .nav-links { display: flex; gap: 12px; align-items: center; }
-        .nav-link { padding: 9px 18px; border: 1px solid #E5E5E5; border-radius: 8px; background: #fff; color: #111010; font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
-        .nav-link:hover { border-color: #E8305A; color: #E8305A; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-link { color: #111010; text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: #E8305A; }
         .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 56px 20px 48px; min-height: calc(100vh - 70px); }
         .page-header { text-align: center; margin-bottom: 34px; max-width: 620px; }
         .page-title { font-family: 'Inter', sans-serif; font-size: 40px; font-weight: 600; color: #111010; margin-bottom: 10px; letter-spacing: -0.8px; }
         .page-subtitle { font-size: 15px; color: #888; }
-        .edit-container { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #E5E5E5; padding: 32px; width: 100%; max-width: 560px; }
+        .edit-container { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #E5E5E5; padding: 36px; width: 100%; max-width: 380px; }
         .form-group { margin-bottom: 22px; }
         .form-group label { display: block; margin-bottom: 8px; color: #888; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
         .form-group input, .form-group textarea { width: 100%; padding: 11px 14px; border: 1px solid #E5E5E5; border-radius: 8px; font-size: 14px; font-family: inherit; transition: all 0.2s; background: #fff; color: #111010; }
@@ -173,8 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .profile-photo-upload { flex: 1; }
         .upload-button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; font-size: 13px; font-weight: 500; color: #111010; cursor: pointer; transition: all 0.2s; }
         .upload-button:hover { border-color: #E8305A; color: #E8305A; }
-        .payout-section-label { display: block; margin-bottom: 12px; color: #111010; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .payout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .password-section { margin-top: 28px; padding-top: 22px; border-top: 1px solid #E5E5E5; }
         .password-section-label { display: block; margin-bottom: 12px; color: #111010; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
         .submit-btn { width: 100%; padding: 13px; background: #E8305A; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
@@ -192,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .topic-checkbox-item input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg); }
         .topic-checkbox-item span { font-size: 13px; color: #111010; font-weight: 500; }
 
-        @media (max-width: 768px) { .nav-container { padding: 0 20px; } .page-wrapper { padding: 44px 16px 36px; } .edit-container { padding: 24px 18px; } .page-title { font-size: 30px; } .payout-fields { grid-template-columns: 1fr; } .profile-photo-container { flex-direction: column; align-items: flex-start; } .topics-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .nav-container { padding: 0 20px; } .page-wrapper { padding: 44px 16px 36px; } .edit-container { padding: 24px 18px; } .page-title { font-size: 30px; } .profile-photo-container { flex-direction: column; align-items: flex-start; } .topics-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -200,14 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="nav-container">
             <a href="/" class="nav-logo">TopicLaunch</a>
             <div class="nav-links">
-                <a href="dashboard.php" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                    Dashboard
-                </a>
-                <a href="../auth/logout.php" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
-                    Log Out
-                </a>
+                <a href="dashboard.php" class="nav-link">Dashboard</a>
+                <a href="../auth/logout.php" class="nav-link">Log Out</a>
             </div>
         </div>
     </nav>
@@ -280,23 +272,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="minimum_topic_price">Minimum Price per Topic ($)</label>
                     <input type="number" id="minimum_topic_price" name="minimum_topic_price" step="1" value="<?php echo htmlspecialchars($creator->minimum_topic_price ?? 100); ?>" required>
                     <small>You'll keep 90% of this amount.</small>
-                </div>
-                
-                <div class="form-group">
-                    <label class="payout-section-label">Payout Methods</label>
-                    <div class="payout-fields">
-                        <div>
-                            <label for="paypal_email" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">PayPal Email</label>
-                            <input type="email" id="paypal_email" name="paypal_email" placeholder="payouts@example.com" value="<?php echo htmlspecialchars($creator->paypal_email ?? ''); ?>">
-                        </div>
-                        <div>
-                            <label for="venmo_handle" style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">Venmo Handle</label>
-                            <div class="input-with-prefix">
-                                <span class="input-prefix">@</span>
-                                <input type="text" id="venmo_handle" name="venmo_handle" placeholder="yourhandle" class="input-with-prefix-field" value="<?php echo htmlspecialchars($creator->venmo_handle ?? ''); ?>">
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="password-section">
