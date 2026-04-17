@@ -511,6 +511,7 @@ if ($queued_count > 0) {
             display: flex;
             gap: 10px;
             margin-bottom: 28px;
+            align-items: flex-start;
         }
 
         .dash-btn {
