@@ -1,5 +1,7 @@
 <?php
 // creators/index.php - Browse Creators page
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 session_start();
 
 if (isset($_SESSION['user_id'])) {
