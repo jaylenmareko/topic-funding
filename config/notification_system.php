@@ -717,8 +717,9 @@ Support: support@topiclaunch.com";
               . htmlspecialchars($body)
               . '</pre>';
 
+        $from_domain = getenv('EMAIL_FROM_ADDRESS') ?: 'onboarding@resend.dev';
         $payload = json_encode([
-            'from'    => 'TopicLaunch <notifications@topic-funding.replit.app>',
+            'from'    => 'TopicLaunch <' . $from_domain . '>',
             'to'      => [$to],
             'subject' => $subject,
             'text'    => $body,

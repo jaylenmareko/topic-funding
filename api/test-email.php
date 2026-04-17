@@ -18,7 +18,7 @@ if (empty($api_key)) {
 }
 
 $payload = json_encode([
-    'from'    => 'TopicLaunch <notifications@topic-funding.replit.app>',
+    'from'    => 'TopicLaunch <' . (getenv('EMAIL_FROM_ADDRESS') ?: 'onboarding@resend.dev') . '>',
     'to'      => [$to],
     'subject' => 'TopicLaunch email test',
     'text'    => "This is a test email from TopicLaunch.\n\nIf you received this, Resend is wired up correctly!",
