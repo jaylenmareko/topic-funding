@@ -46,6 +46,10 @@ externalPort = 3001
 localPort = 23638
 externalPort = 3000
 
+[[ports]]
+localPort = 23639
+externalPort = 3003
+
 [deployment]
 deploymentTarget = "autoscale"
 run = ["php", "-S", "0.0.0.0:5000", "router.php"]

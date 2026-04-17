@@ -506,6 +506,51 @@ if ($queued_count > 0) {
             border-color: var(--hot-pink);
             color: var(--hot-pink);
         }
+
+        .dashboard-action-btns {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .dash-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            border: 1.5px solid transparent;
+            letter-spacing: -0.1px;
+        }
+
+        .dash-btn-secondary {
+            background: white;
+            border-color: #E5E5E5;
+            color: #444;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .dash-btn-secondary:hover {
+            border-color: var(--hot-pink);
+            color: var(--hot-pink);
+        }
+
+        .dash-btn-primary {
+            background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(232,48,90,0.25);
+        }
+
+        .dash-btn-primary:hover {
+            box-shadow: 0 4px 14px rgba(232,48,90,0.35);
+            transform: translateY(-1px);
+        }
         
         .content-box {
             background: white;
@@ -1093,16 +1138,23 @@ if ($queued_count > 0) {
             </div>
         </div>
 
-        <div style="margin-bottom: 12px;">
-            <button onclick="copyProfileLink()" class="browse-btn" id="copyBtn">
-                🔗 Copy Profile Link
+        <div class="dashboard-action-btns">
+            <button onclick="copyProfileLink()" class="dash-btn dash-btn-secondary" id="copyBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                Copy Profile Link
             </button>
-            <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 10px;">Share this link with your fans to start getting requests</p>
+            <button onclick="openCreateTopicModal()" class="dash-btn dash-btn-primary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                New Topic
+            </button>
         </div>
-
-        <button onclick="openCreateTopicModal()" class="browse-btn" style="background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); color: white; border-color: var(--hot-pink); margin-bottom: 32px;">
-            🎯 Create New Topic
-        </button>
 
         <div class="earnings-section">
             <div class="earnings-stats">
