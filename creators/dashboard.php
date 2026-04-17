@@ -216,6 +216,21 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
     }
 }
 
+// Auto-promote: if no topic is currently running but one is queued, start it now
+$db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'funded' LIMIT 1");
+$db->bind(':creator_id', $creator->id);
+$running_check = $db->single();
+if (!$running_check) {
+    $db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'queued' ORDER BY funded_at ASC, id ASC LIMIT 1");
+    $db->bind(':creator_id', $creator->id);
+    $next = $db->single();
+    if ($next) {
+        $db->query("UPDATE topics SET status = 'funded', content_deadline = NOW() + INTERVAL '48 hours' WHERE id = :id");
+        $db->bind(':id', $next->id);
+        $db->execute();
+    }
+}
+
 $db->query("
     SELECT t.*, 
            EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp,

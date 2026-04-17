@@ -119,19 +119,23 @@ class FundingProcessor {
             
             $fully_funded = false;
             if ($topic_after && $topic_after->current_funding >= $topic_after->funding_threshold) {
-                error_log("ðŸŽ‰ TOPIC FULLY FUNDED! Updating status...");
-                
-                // Update topic status to funded
-                $this->db->query("
-                    UPDATE topics 
-                    SET status = 'queued', 
-                        funded_at = NOW()
-                    WHERE id = :topic_id
-                ");
+                error_log("TOPIC FULLY FUNDED! Checking for running topic...");
+
+                // Check if creator already has a running topic
+                $this->db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'funded' LIMIT 1");
+                $this->db->bind(':creator_id', $topic_after->creator_id);
+                $has_running = $this->db->single();
+
+                if ($has_running) {
+                    $this->db->query("UPDATE topics SET status = 'queued', funded_at = NOW() WHERE id = :topic_id");
+                    error_log("Creator already has a running topic — added to queue");
+                } else {
+                    $this->db->query("UPDATE topics SET status = 'funded', funded_at = NOW(), content_deadline = NOW() + INTERVAL '48 hours' WHERE id = :topic_id");
+                    error_log("No running topic — starting immediately with 48h deadline");
+                }
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
-                
-                error_log("âœ“ Topic status updated to FUNDED");
+
                 $fully_funded = true;
             }
             
@@ -232,14 +236,22 @@ class FundingProcessor {
             $fully_funded = $initial_amount >= $funding_threshold;
             
             if ($fully_funded) {
-                error_log("ðŸŽ‰ Topic immediately fully funded!");
-                
-                $this->db->query("
-                    UPDATE topics 
-                    SET status = 'queued', 
-                        funded_at = NOW()
-                    WHERE id = :topic_id
-                ");
+                error_log("Topic immediately fully funded!");
+
+                // Check if creator already has a running topic
+                $this->db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'funded' LIMIT 1");
+                $this->db->bind(':creator_id', $creator_id);
+                $has_running = $this->db->single();
+
+                if ($has_running) {
+                    // Another topic is already running — add to queue
+                    $this->db->query("UPDATE topics SET status = 'queued', funded_at = NOW() WHERE id = :topic_id");
+                    error_log("Creator already has a running topic — added to queue");
+                } else {
+                    // No running topic — start immediately
+                    $this->db->query("UPDATE topics SET status = 'funded', funded_at = NOW(), content_deadline = NOW() + INTERVAL '48 hours' WHERE id = :topic_id");
+                    error_log("No running topic — starting immediately with 48h deadline");
+                }
                 $this->db->bind(':topic_id', $topic_id);
                 $this->db->execute();
             }
