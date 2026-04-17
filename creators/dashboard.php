@@ -9,7 +9,14 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $db = new Database();
-$db->query('SELECT c.*, u.email FROM creators c LEFT JOIN users u ON c.applicant_user_id = u.id WHERE c.applicant_user_id = :user_id AND c.is_active = 1');
+$db->query('
+    SELECT c.*, u.email,
+        COALESCE((SELECT SUM(cp.amount) FROM creator_payouts cp WHERE cp.creator_id = c.id AND cp.status = \'completed\'), 0) AS total_earnings,
+        COALESCE((SELECT SUM(cp.amount) FROM creator_payouts cp WHERE cp.creator_id = c.id AND cp.status = \'pending\'),   0) AS pending_payout
+    FROM creators c
+    LEFT JOIN users u ON c.applicant_user_id = u.id
+    WHERE c.applicant_user_id = :user_id AND c.is_active = 1
+');
 $db->bind(':user_id', $_SESSION['user_id']);
 $creator = $db->single();
 
@@ -165,6 +172,7 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                                 $db->bind(':transfer_id',  $transfer_id);
                                 $db->bind(':status',       $payout_status);
                                 $db->execute();
+
                             }
                         } catch (Exception $payout_ex) {
                             error_log("Auto-payout failed for topic $topic_id: " . $payout_ex->getMessage());

@@ -112,16 +112,6 @@ function processCreatorPayout($topic_id) {
             $db->bind(':payout_id', $payout_id);
             $db->execute();
 
-            // Update creator's total earnings
-            $db->query("
-                UPDATE creators
-                SET total_earnings = total_earnings + :amount
-                WHERE id = :creator_id
-            ");
-            $db->bind(':amount', $creator_payout);
-            $db->bind(':creator_id', $topic->creator_id);
-            $db->execute();
-
             // Log success
             error_log("Payout successful - Topic: $topic_id, Creator: {$topic->creator_id}, Amount: $$creator_payout");
 
