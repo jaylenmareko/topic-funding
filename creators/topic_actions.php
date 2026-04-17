@@ -3,6 +3,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/refund_helper.php';
+require_once __DIR__ . '/../config/notification_system.php';
 
 // Check if user is logged in and is a creator
 if (!isset($_SESSION['user_id'])) {
@@ -88,8 +89,20 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     $db->query("UPDATE topics SET status = 'cancelled' WHERE id = :topic_id");
                     $db->bind(':topic_id', $topic_id);
                     $db->execute();
-                    
+
+                    $db->endTransaction();
+
+                    // Send decline notification emails (after commit so data is visible)
+                    try {
+                        $notifier = new NotificationSystem();
+                        $notifier->sendDeclineEmails($topic_id);
+                    } catch (Exception $e) {
+                        error_log("Decline notification error (non-fatal): " . $e->getMessage());
+                    }
+
                     $message = "Topic declined and all contributors have been refunded.";
+                    header('Location: dashboard.php?success=' . urlencode($message));
+                    exit;
                     break;
                     
                 case 'hold':
@@ -139,6 +152,19 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     } elseif ($topic->status === 'queued') {
                         $message = "Topic put on hold. It will return to your queue when you resume it.";
                     }
+
+                    $db->endTransaction();
+
+                    // Send hold notification emails (after commit)
+                    try {
+                        $notifier = new NotificationSystem();
+                        $notifier->sendHoldEmails($topic_id);
+                    } catch (Exception $e) {
+                        error_log("Hold notification error (non-fatal): " . $e->getMessage());
+                    }
+
+                    header('Location: dashboard.php?success=' . urlencode($message));
+                    exit;
                     break;
                     
                 case 'resume':

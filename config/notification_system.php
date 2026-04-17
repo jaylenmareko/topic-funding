@@ -959,5 +959,103 @@ Support: support@topiclaunch.com";
             error_log("Failed to create auto_refund_schedule table: " . $e->getMessage());
         }
     }
+
+    /**
+     * Send notifications to contributors when creator declines a topic (full refund issued)
+     */
+    public function sendDeclineEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       cu.email as creator_email
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users cu ON c.applicant_user_id = cu.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            // Email all contributors
+            $this->db->query("
+                SELECT DISTINCT u.email, u.username, c.amount
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+            ");
+            $this->db->bind(':id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            foreach ($contributors as $fan) {
+                if (!$fan->email) continue;
+                $this->sendEmail($fan->email,
+                    "Topic Declined — Full Refund Issued: " . $topic->title,
+                    "Hello " . $fan->username . ",\n\n"
+                    . "Unfortunately, " . $topic->creator_name . " has decided to decline the following topic:\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n\n"
+                    . "A FULL refund of $" . number_format($fan->amount, 2) . " has been issued to your original payment method. "
+                    . "It typically appears within 5–10 business days depending on your bank.\n\n"
+                    . "We're sorry this topic didn't work out. You can browse other creators and topics at:\n"
+                    . "https://topiclaunch.com/\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+
+            error_log("sendDeclineEmails: notified " . count($contributors) . " contributors for topic $topic_id");
+        } catch (Exception $e) {
+            error_log("sendDeclineEmails error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send notifications to contributors when creator puts a topic on hold
+     */
+    public function sendHoldEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            // Email all contributors
+            $this->db->query("
+                SELECT DISTINCT u.email, u.username, c.amount
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+            ");
+            $this->db->bind(':id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            $hold_reason = $topic->hold_reason ?: 'Working on other content first';
+
+            foreach ($contributors as $fan) {
+                if (!$fan->email) continue;
+                $this->sendEmail($fan->email,
+                    "Topic Paused — " . $topic->title,
+                    "Hello " . $fan->username . ",\n\n"
+                    . $topic->creator_name . " has temporarily put the following topic on hold:\n\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n"
+                    . "Reason: " . $hold_reason . "\n\n"
+                    . "Your contribution is safe and will remain reserved for this topic. "
+                    . "The creator will resume it when they're ready, and you'll be notified when content is delivered.\n\n"
+                    . "If you'd prefer a refund instead, please contact us at support@topiclaunch.com.\n\n"
+                    . "— TopicLaunch"
+                );
+            }
+
+            error_log("sendHoldEmails: notified " . count($contributors) . " contributors for topic $topic_id");
+        } catch (Exception $e) {
+            error_log("sendHoldEmails error: " . $e->getMessage());
+        }
+    }
 }
 ?>
