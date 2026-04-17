@@ -1,148 +1,131 @@
 <?php
-// webhooks/stripe.php - Ultra-defensive version with maximum error catching
+// webhooks/stripe.php - DB-backed logging for autoscale compatibility
 
-// Catch ANY PHP error and log it
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// DB logger function — writes to webhook_logs table (autoscale-safe)
+function whlog($level, $message) {
+    static $pdo = null;
+    try {
+        if ($pdo === null) {
+            $url = getenv('DATABASE_URL');
+            $p = parse_url($url);
+            $dsn = "pgsql:host={$p['host']};port=" . ($p['port'] ?? 5432) . ";dbname=" . ltrim($p['path'], '/');
+            $pdo = new PDO($dsn, $p['user'], $p['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+            $pdo->exec("CREATE TABLE IF NOT EXISTS webhook_logs (id SERIAL PRIMARY KEY, level VARCHAR(20), message TEXT, created_at TIMESTAMP DEFAULT NOW())");
+        }
+        $stmt = $pdo->prepare("INSERT INTO webhook_logs (level, message) VALUES (?, ?)");
+        $stmt->execute([$level, $message]);
+    } catch (Exception $e) {
+        error_log("whlog failed: " . $e->getMessage() . " | original: $message");
+    }
+}
+
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    $error = "PHP Error [$errno]: $errstr in $errfile on line $errline";
-    error_log($error);
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - $error\n", FILE_APPEND);
+    whlog('error', "PHP Error [$errno]: $errstr in $errfile:$errline");
     return false;
 });
 
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        $msg = "FATAL: {$error['message']} in {$error['file']} on line {$error['line']}";
-        error_log($msg);
-        file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - $msg\n", FILE_APPEND);
+        whlog('fatal', "FATAL: {$error['message']} in {$error['file']}:{$error['line']}");
     }
 });
 
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
-
-file_put_contents(__DIR__ . '/webhook-calls.txt', date('Y-m-d H:i:s') . " - Webhook called\n", FILE_APPEND);
+whlog('info', '=== Webhook called ===');
 
 header('Content-Type: application/json');
 
 try {
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Loading database...\n", FILE_APPEND);
     require_once __DIR__ . '/../config/database.php';
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Database loaded\n", FILE_APPEND);
-} catch (Exception $e) {
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - DB Error: " . $e->getMessage() . "\n", FILE_APPEND);
-    http_response_code(500);
-    die(json_encode(['error' => 'Database config failed: ' . $e->getMessage()]));
-}
-
-try {
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Loading Stripe...\n", FILE_APPEND);
     require_once __DIR__ . '/../config/stripe.php';
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Stripe loaded\n", FILE_APPEND);
-} catch (Exception $e) {
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Stripe Error: " . $e->getMessage() . "\n", FILE_APPEND);
-    http_response_code(500);
-    die(json_encode(['error' => 'Stripe config failed: ' . $e->getMessage()]));
-}
-
-try {
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Loading funding processor...\n", FILE_APPEND);
     require_once __DIR__ . '/../config/funding_processor.php';
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Funding processor loaded\n", FILE_APPEND);
+    whlog('info', 'Dependencies loaded');
 } catch (Exception $e) {
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Processor Error: " . $e->getMessage() . "\n", FILE_APPEND);
+    whlog('error', 'Dependency load failed: ' . $e->getMessage());
     http_response_code(500);
-    die(json_encode(['error' => 'Funding processor failed: ' . $e->getMessage()]));
+    die(json_encode(['error' => 'Bootstrap failed: ' . $e->getMessage()]));
 }
 
-// Get payload
 $payload = @file_get_contents('php://input');
 $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
+whlog('info', 'Payload length: ' . strlen($payload));
 
-file_put_contents(__DIR__ . '/webhook-calls.txt', "Payload length: " . strlen($payload) . "\n", FILE_APPEND);
-
-// Verify webhook
 $endpoint_secret = STRIPE_WEBHOOK_SECRET;
-
 if (empty($endpoint_secret)) {
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Webhook secret is empty!\n", FILE_APPEND);
+    whlog('error', 'Webhook secret is empty!');
     http_response_code(500);
     die(json_encode(['error' => 'Webhook secret not configured']));
 }
 
 $event = null;
 try {
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Verifying signature...\n", FILE_APPEND);
     $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Signature verified\n", FILE_APPEND);
+    whlog('info', 'Signature verified, event type: ' . $event['type']);
 } catch (\Exception $e) {
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Signature Error: " . $e->getMessage() . "\n", FILE_APPEND);
+    whlog('error', 'Signature error: ' . $e->getMessage());
     http_response_code(400);
     die(json_encode(['error' => 'Invalid signature']));
 }
 
-file_put_contents(__DIR__ . '/webhook-calls.txt', "Event type: " . $event['type'] . "\n", FILE_APPEND);
-
 try {
     $processor = new FundingProcessor();
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "Processor instantiated\n", FILE_APPEND);
-    
+
     switch ($event['type']) {
         case 'payment_intent.succeeded':
             $payment_intent = $event['data']['object'];
-            file_put_contents(__DIR__ . '/webhook-calls.txt', "Processing payment: " . $payment_intent['id'] . "\n", FILE_APPEND);
-            
+            whlog('info', 'Processing payment: ' . $payment_intent['id'] . ' | metadata: ' . json_encode($payment_intent['metadata'] ?? []));
+
             $result = $processor->handlePaymentSuccess($payment_intent['id']);
-            
+            whlog('info', 'Payment result: ' . json_encode($result));
+
             if (!$result['success']) {
-                file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Payment processing failed: " . json_encode($result) . "\n", FILE_APPEND);
-            } else {
-                file_put_contents(__DIR__ . '/webhook-calls.txt', "Payment processed successfully\n", FILE_APPEND);
+                whlog('error', 'Payment processing failed: ' . json_encode($result));
             }
             break;
-            
+
         case 'checkout.session.completed':
             $session = $event['data']['object'];
-            file_put_contents(__DIR__ . '/webhook-calls.txt', "Checkout completed: " . $session['id'] . "\n", FILE_APPEND);
+            whlog('info', 'Checkout completed: ' . $session['id'] . ' | metadata: ' . json_encode($session['metadata'] ?? []));
             break;
 
         case 'account.updated':
             $account = $event['data']['object'];
             $stripe_account_id = $account['id'];
-            $charges_enabled   = $account['charges_enabled']  ?? false;
-            $payouts_enabled   = $account['payouts_enabled']   ?? false;
+            $charges_enabled = $account['charges_enabled'] ?? false;
+            $payouts_enabled = $account['payouts_enabled'] ?? false;
 
-            file_put_contents(__DIR__ . '/webhook-calls.txt', "account.updated: $stripe_account_id charges=$charges_enabled payouts=$payouts_enabled\n", FILE_APPEND);
+            whlog('info', "account.updated: $stripe_account_id charges=$charges_enabled payouts=$payouts_enabled");
 
             if ($charges_enabled && $payouts_enabled) {
                 $db = new Database();
                 $db->query("UPDATE creators SET stripe_account_status = 'active', updated_at = NOW() WHERE stripe_account_id = :account_id");
                 $db->bind(':account_id', $stripe_account_id);
                 $db->execute();
-                $rows = $db->rowCount();
-                file_put_contents(__DIR__ . '/webhook-calls.txt', "Marked active: $rows row(s) updated\n", FILE_APPEND);
+                whlog('info', 'Marked account active: ' . $db->rowCount() . ' row(s) updated');
             } else {
                 $db = new Database();
                 $db->query("UPDATE creators SET stripe_account_status = 'pending', updated_at = NOW() WHERE stripe_account_id = :account_id AND stripe_account_status != 'active'");
                 $db->bind(':account_id', $stripe_account_id);
                 $db->execute();
-                file_put_contents(__DIR__ . '/webhook-calls.txt', "Account still pending verification\n", FILE_APPEND);
+                whlog('info', 'Account still pending verification');
             }
             break;
 
         default:
-            file_put_contents(__DIR__ . '/webhook-calls.txt', "Unhandled event: " . $event['type'] . "\n", FILE_APPEND);
+            whlog('info', 'Unhandled event: ' . $event['type']);
     }
-    
-    file_put_contents(__DIR__ . '/webhook-calls.txt', "SUCCESS\n---\n", FILE_APPEND);
+
+    whlog('info', 'SUCCESS ---');
     http_response_code(200);
     echo json_encode(['success' => true, 'event_type' => $event['type']]);
-    
+
 } catch (Exception $e) {
-    $error_msg = $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine();
-    file_put_contents(__DIR__ . '/webhook-errors.txt', date('Y-m-d H:i:s') . " - Processing Error: $error_msg\n", FILE_APPEND);
-    file_put_contents(__DIR__ . '/webhook-errors.txt', $e->getTraceAsString() . "\n\n", FILE_APPEND);
+    $error_msg = $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine();
+    whlog('error', 'Processing error: ' . $error_msg);
+    whlog('error', 'Trace: ' . $e->getTraceAsString());
     http_response_code(500);
     echo json_encode(['error' => $error_msg]);
 }
-?>
