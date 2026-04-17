@@ -435,17 +435,22 @@ If the creator doesn't deliver, you'll receive a refund automatically.
         try {
             $this->db->query("
                 SELECT t.*, c.display_name as creator_name,
-                       cu.email as creator_email
+                       cu.email as creator_email,
+                       COALESCE(u.email, t.initiator_email) as fan_email
                 FROM topics t
                 JOIN creators c ON t.creator_id = c.id
                 LEFT JOIN users cu ON c.applicant_user_id = cu.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
                 WHERE t.id = :id
             ");
             $this->db->bind(':id', $topic_id);
             $topic = $this->db->single();
             if (!$topic) return;
 
+            error_log("sendFundedEmails: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL') . ", creator_email=" . ($topic->creator_email ?? 'NULL'));
+
             $creator_earnings = $topic->funding_threshold * 0.9;
+            $emailed = [];
 
             // Email creator
             if ($topic->creator_email) {
@@ -462,20 +467,38 @@ If the creator doesn't deliver, you'll receive a refund automatically.
                     . "Your dashboard: https://topiclaunch.com/creators/dashboard.php\n\n"
                     . "— TopicLaunch"
                 );
+                $emailed[] = $topic->creator_email;
             }
 
-            // Email all contributors
+            // Email the topic initiator (fan who created the request)
+            if ($topic->fan_email && !in_array($topic->fan_email, $emailed)) {
+                $this->sendEmail($topic->fan_email,
+                    "Topic Fully Funded — " . $topic->title,
+                    "The topic you requested has been fully funded.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "WHAT HAPPENS NEXT:\n"
+                    . $topic->creator_name . " has 48 hours to create and upload the content. You'll get an email as soon as it's ready.\n\n"
+                    . "PROTECTION:\n"
+                    . "If the creator doesn't deliver, you'll receive a refund automatically.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $topic->fan_email;
+            }
+
+            // Email any other contributors with accounts
             $this->db->query("
-                SELECT DISTINCT u.email, u.username, c.amount
+                SELECT DISTINCT u.email
                 FROM contributions c
                 JOIN users u ON c.user_id = u.id
-                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+                WHERE c.topic_id = :id AND c.payment_status = 'completed' AND u.email IS NOT NULL
             ");
             $this->db->bind(':id', $topic_id);
             $contributors = $this->db->resultSet();
 
             foreach ($contributors as $fan) {
-                if (!$fan->email) continue;
+                if (!$fan->email || in_array($fan->email, $emailed)) continue;
                 $this->sendEmail($fan->email,
                     "Topic Fully Funded — " . $topic->title,
                     "The topic you supported has been fully funded.\n\n"
@@ -488,7 +511,10 @@ If the creator doesn't deliver, you'll receive a refund automatically.
                     . "If the creator doesn't deliver, you'll receive a refund automatically.\n\n"
                     . "— TopicLaunch"
                 );
+                $emailed[] = $fan->email;
             }
+
+            error_log("sendFundedEmails: notified " . count($emailed) . " recipients for topic $topic_id");
         } catch (Exception $e) {
             error_log("sendFundedEmails error: " . $e->getMessage());
         }
@@ -498,54 +524,66 @@ If the creator doesn't deliver, you'll receive a refund automatically.
      * Send content delivered notifications
      */
     public function sendContentDeliveredNotifications($topic_id, $content_url) {
-        // Get topic and contributors
-        $this->db->query("
-            SELECT t.*, c.display_name as creator_name
-            FROM topics t 
-            JOIN creators c ON t.creator_id = c.id 
-            WHERE t.id = :topic_id
-        ");
-        $this->db->bind(':topic_id', $topic_id);
-        $topic = $this->db->single();
-        
-        if (!$topic) return false;
-        
-        // Get all contributors
-        $this->db->query("
-            SELECT DISTINCT u.email, u.username, c.amount
-            FROM contributions c
-            JOIN users u ON c.user_id = u.id
-            WHERE c.topic_id = :topic_id AND c.payment_status = 'completed'
-        ");
-        $this->db->bind(':topic_id', $topic_id);
-        $contributors = $this->db->resultSet();
-        
-        $success_count = 0;
-        
-        foreach ($contributors as $contributor) {
-            $subject = "Content Delivered - " . $topic->title;
-            $message = "The content you funded has been delivered.
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       COALESCE(u.email, t.initiator_email) as fan_email
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
+                WHERE t.id = :topic_id
+            ");
+            $this->db->bind(':topic_id', $topic_id);
+            $topic = $this->db->single();
 
-TOPIC DETAILS:
-Title: " . $topic->title . "
-Creator: " . $topic->creator_name . "
+            if (!$topic) return false;
 
-CONTENT:
-" . $content_url . "
+            error_log("sendContentDeliveredNotifications: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL'));
 
-— TopicLaunch";
-            
-            $result = $this->sendEmail($contributor->email, $subject, $message);
-            if ($result) {
-                $success_count++;
+            $emailed = [];
+            $success_count = 0;
+
+            $subject = "Content Delivered — " . $topic->title;
+            $body = "The content you requested has been delivered.\n\n"
+                . "TOPIC DETAILS:\n"
+                . "Title: " . $topic->title . "\n"
+                . "Creator: " . $topic->creator_name . "\n\n"
+                . "CONTENT:\n"
+                . $content_url . "\n\n"
+                . "— TopicLaunch";
+
+            // Email the topic initiator
+            if ($topic->fan_email) {
+                $result = $this->sendEmail($topic->fan_email, $subject, $body);
+                if ($result) $success_count++;
+                error_log("Content delivered to initiator {$topic->fan_email}: " . ($result ? 'SUCCESS' : 'FAILED'));
+                $emailed[] = $topic->fan_email;
             }
-            
-            error_log("Content delivered notification sent to {$contributor->email}: " . ($result ? 'SUCCESS' : 'FAILED'));
+
+            // Email any other contributors with accounts
+            $this->db->query("
+                SELECT DISTINCT u.email
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :topic_id AND c.payment_status = 'completed' AND u.email IS NOT NULL
+            ");
+            $this->db->bind(':topic_id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            foreach ($contributors as $contributor) {
+                if (!$contributor->email || in_array($contributor->email, $emailed)) continue;
+                $result = $this->sendEmail($contributor->email, $subject, $body);
+                if ($result) $success_count++;
+                error_log("Content delivered to contributor {$contributor->email}: " . ($result ? 'SUCCESS' : 'FAILED'));
+                $emailed[] = $contributor->email;
+            }
+
+            error_log("sendContentDeliveredNotifications: {$success_count}/" . count($emailed) . " sent for topic $topic_id");
+            return $success_count > 0;
+        } catch (Exception $e) {
+            error_log("sendContentDeliveredNotifications error: " . $e->getMessage());
+            return false;
         }
-        
-        error_log("Content delivery notifications: {$success_count}/" . count($contributors) . " sent successfully");
-        
-        return $success_count > 0;
     }
     
     /**
@@ -887,28 +925,47 @@ Your refund will appear in your original payment method within 5-10 business day
         try {
             $this->db->query("
                 SELECT t.*, c.display_name as creator_name,
-                       cu.email as creator_email
+                       COALESCE(u.email, t.initiator_email) as fan_email
                 FROM topics t
                 JOIN creators c ON t.creator_id = c.id
-                LEFT JOIN users cu ON c.applicant_user_id = cu.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
                 WHERE t.id = :id
             ");
             $this->db->bind(':id', $topic_id);
             $topic = $this->db->single();
             if (!$topic) return;
 
-            // Email all contributors
+            error_log("sendDeclineEmails: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL'));
+
+            $emailed = [];
+
+            // Email the topic initiator
+            if ($topic->fan_email) {
+                $this->sendEmail($topic->fan_email,
+                    "Topic Declined — " . $topic->title,
+                    $topic->creator_name . " has declined your topic.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "REFUND:\n"
+                    . "A full refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $topic->fan_email;
+            }
+
+            // Email any other contributors with accounts
             $this->db->query("
-                SELECT DISTINCT u.email, u.username, c.amount
+                SELECT DISTINCT u.email
                 FROM contributions c
                 JOIN users u ON c.user_id = u.id
-                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+                WHERE c.topic_id = :id AND c.payment_status IN ('completed', 'refunded') AND u.email IS NOT NULL
             ");
             $this->db->bind(':id', $topic_id);
             $contributors = $this->db->resultSet();
 
             foreach ($contributors as $fan) {
-                if (!$fan->email) continue;
+                if (!$fan->email || in_array($fan->email, $emailed)) continue;
                 $this->sendEmail($fan->email,
                     "Topic Declined — " . $topic->title,
                     $topic->creator_name . " has declined the following topic.\n\n"
@@ -919,9 +976,10 @@ Your refund will appear in your original payment method within 5-10 business day
                     . "A full refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
                     . "— TopicLaunch"
                 );
+                $emailed[] = $fan->email;
             }
 
-            error_log("sendDeclineEmails: notified " . count($contributors) . " contributors for topic $topic_id");
+            error_log("sendDeclineEmails: notified " . count($emailed) . " recipients for topic $topic_id");
         } catch (Exception $e) {
             error_log("sendDeclineEmails error: " . $e->getMessage());
         }
@@ -943,6 +1001,8 @@ Your refund will appear in your original payment method within 5-10 business day
             $this->db->bind(':id', $topic_id);
             $topic = $this->db->single();
             if (!$topic) return;
+
+            error_log("sendHoldEmails: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL'));
 
             $emailed = [];
 
@@ -1009,6 +1069,8 @@ Your refund will appear in your original payment method within 5-10 business day
             $topic = $this->db->single();
             if (!$topic) return;
 
+            error_log("sendResumeEmails: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL'));
+
             $emailed = [];
 
             if ($topic->fan_email) {
@@ -1071,6 +1133,8 @@ Your refund will appear in your original payment method within 5-10 business day
             $this->db->bind(':id', $topic_id);
             $topic = $this->db->single();
             if (!$topic) return;
+
+            error_log("sendStartEmails: topic $topic_id, fan_email=" . ($topic->fan_email ?? 'NULL'));
 
             $emailed = [];
 
