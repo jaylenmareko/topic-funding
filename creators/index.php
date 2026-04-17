@@ -705,6 +705,10 @@ try {
                     <div class="tl-char-count" id="topicDescCount">0/350</div>
                 </div>
                 <div class="tl-field">
+                    <div id="goalBanner" style="display:none;background:#E8305A;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:none;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:600;color:#fff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Funding Goal</span>
+                        <span id="goalBannerAmount" style="font-weight:800;color:#fff;font-size:20px;"></span>
+                    </div>
                     <label class="tl-label" id="topicAmountLabel">Your offer amount</label>
                     <div class="tl-input-prefix-wrap">
                         <span class="tl-prefix">$</span>
@@ -766,6 +770,8 @@ try {
         const topicFundingInfo = document.getElementById('topicFundingInfo');
         const topicModalTitle  = document.getElementById('topicModalTitle');
         const topicAmountLabel = document.getElementById('topicAmountLabel');
+        const goalBanner       = document.getElementById('goalBanner');
+        const goalBannerAmount = document.getElementById('goalBannerAmount');
 
         let selectedCreator  = null;
         let pickerTopics     = new Set(); // selected filter chips (modal)
@@ -979,6 +985,7 @@ try {
             topicDescField.style.display = '';
             topicFundingInfo.style.display = 'block';
             topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> raised &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong style="color:#333;">$${Math.round(remaining)}</strong> still needed`;
+            goalBanner.style.display   = 'none';
             topicOverlay.classList.add('open');
             topicAmount.focus();
         });
@@ -989,14 +996,17 @@ try {
             activeTopic = null;
             topicModalTitle.textContent = 'Send your request';
             topicAmountLabel.textContent = 'Your offer amount';
-            topicAmount.removeAttribute('max');
             topicPreview.textContent = topicInput.value.trim();
             topicModalSub.textContent = `To: ${selectedCreator.name}`;
+            minPriceHint.textContent = '';
             if (selectedCreator.price > 0) {
-                minPriceHint.textContent = `Funding goal: $${selectedCreator.price}`;
+                topicAmount.max         = selectedCreator.price;
                 topicAmount.placeholder = selectedCreator.price;
+                goalBannerAmount.textContent = `$${selectedCreator.price}`;
+                goalBanner.style.display = 'flex';
             } else {
-                minPriceHint.textContent = '';
+                topicAmount.removeAttribute('max');
+                goalBanner.style.display = 'none';
             }
             topicAmount.value = '';
             topicDesc.value = '';
@@ -1030,8 +1040,10 @@ try {
                 setTimeout(() => topicAmount.style.borderColor = '', 1500);
                 return;
             }
-            if (activeTopic && topicAmount.max && amount > parseFloat(topicAmount.max)) {
-                minPriceHint.textContent = `Maximum contribution is $${Math.round(topicAmount.max)} (remaining needed)`;
+            if (topicAmount.max && amount > parseFloat(topicAmount.max)) {
+                minPriceHint.textContent = activeTopic
+                    ? `Maximum contribution is $${Math.round(topicAmount.max)} (remaining needed)`
+                    : `Maximum contribution is $${Math.round(topicAmount.max)} (funding goal)`;
                 minPriceHint.style.color = '#E8305A';
                 topicAmount.focus();
                 setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
@@ -1060,7 +1072,7 @@ try {
                     email:         email,
                     title:         topic,
                     description:   desc || topic,
-                    funding_goal:  amount,
+                    funding_goal:  selectedCreator.price,
                     initial_amount: amount
                 };
             }
