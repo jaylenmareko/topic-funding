@@ -1139,13 +1139,16 @@ if ($queued_count > 0) {
         </div>
 
         <div class="dashboard-action-btns">
-            <button onclick="copyProfileLink()" class="dash-btn dash-btn-secondary" id="copyBtn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                </svg>
-                Copy Profile Link
-            </button>
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                <button onclick="copyProfileLink()" class="dash-btn dash-btn-secondary" id="copyBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                    Copy Profile Link
+                </button>
+                <span style="font-size:11px;color:#999;text-align:center;letter-spacing:-0.1px;">topiclaunch.com/<?php echo htmlspecialchars($creator->handle); ?></span>
+            </div>
             <button onclick="openCreateTopicModal()" class="dash-btn dash-btn-primary">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/>
