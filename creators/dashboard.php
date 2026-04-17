@@ -1130,16 +1130,6 @@ if ($queued_count > 0) {
                     <div class="stat-card-sub">total withdrawn</div>
                 </div>
                 
-                <div class="payout-wrapper">
-                    <button onclick="requestPayout()" class="payout-button">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        Request Payout
-                    </button>
-                    <div class="payout-note">Min. $50</div>
-                </div>
             </div>
 
             <?php if ($stripe_connect_state === 'not_connected'): ?>
@@ -1572,18 +1562,6 @@ if ($queued_count > 0) {
                 });
         }
 
-        function requestPayout() {
-            const availableBalance = <?php echo $creator->available_balance ?? 0; ?>;
-            
-            if (availableBalance < 50) {
-                alert('Minimum payout amount is $50. Your current available balance is $' + availableBalance.toFixed(2));
-                return;
-            }
-            
-            if (confirm('Request payout of $' + availableBalance.toFixed(2) + '?')) {
-                alert('Payout request feature coming soon!');
-            }
-        }
         
         function copyTopicLink(id) {
             event.stopPropagation();
