@@ -141,13 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'user_id' => $is_logged_in ? (string)$_SESSION['user_id'] : ''
         ];
 
-        // Create success URL based on user status
-        if ($is_logged_in) {
-            $success_url = 'https://' . $_SERVER['HTTP_HOST'] . '/payment_success.php?session_id={CHECKOUT_SESSION_ID}&type=topic_funding&topic_id=' . $topic_id;
-        } else {
-            // For guests, redirect to creator profile after payment with success message
-            $success_url = 'https://' . $_SERVER['HTTP_HOST'] . '/' . ($topic->creator_name ?? '') . '?payment=success&session_id={CHECKOUT_SESSION_ID}&topic_id=' . $topic_id . '&amount=' . $amount;
-        }
+        // Redirect to creator profile after payment
+        $success_url = 'https://' . $_SERVER['HTTP_HOST'] . '/' . ($topic->creator_name ?? '');
 
         // Cancel URL - redirect back to creator profile using vanity URL
         $cancel_url = 'https://' . $_SERVER['HTTP_HOST'] . '/' . ($topic->creator_name ?? '') . '?payment=cancelled';
