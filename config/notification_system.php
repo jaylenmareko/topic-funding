@@ -96,27 +96,16 @@ class NotificationSystem {
 
 A new topic request has been created for your channel:
 
-TOPIC DETAILS:
 Title: " . $topic->title . "
 Requested by: " . $topic->proposer_name . "
+Description: " . $topic->description . "
 Funding Goal: $" . number_format($topic->funding_threshold, 2) . "
-Current Funding: $" . number_format($topic->current_funding, 2) . "
 
-DESCRIPTION:
-" . $topic->description . "
+Once it reaches the goal, you'll have 48 hours to create the content.
 
-STATUS:
-The topic is now live and accepting community funding. Once it reaches the funding goal, you'll have 48 hours to create the content and earn 90% of the funding.
-
-View topic progress: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
 Your dashboard: https://topiclaunch.com/creators/dashboard.php
 
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
         
         $result = $this->sendEmail($creator_email, $subject, $message);
         error_log("Creator live notification sent to {$creator_email}: " . ($result ? 'SUCCESS' : 'FAILED'));
@@ -131,32 +120,17 @@ Support: support@topiclaunch.com";
      */
     private function sendProposerTopicLiveNotification($topic) {
         $subject = "Topic Live - " . $topic->title;
-        $message = "Hello " . $topic->proposer_name . ",
+        $message = "Your topic request is now live and accepting community funding:
 
-Your topic request is now live and accepting community funding:
-
-TOPIC DETAILS:
 Title: " . $topic->title . "
 Creator: " . $topic->creator_name . "
 Funding Goal: $" . number_format($topic->funding_threshold, 2) . "
-Your Contribution: $" . number_format($topic->current_funding, 2) . "
-
-NEXT STEPS:
-Your topic is live for the community to fund. Once funded, " . $topic->creator_name . " has 48 hours to create the content.
 
 Share your topic: https://topiclaunch.com/topics/view.php?id=" . $topic->id . "
 
-PROTECTION:
-If the creator doesn't deliver content within 48 hours of funding, you'll receive a 90% refund (10% covers platform fees and delivery guarantee).
+If the creator doesn't deliver within 48 hours of funding, you'll receive a refund automatically.
 
-Thank you for using TopicLaunch.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
         
         $result = $this->sendEmail($topic->proposer_email, $subject, $message);
         error_log("Proposer live notification sent to {$topic->proposer_email}: " . ($result ? 'SUCCESS' : 'FAILED'));
@@ -306,37 +280,22 @@ Support: support@topiclaunch.com";
         
         error_log("Sending funded notification to creator: " . $creator_email);
         
-        $subject = "Content Request Funded - " . $topic->title;
-        
+        $subject = "Topic Funded — Start Creating: " . $topic->title;
+
         $message = "Hello " . $topic->creator_name . ",
 
-Your content request has been fully funded and is ready for creation.
+Your topic has been fully funded:
 
-REQUEST DETAILS:
-Topic: " . $topic->title . "
-Total Funding: $" . number_format($topic->current_funding, 2) . "
+Title: " . $topic->title . "
+Description: " . $topic->description . "
+Total Funded: $" . number_format($topic->current_funding, 2) . "
 Your Earnings: $" . number_format($fee_info['creator_amount'], 2) . " (after 10% platform fee)
 
-NEXT STEPS:
-1. Go to your dashboard and click 'Start' when you are ready to begin
-2. Once you start, you will have 48 hours to create and upload the content
-3. Your payment will be processed after successful content delivery
+Click 'Start' on your dashboard when you're ready. The 48-hour deadline begins then.
 
 Dashboard: https://topiclaunch.com/creators/dashboard.php
 
-IMPORTANT NOTES:
-- The 48-hour countdown only starts when you click 'Start' on your dashboard
-- If content is not delivered on time, contributors will receive automatic refunds
-- You can hold the topic from your dashboard if you need more time before starting
-
-Thank you for participating in TopicLaunch.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
         
         $result = $this->sendEmail($creator_email, $subject, $message);
         error_log("Creator funded notification sent: " . ($result ? 'SUCCESS' : 'FAILED'));
@@ -368,31 +327,16 @@ Support: support@topiclaunch.com";
         
         foreach ($contributors as $contributor) {
             $subject = "Topic Funded - " . $topic->title;
-            $message = "Hello " . $contributor->username . ",
+            $message = "The topic you supported has reached its funding goal:
 
-The topic you supported has reached its funding goal:
-
-TOPIC DETAILS:
 Title: " . $topic->title . "
 Creator: " . $topic->creator_name . "
-Your Contribution: $" . number_format($contributor->amount, 2) . "
 
-WHAT HAPPENS NEXT:
-Your topic has been added to the creator's queue. The creator will start work when they're ready — once they click 'Start' they have 48 hours to create and upload the content. You'll be notified when the content is ready.
+The creator has 48 hours to create and upload the content. You'll be notified when it's ready.
 
-REFUND PROTECTION:
-If the creator doesn't deliver content within 48 hours of starting, you'll automatically receive a 90% refund ($" . number_format($contributor->amount * 0.9, 2) . ") to your original payment method. The 10% platform fee covers processing costs and delivery guarantee services.
+If the creator doesn't deliver, you'll receive a refund automatically.
 
-Track progress: https://topiclaunch.com/topics/view.php?id=" . $topic_id . "
-
-Thank you for supporting content creators on TopicLaunch.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
             
             $result = $this->sendEmail($contributor->email, $subject, $message);
             if ($result) {
@@ -439,9 +383,8 @@ Support: support@topiclaunch.com";
                     . "A fan has commissioned a new topic for your channel:\n\n"
                     . "Title: " . $topic->title . "\n"
                     . "Description: " . $topic->description . "\n"
-                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n"
-                    . "Funded So Far: $" . number_format($topic->current_funding, 2) . "\n\n"
-                    . "Once it reaches the goal, you'll have 48 hours to create the content and earn 90% of the funding.\n\n"
+                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n\n"
+                    . "Once it reaches the goal, you'll have 48 hours to create the content.\n\n"
                     . "View your dashboard: https://topiclaunch.com/creators/dashboard.php\n\n"
                     . "— TopicLaunch"
                 );
@@ -451,14 +394,12 @@ Support: support@topiclaunch.com";
             if ($topic->fan_email) {
                 $this->sendEmail($topic->fan_email,
                     "Your Topic is Live — " . $topic->title,
-                    "Hello " . $topic->fan_name . ",\n\n"
-                    . "Your topic request is now live and accepting community funding:\n\n"
+                    "Your topic request is now live and accepting community funding:\n\n"
                     . "Title: " . $topic->title . "\n"
                     . "Creator: " . $topic->creator_name . "\n"
-                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n"
-                    . "Your Contribution: $" . number_format($topic->current_funding, 2) . "\n\n"
+                    . "Funding Goal: $" . number_format($topic->funding_threshold, 2) . "\n\n"
                     . "Share it to help it reach the goal faster!\n\n"
-                    . "If the creator doesn't deliver within 48 hours of funding, you'll receive a 90% refund automatically.\n\n"
+                    . "If the creator doesn't deliver, you'll receive a refund automatically.\n\n"
                     . "— TopicLaunch"
                 );
             }
@@ -491,14 +432,13 @@ Support: support@topiclaunch.com";
                 $this->sendEmail($topic->creator_email,
                     "Topic Funded — Start Creating: " . $topic->title,
                     "Hello " . $topic->creator_name . ",\n\n"
-                    . "Your topic has been fully funded and is now running!\n\n"
+                    . "Your topic has been fully funded:\n\n"
                     . "Title: " . $topic->title . "\n"
+                    . "Description: " . $topic->description . "\n"
                     . "Total Funded: $" . number_format($topic->current_funding, 2) . "\n"
-                    . "Your Earnings: $" . number_format($creator_earnings, 2) . " (after 10% platform fee)\n"
-                    . "Deadline: 48 hours from now\n\n"
-                    . "Go to your dashboard to upload the content before the deadline:\n"
+                    . "Your Earnings: $" . number_format($creator_earnings, 2) . " (after 10% platform fee)\n\n"
+                    . "Click 'Start' on your dashboard when you're ready. The 48-hour deadline begins then.\n\n"
                     . "https://topiclaunch.com/creators/dashboard.php\n\n"
-                    . "If content is not delivered on time, contributors will be automatically refunded.\n\n"
                     . "— TopicLaunch"
                 );
             }
@@ -517,13 +457,11 @@ Support: support@topiclaunch.com";
                 if (!$fan->email) continue;
                 $this->sendEmail($fan->email,
                     "Topic Fully Funded — " . $topic->title,
-                    "Hello " . $fan->username . ",\n\n"
-                    . "The topic you supported has been fully funded!\n\n"
+                    "The topic you supported has been fully funded:\n\n"
                     . "Title: " . $topic->title . "\n"
-                    . "Creator: " . $topic->creator_name . "\n"
-                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n\n"
-                    . $topic->creator_name . " now has 48 hours to create and upload the content. You'll get an email as soon as it's delivered.\n\n"
-                    . "If the creator misses the deadline, you'll automatically receive a 90% refund ($" . number_format($fan->amount * 0.9, 2) . ").\n\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . $topic->creator_name . " has 48 hours to create and upload the content. You'll get an email as soon as it's delivered.\n\n"
+                    . "If the creator doesn't deliver, you'll receive a refund automatically.\n\n"
                     . "— TopicLaunch"
                 );
             }
@@ -562,26 +500,14 @@ Support: support@topiclaunch.com";
         
         foreach ($contributors as $contributor) {
             $subject = "Content Delivered - " . $topic->title;
-            $message = "Hello " . $contributor->username . ",
+            $message = "The content you funded has been delivered:
 
-The content you funded has been delivered:
-
-CONTENT DETAILS:
-Topic: " . $topic->title . "
+Title: " . $topic->title . "
 Creator: " . $topic->creator_name . "
-Your Contribution: $" . number_format($contributor->amount, 2) . "
 
-ACCESS YOUR CONTENT:
 " . $content_url . "
 
-Thank you for supporting content creators through TopicLaunch.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
             
             $result = $this->sendEmail($contributor->email, $subject, $message);
             if ($result) {
@@ -734,33 +660,14 @@ Support: support@topiclaunch.com";
             $subject = "Content Deadline Missed - " . $topic->title;
             $message = "Hello " . $topic->creator_name . ",
 
-The content deadline for your funded topic has been missed.
+The content deadline for your funded topic has been missed:
 
-TOPIC DETAILS:
 Title: " . $topic->title . "
 Deadline: " . date('F j, Y \a\t g:i A', strtotime($topic->content_deadline)) . "
 
-ACTIONS TAKEN:
-- All contributors have been automatically refunded 90% of their contributions
-- " . $refund_result['refunds_processed'] . " refunds processed
-- Total refunded: $" . number_format($refund_result['total_refunded'], 2) . "
-- Topic status changed to 'Failed'
-- No creator payout will be processed
+All contributors have been automatically refunded. No creator payout will be processed for this topic.
 
-PLATFORM FEE:
-The 10% platform fee has been retained to cover processing costs, delivery guarantee services, and platform operations.
-
-IMPACT:
-Failed deliveries may impact future topic approvals. Please ensure you can meet deadlines before accepting funded topics.
-
-For questions, please contact support.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
             
             $this->sendEmail($creator_email, $subject, $message);
         }
@@ -777,34 +684,14 @@ Support: support@topiclaunch.com";
                 $platform_fee_kept = $detail['platform_fee_kept'];
                 
                 $subject = "Refund Processed - " . $topic->title;
-                $message = "Hello,
+                $message = "A refund has been processed for the following topic:
 
-A 90% refund has been automatically processed for your contribution.
-
-REFUND DETAILS:
-Topic: " . $topic->title . "
+Title: " . $topic->title . "
 Creator: " . $topic->creator_name . "
-Original Contribution: $" . number_format($original_amount, 2) . "
-Refund Amount: $" . number_format($refund_amount, 2) . " (90%)
-Platform Fee Retained: $" . number_format($platform_fee_kept, 2) . " (10%)
 
-REASON:
-The creator did not deliver the requested content within the 48-hour deadline.
+The creator did not deliver the content within the 48-hour deadline. Your refund will appear within 5-10 business days.
 
-PROCESSING:
-Your refund will appear in your original payment method within 5-10 business days. No action is required from you.
-
-PLATFORM FEE:
-The 10% platform fee covers payment processing, hosting, customer support, delivery guarantee system, and platform maintenance costs.
-
-We apologize for this inconvenience. Our delivery guarantee system ensures accountability while maintaining platform sustainability.
-
-Best regards,
-TopicLaunch Team
-
----
-TopicLaunch - Creator Content Platform
-Support: support@topiclaunch.com";
+— TopicLaunch";
                 
                 $this->sendEmail($detail['user_email'], $subject, $message);
             }
@@ -990,15 +877,10 @@ Support: support@topiclaunch.com";
             foreach ($contributors as $fan) {
                 if (!$fan->email) continue;
                 $this->sendEmail($fan->email,
-                    "Topic Declined — Full Refund Issued: " . $topic->title,
-                    "Hello " . $fan->username . ",\n\n"
-                    . "Unfortunately, " . $topic->creator_name . " has decided to decline the following topic:\n\n"
-                    . "Title: " . $topic->title . "\n"
-                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n\n"
-                    . "A FULL refund of $" . number_format($fan->amount, 2) . " has been issued to your original payment method. "
-                    . "It typically appears within 5–10 business days depending on your bank.\n\n"
-                    . "We're sorry this topic didn't work out. You can browse other creators and topics at:\n"
-                    . "https://topiclaunch.com/\n\n"
+                    "Topic Declined — " . $topic->title,
+                    $topic->creator_name . " has declined the following topic:\n\n"
+                    . "Title: " . $topic->title . "\n\n"
+                    . "A full refund has been issued to your original payment method and will appear within 5–10 business days.\n\n"
                     . "— TopicLaunch"
                 );
             }
@@ -1038,8 +920,7 @@ Support: support@topiclaunch.com";
                 if (!$fan->email) continue;
                 $this->sendEmail($fan->email,
                     "Topic Paused — " . $topic->title,
-                    "Hello " . $fan->username . ",\n\n"
-                    . $topic->creator_name . " has temporarily put the following topic on hold:\n\n"
+                    $topic->creator_name . " has temporarily put the following topic on hold:\n\n"
                     . "Title: " . $topic->title . "\n\n"
                     . "The creator will resume it when they're ready, and you'll be notified when content is delivered.\n\n"
                     . "— TopicLaunch"
