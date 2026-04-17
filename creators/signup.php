@@ -42,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     $bio = mb_substr(trim($_POST['bio'] ?? ''), 0, 100);
     $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
-    $paypal_email = trim($_POST['paypal_email'] ?? '');
-    $venmo_handle = trim($_POST['venmo_handle'] ?? '');
+    $paypal_email = '';
+    $venmo_handle = '';
     $agree_terms = isset($_POST['agree_terms']);
     $video_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
     
@@ -52,8 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'All required fields must be filled';
     } elseif (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] !== 0) {
         $error = 'Profile photo is required';
-    } elseif (empty($paypal_email) && empty($venmo_handle)) {
-        $error = 'At least one payout method (PayPal or Venmo) is required';
     } elseif (!$agree_terms) {
         $error = 'You must agree to the terms of service';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -366,13 +364,6 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="payout-section-label">Payout Method <span class="label-note">(at least one required)</span></label>
-                    <div class="payout-fields">
-                        <div class="payout-field-wrapper"><label for="paypal_email">PayPal Email</label><input type="email" id="paypal_email" name="paypal_email" placeholder="payouts@example.com" value="<?php echo htmlspecialchars($_POST['paypal_email'] ?? ''); ?>"></div>
-                        <div class="payout-field-wrapper"><label for="venmo_handle">Venmo Handle</label><div class="input-with-prefix"><span class="input-prefix">@</span><input type="text" id="venmo_handle" name="venmo_handle" placeholder="yourhandle" class="input-with-prefix-field" value="<?php echo htmlspecialchars($_POST['venmo_handle'] ?? ''); ?>"></div></div>
-                    </div>
-                </div>
                 <div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="agree_terms" required><span>I agree to the <a href="/terms.php" target="_blank">Terms of Service</a></span></label></div>
                 <button type="submit" class="submit-btn">Create Account</button>
             </form>
@@ -391,9 +382,6 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
         const confirmPassword = document.getElementById('confirm_password').value;
         if (password !== confirmPassword) { e.preventDefault(); alert('Passwords do not match!'); return false; }
         if (password.length < 8) { e.preventDefault(); alert('Password must be at least 8 characters long!'); return false; }
-        const paypalEmail = document.getElementById('paypal_email').value.trim();
-        const venmoHandle = document.getElementById('venmo_handle').value.trim();
-        if (!paypalEmail && !venmoHandle) { e.preventDefault(); alert('Please provide at least one payout method (PayPal or Venmo)'); return false; }
     });
     </script>
 </body>
