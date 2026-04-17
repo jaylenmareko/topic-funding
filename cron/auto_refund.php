@@ -76,7 +76,7 @@ try {
             $db->query("
                 INSERT INTO auto_refund_processed (topic_id, refunds_count, total_refunded, processed_at, status)
                 VALUES (:topic_id, 0, 0, NOW(), 'processing')
-                ON DUPLICATE KEY UPDATE status = 'processing', processed_at = NOW()
+                ON CONFLICT (topic_id) DO UPDATE SET status = 'processing', processed_at = NOW()
             ");
             $db->bind(':topic_id', $topic->id);
             $db->execute();
@@ -146,7 +146,7 @@ try {
                     ]);
                     
                     // Update contribution status
-                    $db->query('UPDATE contributions SET payment_status = "refunded_90_percent" WHERE id = :id');
+                    $db->query("UPDATE contributions SET payment_status = 'refunded_90_percent' WHERE id = :id");
                     $db->bind(':id', $contribution->id);
                     $db->execute();
                     
