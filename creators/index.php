@@ -711,6 +711,11 @@ try {
                     <div id="topicFundingInfo" style="display:none; margin-top:6px; background:#FFF0F3; border-radius:8px; padding:8px 12px; font-size:12px; color:#555; line-height:1.5;"></div>
                     <div class="tl-hint" id="minPriceHint"></div>
                 </div>
+                <div class="tl-field" id="topicEmailField">
+                    <label class="tl-label">Your email</label>
+                    <input type="email" id="topicEmail" class="tl-input" placeholder="you@example.com">
+                    <div class="tl-hint">We'll send you updates on your request.</div>
+                </div>
                 <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
             </div>
         </div>
@@ -962,6 +967,7 @@ try {
             topicAmount.max            = remaining > 0 ? remaining : '';
             topicAmount.placeholder    = remaining > 0 ? Math.round(remaining) : '0';
             topicAmount.value          = '';
+            topicEmail.value           = '';
             topicDesc.value            = topicDescription;
             topicDescCount.textContent = `${topicDescription.length}/350`;
             topicDesc.setAttribute('readonly', true);
@@ -993,6 +999,7 @@ try {
             topicAmount.value = '';
             topicDesc.value = '';
             topicDescCount.textContent = '0/350';
+            topicEmail.value = '';
             topicDesc.removeAttribute('readonly');
             topicDesc.style.background = '';
             topicDesc.style.color = '';
@@ -1006,11 +1013,14 @@ try {
         topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
         function closeTopic() { topicOverlay.classList.remove('open'); }
 
+        const topicEmail = document.getElementById('topicEmail');
+
         /* Submit: call Stripe API directly */
         topicSubmit.addEventListener('click', () => {
             const amount = parseFloat(topicAmount.value);
             const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
             const desc   = topicDesc.value.trim();
+            const email  = topicEmail.value.trim();
 
             if (!amount || amount < 1) {
                 topicAmount.style.borderColor = '#E8305A';
@@ -1031,6 +1041,14 @@ try {
                 setTimeout(() => minPriceHint.style.color = '', 1500);
                 return;
             }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                topicEmail.style.borderColor = '#E8305A';
+                topicEmail.focus();
+                minPriceHint.textContent = 'Please enter a valid email address.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { topicEmail.style.borderColor = ''; minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 3000);
+                return;
+            }
 
             topicSubmit.disabled = true;
             topicSubmit.textContent = 'Processing…';
@@ -1038,11 +1056,12 @@ try {
             let endpoint, payload;
             if (activeTopic) {
                 endpoint = '/api/get-topic.php';
-                payload  = { topic_id: parseInt(activeTopic.id, 10), amount };
+                payload  = { topic_id: parseInt(activeTopic.id, 10), amount, email };
             } else {
                 endpoint = '/api/create-topic.php';
                 payload  = {
                     creator_id:    selectedCreator.id,
+                    email:         email,
                     title:         topic,
                     description:   desc || topic,
                     funding_goal:  amount,

@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $topic_id = isset($data['topic_id']) ? (int)$data['topic_id'] : 0;
     $amount = isset($data['amount']) ? floatval($data['amount']) : 0;
+    $email = isset($data['email']) ? trim($data['email']) : '';
 
     if (!$topic_id) {
         echo json_encode(['error' => 'Invalid topic ID']);
@@ -138,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'type' => 'topic_contribution',
             'topic_id' => (string)$topic_id,
             'amount' => (string)$amount,
-            'user_id' => $is_logged_in ? (string)$_SESSION['user_id'] : ''
+            'user_id' => $is_logged_in ? (string)$_SESSION['user_id'] : '',
+            'contributor_email' => $email
         ];
 
         // Redirect to creator profile after payment
@@ -165,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'success_url' => $success_url,
             'cancel_url' => $cancel_url,
             'metadata' => $metadata,
-            'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : null,
+            'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : ($email ?: null),
         ]);
 
         // Return the Stripe Checkout URL
