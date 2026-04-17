@@ -890,6 +890,24 @@ if ($queued_count > 0) {
             transform: rotate(-90deg);
         }
 
+        .section-hint {
+            margin-left: auto;
+            font-size: 11px;
+            color: #BBB;
+            font-weight: 400;
+            display: none;
+            pointer-events: none;
+            letter-spacing: 0.1px;
+        }
+
+        .section-label.collapsed .section-hint {
+            display: block;
+        }
+
+        .section-label.collapsed .section-chevron {
+            margin-left: 6px;
+        }
+
         .section-body {
             overflow: hidden;
             transition: max-height 0.25s ease, opacity 0.2s ease;
@@ -1337,6 +1355,7 @@ if ($queued_count > 0) {
                             <div class="section-label-dot" style="background:#3B82F6;"></div>
                             Up Next
                             <span class="section-label-count"><?php echo count($section_queued); ?></span>
+                            <span class="section-hint">click to open</span>
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body" id="body-queued">
@@ -1353,6 +1372,7 @@ if ($queued_count > 0) {
                             <div class="section-label-dot" style="background:#F59E0B;"></div>
                             On Hold
                             <span class="section-label-count"><?php echo count($section_on_hold); ?></span>
+                            <span class="section-hint">click to open</span>
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body collapsed" id="body-onhold">
@@ -1369,6 +1389,7 @@ if ($queued_count > 0) {
                             <div class="section-label-dot" style="background:var(--hot-pink);"></div>
                             Active Topics
                             <span class="section-label-count"><?php echo count($section_active); ?></span>
+                            <span class="section-hint">click to open</span>
                             <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                         <div class="section-body collapsed" id="body-active">
