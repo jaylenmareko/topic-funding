@@ -118,8 +118,8 @@ try {
             
             // Process 90% refunds for each contribution
             foreach ($contributions as $contribution) {
-                if (!$contribution->payment_id) {
-                    error_log("Skipping contribution {$contribution->id} - no payment_id");
+                if (!$contribution->stripe_payment_intent_id) {
+                    error_log("Skipping contribution {$contribution->id} - no stripe_payment_intent_id");
                     continue;
                 }
                 
@@ -130,7 +130,7 @@ try {
                 try {
                     // Process Stripe refund for 90%
                     $refund = \Stripe\Refund::create([
-                        'payment_intent' => $contribution->payment_id,
+                        'payment_intent' => $contribution->stripe_payment_intent_id,
                         'amount' => round($refund_amount * 100), // Convert to cents
                         'reason' => 'requested_by_customer',
                         'metadata' => [

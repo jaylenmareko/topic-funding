@@ -1,0 +1,16 @@
+=== WEBHOOK LOGS (newest first, last 300 entries) ===
+
+[2026-04-17 00:49:56.376346] [info] SUCCESS ---
+[2026-04-17 00:49:56.248352] [info] Checkout completed: cs_test_a1Do0j86OjtGIOtJAie5h3nYSTuTMN8hl7ENZyrRre4I5DuHxrpD0zcR5i | metadata: {"initiator_user_id":"","description":"I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some pig feet.I like everything and some","type":"topic_creation","creator_display_name":"jaylenmareko","initial_amount":"5","title":"I like everything and some pig feet.I like everything and some pig feet.I like everything and some p","creator_id":"1","platform_fee_percent":"10.00","funding_threshold":"5"}
+[2026-04-17 00:49:55.857708] [info] Signature verified, event type: checkout.session.completed
+[2026-04-17 00:49:55.728195] [info] Payload length: 4613
+[2026-04-17 00:49:55.591643] [info] Dependencies loaded
+[2026-04-17 00:49:55.19327] [info] === Webhook called ===
+[2026-04-17 00:49:54.757358] [info] SUCCESS ---
+[2026-04-17 00:49:54.627989] [error] Payment processing failed: {"success":false,"error":"SQLSTATE[42703]: Undefined column: 7 ERROR:  column \"payment_id\" does not exist\nLINE 1: SELECT id FROM contributions WHERE payment_id = $1\n                                           ^"}
+[2026-04-17 00:49:54.499813] [info] Payment result: {"success":false,"error":"SQLSTATE[42703]: Undefined column: 7 ERROR:  column \"payment_id\" does not exist\nLINE 1: SELECT id FROM contributions WHERE payment_id = $1\n                                           ^"}
+[2026-04-17 00:49:54.323135] [info] Processing payment: pi_3TN0bTECfTIYlUne1uShEmAK | metadata: []
+[2026-04-17 00:49:53.938418] [info] Signature verified, event type: payment_intent.succeeded
+[2026-04-17 00:49:53.790948] [info] Payload length: 2378
+[2026-04-17 00:49:53.662821] [info] Dependencies loaded
+[2026-04-17 00:49:53.244904] [info] === Webhook called ===

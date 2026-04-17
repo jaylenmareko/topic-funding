@@ -57,7 +57,7 @@ try {
         
         // Create the initial contribution record
         $db->query('
-            INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
+            INSERT INTO contributions (topic_id, user_id, amount, payment_status, stripe_payment_intent_id, contributed_at) 
             VALUES (:topic_id, :user_id, :amount, "completed", :payment_id, NOW())
         ');
         $db->bind(':topic_id', $topic_id);

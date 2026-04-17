@@ -119,7 +119,7 @@ try {
     
     foreach ($recent_payments->data as $payment) {
         // Check if this payment was processed in our database
-        $db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+        $db->query('SELECT id FROM contributions WHERE stripe_payment_intent_id = :payment_id');
         $db->bind(':payment_id', $payment->id);
         $processed = $db->single();
         
@@ -264,7 +264,7 @@ if ($_POST && isset($_POST['payment_intent_id'])) {
         
         // Check if already processed
         $db = new Database();
-        $db->query('SELECT id, topic_id FROM contributions WHERE payment_id = :payment_id');
+        $db->query('SELECT id, topic_id FROM contributions WHERE stripe_payment_intent_id = :payment_id');
         $db->bind(':payment_id', $payment_intent_id);
         $existing = $db->single();
         
@@ -400,7 +400,7 @@ try {
     
     // Recent contributions
     echo "<h4>💰 Recent Contributions:</h4>";
-    $db->query('SELECT c.id, c.topic_id, c.amount, c.payment_status, c.payment_id, c.contributed_at, u.username FROM contributions c LEFT JOIN users u ON c.user_id = u.id ORDER BY c.contributed_at DESC LIMIT 5');
+    $db->query('SELECT c.id, c.topic_id, c.amount, c.payment_status, c.stripe_payment_intent_id, c.contributed_at, u.username FROM contributions c LEFT JOIN users u ON c.user_id = u.id ORDER BY c.contributed_at DESC LIMIT 5');
     $recent_contributions = $db->resultSet();
     
     if (empty($recent_contributions)) {
@@ -415,7 +415,7 @@ try {
             echo "<td>" . htmlspecialchars($contrib->username ?: 'Unknown') . "</td>";
             echo "<td>$" . number_format($contrib->amount, 2) . "</td>";
             echo "<td>" . $contrib->payment_status . "</td>";
-            echo "<td><small>" . ($contrib->payment_id ?: 'NULL') . "</small></td>";
+            echo "<td><small>" . ($contrib->stripe_payment_intent_id ?: 'NULL') . "</small></td>";
             echo "<td>" . $contrib->contributed_at . "</td>";
             echo "</tr>";
         }

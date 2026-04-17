@@ -16,7 +16,7 @@ class FundingProcessor {
             error_log("Payment Intent ID: " . $payment_intent_id);
             
             // Check if already processed
-            $this->db->query('SELECT id FROM contributions WHERE payment_id = :payment_id');
+            $this->db->query('SELECT id FROM contributions WHERE stripe_payment_intent_id = :payment_id');
             $this->db->bind(':payment_id', $payment_intent_id);
             if ($this->db->single()) {
                 error_log("Payment already processed: " . $payment_intent_id);
@@ -90,7 +90,7 @@ class FundingProcessor {
             
             // Add contribution to database
             $this->db->query("
-                INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
+                INSERT INTO contributions (topic_id, user_id, amount, payment_status, stripe_payment_intent_id, contributed_at) 
                 VALUES (:topic_id, :user_id, :amount, 'completed', :payment_id, NOW())
             ");
             $this->db->bind(':topic_id', $topic_id);
@@ -217,7 +217,7 @@ class FundingProcessor {
             
             // Create initial contribution
             $this->db->query("
-                INSERT INTO contributions (topic_id, user_id, amount, payment_status, payment_id, contributed_at) 
+                INSERT INTO contributions (topic_id, user_id, amount, payment_status, stripe_payment_intent_id, contributed_at) 
                 VALUES (:topic_id, :user_id, :amount, 'completed', :payment_id, NOW())
             ");
             $this->db->bind(':topic_id', $topic_id);

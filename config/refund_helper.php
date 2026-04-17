@@ -26,7 +26,7 @@ class RefundManager {
             $this->db->bind(':id', $contribution_id);
             $contribution = $this->db->single();
             
-            if (!$contribution || !$contribution->payment_id) {
+            if (!$contribution || !$contribution->stripe_payment_intent_id) {
                 return ['success' => false, 'error' => 'Contribution not found or already refunded'];
             }
             
@@ -37,7 +37,7 @@ class RefundManager {
             
             // Process Stripe refund for 90%
             $refund = \Stripe\Refund::create([
-                'payment_intent' => $contribution->payment_id,
+                'payment_intent' => $contribution->stripe_payment_intent_id,
                 'amount' => round($refund_amount * 100), // Convert to cents
                 'reason' => 'requested_by_customer',
                 'metadata' => [
@@ -150,13 +150,13 @@ class RefundManager {
             $this->db->bind(':id', $contribution_id);
             $contribution = $this->db->single();
             
-            if (!$contribution || !$contribution->payment_id) {
+            if (!$contribution || !$contribution->stripe_payment_intent_id) {
                 return ['success' => false, 'error' => 'Contribution not found or already refunded'];
             }
             
             // Process full Stripe refund
             $refund = \Stripe\Refund::create([
-                'payment_intent' => $contribution->payment_id,
+                'payment_intent' => $contribution->stripe_payment_intent_id,
                 'reason' => 'requested_by_customer',
                 'metadata' => [
                     'reason' => $reason,

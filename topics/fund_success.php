@@ -41,7 +41,7 @@ if ($contribution_result['success']) {
             
             // Update contribution with payment_intent_id for refunds
             $db = new Database();
-            $db->query('UPDATE contributions SET payment_id = :payment_id WHERE id = :id');
+            $db->query('UPDATE contributions SET stripe_payment_intent_id = :payment_id WHERE id = :id');
             $db->bind(':payment_id', $payment_intent_id);
             $db->bind(':id', $contribution_result['contribution_id']);
             $db->execute();

@@ -45,7 +45,7 @@ try {
     
     foreach ($recent_payments->data as $payment) {
         // Check if processed in database
-        $db->query('SELECT * FROM contributions WHERE payment_id = :payment_id');
+        $db->query('SELECT * FROM contributions WHERE stripe_payment_intent_id = :payment_id');
         $db->bind(':payment_id', $payment->id);
         $contribution = $db->single();
         
@@ -150,7 +150,7 @@ try {
             echo "<td>" . htmlspecialchars($contrib->username ?: 'Unknown') . "</td>";
             echo "<td>$" . $contrib->amount . "</td>";
             echo "<td>" . $contrib->payment_status . "</td>";
-            echo "<td><small>" . ($contrib->payment_id ?: 'NULL') . "</small></td>";
+            echo "<td><small>" . ($contrib->stripe_payment_intent_id ?: 'NULL') . "</small></td>";
             echo "<td>" . $contrib->contributed_at . "</td>";
             echo "</tr>";
         }
