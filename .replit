@@ -1,6 +1,7 @@
-modules = ["php-8.2", "nodejs-20", "postgresql-16"]
+modules = ["php-8.2", "nodejs-20", "postgresql-16", "python-3.11"]
 [agent]
 expertMode = true
+integrations = ["resend:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
