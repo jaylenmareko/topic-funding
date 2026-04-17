@@ -1034,8 +1034,6 @@ Support: support@topiclaunch.com";
             $this->db->bind(':id', $topic_id);
             $contributors = $this->db->resultSet();
 
-            $hold_reason = $topic->hold_reason ?: 'Working on other content first';
-
             foreach ($contributors as $fan) {
                 if (!$fan->email) continue;
                 $this->sendEmail($fan->email,
@@ -1043,11 +1041,9 @@ Support: support@topiclaunch.com";
                     "Hello " . $fan->username . ",\n\n"
                     . $topic->creator_name . " has temporarily put the following topic on hold:\n\n"
                     . "Title: " . $topic->title . "\n"
-                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n"
-                    . "Reason: " . $hold_reason . "\n\n"
+                    . "Your Contribution: $" . number_format($fan->amount, 2) . "\n\n"
                     . "Your contribution is safe and will remain reserved for this topic. "
                     . "The creator will resume it when they're ready, and you'll be notified when content is delivered.\n\n"
-                    . "If you'd prefer a refund instead, please contact us at support@topiclaunch.com.\n\n"
                     . "— TopicLaunch"
                 );
             }
