@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-    $bio = trim($_POST['bio'] ?? '');
+    $bio = mb_substr(trim($_POST['bio'] ?? ''), 0, 100);
     $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
     $paypal_email = trim($_POST['paypal_email'] ?? '');
     $venmo_handle = trim($_POST['venmo_handle'] ?? '');
@@ -341,7 +341,11 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
                         </div>
                     </div>
                 </div>
-                <div class="form-group"><label for="bio">Bio (Optional)</label><textarea id="bio" name="bio" placeholder="Tell your audience what you're all about..."><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea></div>
+                <div class="form-group" style="position:relative;">
+                    <label for="bio">Bio <span style="font-weight:400;color:#aaa;">(Optional)</span></label>
+                    <textarea id="bio" name="bio" maxlength="100" placeholder="Tell your audience what you're all about..." style="padding-bottom:22px;"><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
+                    <span id="bioCount" style="position:absolute;bottom:8px;right:10px;font-size:10px;color:#aaa;pointer-events:none;z-index:2;background:rgba(255,255,255,0.9);padding:1px 3px;border-radius:3px;">0/100</span>
+                </div>
                 <div class="form-group"><label for="email">Email</label><input type="email" id="email" name="email" placeholder="your@email.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required></div>
                 <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" placeholder="Create a secure password" required><small>Minimum 8 characters</small></div>
                 <div class="form-group"><label for="confirm_password">Confirm Password</label><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required></div>
@@ -376,6 +380,11 @@ $selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
     </div>
     <script>
     document.getElementById('username').addEventListener('input', function() { document.getElementById('usernamePreview').textContent = this.value.trim() || 'username'; });
+    const bio = document.getElementById('bio');
+    const bioCount = document.getElementById('bioCount');
+    function updateBioCount() { bioCount.textContent = bio.value.length + '/100'; }
+    bio.addEventListener('input', updateBioCount);
+    updateBioCount();
     document.getElementById('profile_photo').addEventListener('change', function(e) { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(e) { document.getElementById('photoPreview').innerHTML = '<img src="' + e.target.result + '" alt="Preview">'; }; reader.readAsDataURL(file); } });
     document.getElementById('signupForm').addEventListener('submit', function(e) {
         const password = document.getElementById('password').value;
