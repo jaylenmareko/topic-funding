@@ -1147,7 +1147,7 @@ if ($queued_count > 0) {
                     </svg>
                     Copy Profile Link
                 </button>
-                <span style="font-size:11px;color:#999;text-align:center;letter-spacing:-0.1px;">topiclaunch.com/<?php echo htmlspecialchars($creator->handle); ?></span>
+                <span style="font-size:11px;color:#999;text-align:center;letter-spacing:-0.1px;">Share this link with your fans</span>
             </div>
             <button onclick="openCreateTopicModal()" class="dash-btn dash-btn-primary">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
