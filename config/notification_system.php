@@ -933,27 +933,46 @@ Your refund will appear in your original payment method within 5-10 business day
     public function sendHoldEmails($topic_id) {
         try {
             $this->db->query("
-                SELECT t.*, c.display_name as creator_name
+                SELECT t.*, c.display_name as creator_name,
+                       COALESCE(u.email, t.initiator_email) as fan_email
                 FROM topics t
                 JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
                 WHERE t.id = :id
             ");
             $this->db->bind(':id', $topic_id);
             $topic = $this->db->single();
             if (!$topic) return;
 
-            // Email all contributors
+            $emailed = [];
+
+            // Email the topic initiator
+            if ($topic->fan_email) {
+                $this->sendEmail($topic->fan_email,
+                    "Topic Paused — " . $topic->title,
+                    $topic->creator_name . " has temporarily put your topic on hold.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "STATUS:\n"
+                    . "The creator will resume it when they're ready. You'll be notified when the content is delivered.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $topic->fan_email;
+            }
+
+            // Email any other contributors with accounts
             $this->db->query("
-                SELECT DISTINCT u.email, u.username, c.amount
+                SELECT DISTINCT u.email
                 FROM contributions c
                 JOIN users u ON c.user_id = u.id
-                WHERE c.topic_id = :id AND c.payment_status = 'completed'
+                WHERE c.topic_id = :id AND c.payment_status = 'completed' AND u.email IS NOT NULL
             ");
             $this->db->bind(':id', $topic_id);
             $contributors = $this->db->resultSet();
 
             foreach ($contributors as $fan) {
-                if (!$fan->email) continue;
+                if (!$fan->email || in_array($fan->email, $emailed)) continue;
                 $this->sendEmail($fan->email,
                     "Topic Paused — " . $topic->title,
                     $topic->creator_name . " has temporarily put the following topic on hold.\n\n"
@@ -964,11 +983,138 @@ Your refund will appear in your original payment method within 5-10 business day
                     . "The creator will resume it when they're ready. You'll be notified when the content is delivered.\n\n"
                     . "— TopicLaunch"
                 );
+                $emailed[] = $fan->email;
             }
 
-            error_log("sendHoldEmails: notified " . count($contributors) . " contributors for topic $topic_id");
+            error_log("sendHoldEmails: notified " . count($emailed) . " recipients for topic $topic_id");
         } catch (Exception $e) {
             error_log("sendHoldEmails error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify initiator + contributors when a held topic is resumed
+     */
+    public function sendResumeEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       COALESCE(u.email, t.initiator_email) as fan_email
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            $emailed = [];
+
+            if ($topic->fan_email) {
+                $this->sendEmail($topic->fan_email,
+                    "Topic Resumed — " . $topic->title,
+                    $topic->creator_name . " has resumed your topic.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "STATUS:\n"
+                    . "The topic is back and the creator will be working on it. You'll be notified when the content is delivered.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $topic->fan_email;
+            }
+
+            $this->db->query("
+                SELECT DISTINCT u.email
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :id AND c.payment_status = 'completed' AND u.email IS NOT NULL
+            ");
+            $this->db->bind(':id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            foreach ($contributors as $fan) {
+                if (!$fan->email || in_array($fan->email, $emailed)) continue;
+                $this->sendEmail($fan->email,
+                    "Topic Resumed — " . $topic->title,
+                    $topic->creator_name . " has resumed the following topic.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "STATUS:\n"
+                    . "The topic is back and the creator will be working on it. You'll be notified when the content is delivered.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $fan->email;
+            }
+
+            error_log("sendResumeEmails: notified " . count($emailed) . " recipients for topic $topic_id");
+        } catch (Exception $e) {
+            error_log("sendResumeEmails error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify initiator + contributors when a topic moves from queue to active (started)
+     */
+    public function sendStartEmails($topic_id) {
+        try {
+            $this->db->query("
+                SELECT t.*, c.display_name as creator_name,
+                       COALESCE(u.email, t.initiator_email) as fan_email
+                FROM topics t
+                JOIN creators c ON t.creator_id = c.id
+                LEFT JOIN users u ON t.initiator_user_id = u.id
+                WHERE t.id = :id
+            ");
+            $this->db->bind(':id', $topic_id);
+            $topic = $this->db->single();
+            if (!$topic) return;
+
+            $emailed = [];
+
+            if ($topic->fan_email) {
+                $this->sendEmail($topic->fan_email,
+                    "Content In Progress — " . $topic->title,
+                    $topic->creator_name . " has started working on your topic.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "NEXT STEPS:\n"
+                    . "The creator has 48 hours to deliver the content. You'll receive a notification as soon as it's ready.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $topic->fan_email;
+            }
+
+            $this->db->query("
+                SELECT DISTINCT u.email
+                FROM contributions c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.topic_id = :id AND c.payment_status = 'completed' AND u.email IS NOT NULL
+            ");
+            $this->db->bind(':id', $topic_id);
+            $contributors = $this->db->resultSet();
+
+            foreach ($contributors as $fan) {
+                if (!$fan->email || in_array($fan->email, $emailed)) continue;
+                $this->sendEmail($fan->email,
+                    "Content In Progress — " . $topic->title,
+                    $topic->creator_name . " has started working on the following topic.\n\n"
+                    . "TOPIC DETAILS:\n"
+                    . "Title: " . $topic->title . "\n"
+                    . "Creator: " . $topic->creator_name . "\n\n"
+                    . "NEXT STEPS:\n"
+                    . "The creator has 48 hours to deliver the content. You'll receive a notification as soon as it's ready.\n\n"
+                    . "— TopicLaunch"
+                );
+                $emailed[] = $fan->email;
+            }
+
+            error_log("sendStartEmails: notified " . count($emailed) . " recipients for topic $topic_id");
+        } catch (Exception $e) {
+            error_log("sendStartEmails error: " . $e->getMessage());
         }
     }
 }

@@ -25,6 +25,9 @@ if (!$creator) {
 
 $message = '';
 $error = '';
+$notify_start_id = null;    // topic to send sendStartEmails for
+$notify_resume_id = null;   // topic to send sendResumeEmails for
+$notify_auto_start_id = null; // auto-started queued topic to notify
 
 if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
     $action = $_POST['action'];
@@ -68,6 +71,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     $db->execute();
                     
                     $message = "Topic started! You have 48 hours to create and upload the content.";
+                    $notify_start_id = $topic_id;
                     break;
                     
                 case 'decline':
@@ -145,6 +149,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                             ");
                             $db->bind(':next_id', $next->id);
                             $db->execute();
+                            $notify_auto_start_id = $next->id;
                             $message = "Topic put on hold. The next topic in your queue has been started automatically.";
                         } else {
                             $message = "Topic put on hold. No topics in queue — your slot is open when you resume.";
@@ -159,6 +164,9 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                     try {
                         $notifier = new NotificationSystem();
                         $notifier->sendHoldEmails($topic_id);
+                        if ($notify_auto_start_id) {
+                            $notifier->sendStartEmails($notify_auto_start_id);
+                        }
                     } catch (Exception $e) {
                         error_log("Hold notification error (non-fatal): " . $e->getMessage());
                     }
@@ -184,6 +192,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
                         $message = "Topic resumed! Fans can continue contributing to reach the funding goal.";
+                        $notify_resume_id = $topic_id;
                     } elseif ($topic->content_deadline !== null) {
                         // Was previously started — check if another topic is already running
                         $db->query("SELECT COUNT(*) as cnt FROM topics WHERE creator_id = :creator_id AND status = 'funded'");
@@ -204,6 +213,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                             $db->bind(':topic_id', $topic_id);
                             $db->execute();
                             $message = "Topic moved to #1 in queue — it will start as soon as the current topic finishes or is held.";
+                            $notify_resume_id = $topic_id;
                         } else {
                             // Slot is free — start immediately with a fresh deadline
                             $db->query("
@@ -217,6 +227,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                             $db->bind(':topic_id', $topic_id);
                             $db->execute();
                             $message = "Topic started! You have 48 hours to create the content.";
+                            $notify_start_id = $topic_id;
                         }
                     } else {
                         // Was fully funded but never started — return to queue normally
@@ -230,6 +241,7 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
                         $message = "Topic returned to your queue.";
+                        $notify_resume_id = $topic_id;
                     }
                     break;
                     
@@ -238,7 +250,23 @@ if ($_POST && isset($_POST['action']) && isset($_POST['topic_id'])) {
             }
             
             $db->endTransaction();
-            
+
+            // Send notifications after transaction commits
+            try {
+                $notifier = new NotificationSystem();
+                if ($notify_start_id) {
+                    $notifier->sendStartEmails($notify_start_id);
+                }
+                if ($notify_resume_id) {
+                    $notifier->sendResumeEmails($notify_resume_id);
+                }
+                if ($notify_auto_start_id) {
+                    $notifier->sendStartEmails($notify_auto_start_id);
+                }
+            } catch (Exception $e) {
+                error_log("Post-action notification error (non-fatal): " . $e->getMessage());
+            }
+
         } catch (Exception $e) {
             $db->cancelTransaction();
             $error = $e->getMessage();
