@@ -693,74 +693,69 @@ Support: support@topiclaunch.com";
     /**
      * Send email notification with improved error handling
      */
-    private function sendEmail($to, $subject, $message) {
-        // For localhost testing - log emails and return true
-        if (strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
-            strpos($_SERVER['HTTP_HOST'] ?? '127.0.0.1', '127.0.0.1') !== false) {
-            error_log("📧 EMAIL TO: $to | SUBJECT: $subject");
-            return true; // Pretend it worked for local testing
-        }
-        
-        // Validate email
+    private function sendEmail($to, $subject, $body) {
+        // Validate
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
-            error_log("❌ Invalid email address: " . $to);
+            error_log("Email invalid address: $to");
             return false;
         }
-        
-        // Clean up message and subject
-        $message = trim($message);
         $subject = trim($subject);
-        
-        // Check if subject and message are not empty
-        if (empty($subject) || empty($message)) {
-            error_log("❌ Email subject or message is empty");
+        $body    = trim($body);
+        if (empty($subject) || empty($body)) {
+            error_log("Email subject or body is empty");
             return false;
         }
-        
-        // Enhanced email headers for better deliverability
-        $headers = array();
-        $headers[] = 'From: TopicLaunch Notifications <noreply@topiclaunch.com>';
-        $headers[] = 'Reply-To: TopicLaunch Support <support@topiclaunch.com>';
-        $headers[] = 'Return-Path: noreply@topiclaunch.com';
-        $headers[] = 'Content-Type: text/plain; charset=UTF-8';
-        $headers[] = 'Content-Transfer-Encoding: 8bit';
-        $headers[] = 'X-Mailer: TopicLaunch Platform v1.0';
-        $headers[] = 'X-Priority: 3';
-        $headers[] = 'X-MSMail-Priority: Normal';
-        $headers[] = 'Importance: Normal';
-        $headers[] = 'X-Auto-Response-Suppress: All';
-        $headers[] = 'Auto-Submitted: auto-generated';
-        $headers[] = 'Precedence: bulk';
-        
-        $message_id = '<' . time() . '.' . uniqid() . '@topiclaunch.com>';
-        $headers[] = 'Message-ID: ' . $message_id;
-        $headers[] = 'List-Unsubscribe: <mailto:unsubscribe@topiclaunch.com>';
-        $headers[] = 'List-Id: TopicLaunch Notifications <notifications.topiclaunch.com>';
-        
-        $formatted_headers = implode("\r\n", $headers);
-        
-        try {
-            error_log("📤 Attempting to send email to: " . $to . " with subject: " . $subject);
-            
-            $result = mail($to, $subject, $message, $formatted_headers);
-            
-            if ($result) {
-                error_log("✅ Email sent successfully to: " . $to);
-            } else {
-                error_log("❌ Failed to send email to: " . $to);
-                error_log("Last PHP error: " . (error_get_last()['message'] ?? 'No PHP error'));
-                
-                if (!function_exists('mail')) {
-                    error_log("PHP mail() function is not available");
-                }
-            }
-            
-            return $result;
-            
-        } catch (Exception $e) {
-            error_log("❌ Email sending exception: " . $e->getMessage());
+
+        $api_key = getenv('RESEND_API_KEY');
+        if (empty($api_key)) {
+            error_log("RESEND_API_KEY not set — email skipped");
             return false;
         }
+
+        // Build plain-text + simple HTML version
+        $html = '<pre style="font-family:Arial,sans-serif;font-size:14px;white-space:pre-wrap">'
+              . htmlspecialchars($body)
+              . '</pre>';
+
+        $payload = json_encode([
+            'from'    => 'TopicLaunch <notifications@topic-funding.replit.app>',
+            'to'      => [$to],
+            'subject' => $subject,
+            'text'    => $body,
+            'html'    => $html,
+        ]);
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $api_key,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_TIMEOUT        => 10,
+        ]);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_err  = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_err) {
+            error_log("Resend curl error: $curl_err");
+            return false;
+        }
+
+        $data = json_decode($response, true);
+
+        if ($http_code === 200 || $http_code === 201) {
+            error_log("Email sent via Resend to $to (id: " . ($data['id'] ?? 'n/a') . ")");
+            return true;
+        }
+
+        error_log("Resend error $http_code: $response");
+        return false;
     }
     
     /**
