@@ -360,40 +360,78 @@ function sendAdminErrorNotification($error_message) {
 }
 
 function sendEmail($to, $subject, $message) {
-    // FIXED: Better email handling with validation
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
-        error_log("Invalid email address: " . $to);
+        error_log("Invalid email address: $to");
         return false;
     }
-    
-    // For localhost testing - just log emails
-    if (strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
-        strpos($_SERVER['SERVER_NAME'] ?? 'localhost', 'localhost') !== false) {
-        error_log("📧 EMAIL TO: $to | SUBJECT: $subject");
+    $subject = trim($subject);
+    $message = trim($message);
+    if (empty($subject) || empty($message)) {
+        error_log("Email subject or body is empty");
+        return false;
+    }
+
+    $api_key = getenv('RESEND_API_KEY');
+    if (empty($api_key)) {
+        error_log("RESEND_API_KEY not set — email skipped to $to");
+        return false;
+    }
+
+    $safe_body = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+    $html_body = nl2br($safe_body);
+    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</title></head>'
+          . '<body style="margin:0;padding:0;background:#FAF8F6;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Arial,sans-serif;color:#222;">'
+          . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAF8F6;padding:32px 16px;">'
+          . '<tr><td align="center">'
+          . '<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:12px;padding:32px;">'
+          . '<tr><td style="font-size:15px;line-height:1.6;color:#222;">' . $html_body . '</td></tr>'
+          . '</table>'
+          . '<p style="font-size:12px;color:#888;margin-top:24px;">TopicLaunch · <a href="https://topiclaunch.com" style="color:#888;text-decoration:underline;">topiclaunch.com</a></p>'
+          . '</td></tr></table></body></html>';
+
+    $from_domain = getenv('EMAIL_FROM_ADDRESS') ?: 'onboarding@resend.dev';
+    $payload = json_encode([
+        'from'     => 'TopicLaunch <' . $from_domain . '>',
+        'reply_to' => 'support@topiclaunch.com',
+        'to'       => [$to],
+        'subject'  => $subject,
+        'text'     => $message,
+        'html'     => $html,
+        'headers'  => [
+            'List-Unsubscribe' => '<mailto:unsubscribe@topiclaunch.com>',
+        ],
+    ]);
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $api_key,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+
+    $response  = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_err  = curl_error($ch);
+    curl_close($ch);
+
+    if ($curl_err) {
+        error_log("Resend curl error: $curl_err");
+        return false;
+    }
+
+    $data = json_decode($response, true);
+    if ($http_code === 200 || $http_code === 201) {
+        error_log("Email sent via Resend to $to (id: " . ($data['id'] ?? 'n/a') . ")");
         return true;
     }
-    
-    // Send real email on production with better headers
-    $headers = array();
-    $headers[] = 'From: TopicLaunch <noreply@topiclaunch.com>';
-    $headers[] = 'Reply-To: support@topiclaunch.com';
-    $headers[] = 'Content-Type: text/plain; charset=UTF-8';
-    $headers[] = 'X-Mailer: TopicLaunch Auto-Refund v1.0';
-    
-    $formatted_headers = implode("\r\n", $headers);
-    
-    try {
-        $result = mail($to, $subject, $message, $formatted_headers);
-        if ($result) {
-            error_log("✅ Email sent successfully to: " . $to);
-        } else {
-            error_log("❌ Failed to send email to: " . $to);
-        }
-        return $result;
-    } catch (Exception $e) {
-        error_log("❌ Email sending exception: " . $e->getMessage());
-        return false;
-    }
+
+    error_log("Resend error $http_code: $response");
+    return false;
 }
 
 // FIXED: Create required tables with better structure
