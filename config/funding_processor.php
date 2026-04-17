@@ -119,12 +119,14 @@ class FundingProcessor {
             error_log("Topic after: Current={$topic_after->current_funding}, Threshold={$topic_after->funding_threshold}");
             
             $fully_funded = false;
-            if ($topic_after && $topic_after->current_funding >= $topic_after->funding_threshold) {
+            // Only transition if topic is still in 'active' state — never demote already-funded topics
+            if ($topic_after && $topic_before->status === 'active' && $topic_after->current_funding >= $topic_after->funding_threshold) {
                 error_log("TOPIC FULLY FUNDED! Checking for running topic...");
 
-                // Check if creator already has a running topic
-                $this->db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'funded' LIMIT 1");
+                // Check if creator has any OTHER running topic (exclude self to avoid self-demotion on stale contributions)
+                $this->db->query("SELECT id FROM topics WHERE creator_id = :creator_id AND status = 'funded' AND id != :topic_id LIMIT 1");
                 $this->db->bind(':creator_id', $topic_after->creator_id);
+                $this->db->bind(':topic_id', $topic_id);
                 $has_running = $this->db->single();
 
                 if ($has_running) {
@@ -138,6 +140,8 @@ class FundingProcessor {
                 $this->db->execute();
 
                 $fully_funded = true;
+            } elseif ($topic_after && $topic_before->status !== 'active' && $topic_after->current_funding >= $topic_after->funding_threshold) {
+                error_log("Skipping status transition — topic already in status '{$topic_before->status}' (no demotion)");
             }
             
             error_log("=== PAYMENT PROCESSED SUCCESSFULLY ===");
@@ -179,10 +183,25 @@ class FundingProcessor {
             $initial_amount = floatval($metadata->initial_amount);
             $platform_fee_percent = floatval($metadata->platform_fee_percent ?? 10.00);
             
-            error_log("Processing topic creation - Creator: $creator_id, Amount: $initial_amount");
+            error_log("Processing topic creation - Creator: $creator_id, funding_threshold=$funding_threshold, initial_amount=$initial_amount, fully_funded=" . ($initial_amount >= $funding_threshold ? 'YES' : 'no'));
             
             if ($initial_amount < 1) {
                 throw new Exception("Minimum payment of $1 required");
+            }
+            
+            if ($funding_threshold < 1) {
+                throw new Exception("Invalid funding threshold: $funding_threshold");
+            }
+            
+            // Authoritative validation: never allow a creation that would auto-fund itself
+            $this->db->query('SELECT minimum_topic_price FROM creators WHERE id = :creator_id');
+            $this->db->bind(':creator_id', $creator_id);
+            $creator_row = $this->db->single();
+            if ($creator_row && $funding_threshold < floatval($creator_row->minimum_topic_price)) {
+                throw new Exception("funding_threshold ($funding_threshold) below creator minimum ({$creator_row->minimum_topic_price})");
+            }
+            if ($initial_amount >= $funding_threshold) {
+                throw new Exception("initial_amount ($initial_amount) must be less than funding_threshold ($funding_threshold) — refusing to auto-fund");
             }
             
             // Calculate fees

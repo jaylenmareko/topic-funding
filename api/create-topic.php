@@ -71,15 +71,27 @@ try {
     }
     
     
+    if ($funding_goal < $creator->minimum_topic_price) {
+        echo json_encode(['error' => 'Funding goal must be at least $' . number_format($creator->minimum_topic_price, 2)]);
+        exit;
+    }
+
     if ($funding_goal > 10000) {
         echo json_encode(['error' => 'Funding goal cannot exceed $10,000']);
         exit;
     }
-    
+
     if ($initial_amount > $funding_goal) {
         echo json_encode(['error' => 'Initial amount cannot exceed funding goal']);
         exit;
     }
+
+    if ($initial_amount >= $funding_goal) {
+        echo json_encode(['error' => 'Your contribution must be less than the funding goal so other fans can chip in']);
+        exit;
+    }
+
+    error_log("create-topic.php: creator_id=$creator_id min_price={$creator->minimum_topic_price} funding_goal=$funding_goal initial_amount=$initial_amount");
     
     // Get initiator user ID from session (if logged in)
     $initiator_user_id = $_SESSION['user_id'] ?? null;
