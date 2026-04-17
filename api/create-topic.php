@@ -35,14 +35,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $creator_id = $input['creator_id'] ?? null;
+$email = trim($input['email'] ?? '');
 $title = trim($input['title'] ?? '');
 $description = trim($input['description'] ?? '');
 $funding_goal = floatval($input['funding_goal'] ?? 0);
 $initial_amount = floatval($input['initial_amount'] ?? 0);
 
 // Validation
-if (!$creator_id || !$title || !$description || !$funding_goal || !$initial_amount) {
+if (!$creator_id || !$email || !$title || !$description || !$funding_goal || !$initial_amount) {
     echo json_encode(['error' => 'All fields are required']);
+    exit;
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['error' => 'Please enter a valid email address']);
     exit;
 }
 
@@ -98,6 +104,7 @@ try {
     // Pass all topic data in metadata so webhook can create it after payment
     $checkout_session = \Stripe\Checkout\Session::create([
         'payment_method_types' => ['card'],
+        'customer_email' => $email,
         'line_items' => [[
             'price_data' => [
                 'currency' => 'usd',
@@ -116,6 +123,7 @@ try {
             'type' => 'topic_creation',
             'creator_id' => $creator_id,
             'initiator_user_id' => $initiator_user_id ?? '',
+            'initiator_email' => $email,
             'title' => $title,
             'description' => $description,
             'funding_threshold' => $funding_goal,

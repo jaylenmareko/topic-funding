@@ -172,6 +172,7 @@ class FundingProcessor {
         try {
             $creator_id = $metadata->creator_id;
             $initiator_user_id = !empty($metadata->initiator_user_id) ? $metadata->initiator_user_id : null;
+            $initiator_email = !empty($metadata->initiator_email) ? $metadata->initiator_email : null;
             $title = $metadata->title;
             $description = $metadata->description;
             $funding_threshold = floatval($metadata->funding_threshold);
@@ -188,11 +189,16 @@ class FundingProcessor {
             $platform_fee_amount = $funding_threshold * ($platform_fee_percent / 100);
             $creator_payout_amount = $funding_threshold - $platform_fee_amount;
             
+            // Ensure initiator_email column exists
+            $this->db->query("ALTER TABLE topics ADD COLUMN IF NOT EXISTS initiator_email VARCHAR(255)");
+            $this->db->execute();
+
             // Create the topic
             $this->db->query("
                 INSERT INTO topics (
                     creator_id, 
-                    initiator_user_id, 
+                    initiator_user_id,
+                    initiator_email,
                     title, 
                     description, 
                     funding_threshold, 
@@ -204,7 +210,8 @@ class FundingProcessor {
                     created_at
                 ) VALUES (
                     :creator_id, 
-                    :initiator_user_id, 
+                    :initiator_user_id,
+                    :initiator_email,
                     :title, 
                     :description, 
                     :funding_threshold, 
@@ -218,6 +225,7 @@ class FundingProcessor {
             ");
             $this->db->bind(':creator_id', $creator_id);
             $this->db->bind(':initiator_user_id', $initiator_user_id);
+            $this->db->bind(':initiator_email', $initiator_email);
             $this->db->bind(':title', $title);
             $this->db->bind(':description', $description);
             $this->db->bind(':funding_threshold', $funding_threshold);

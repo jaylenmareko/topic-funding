@@ -376,7 +376,8 @@ If the creator doesn't deliver, you'll receive a refund automatically.
             $this->db->query("
                 SELECT t.*, c.display_name as creator_name,
                        cu.email as creator_email,
-                       u.email as fan_email, u.username as fan_name
+                       COALESCE(u.email, t.initiator_email) as fan_email,
+                       u.username as fan_name
                 FROM topics t
                 JOIN creators c ON t.creator_id = c.id
                 LEFT JOIN users cu ON c.applicant_user_id = cu.id
