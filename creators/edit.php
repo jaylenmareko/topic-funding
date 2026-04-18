@@ -26,6 +26,12 @@ if (!$creator_check || $creator_check->applicant_user_id != $_SESSION['user_id']
     exit;
 }
 
+// Load current user email
+$db->query('SELECT email FROM users WHERE id = :user_id');
+$db->bind(':user_id', $_SESSION['user_id']);
+$current_user = $db->single();
+$current_email = $current_user->email ?? '';
+
 $topic_options = ['Fitness', 'Health', 'Motivation', 'Therapy', 'Dating', 'Business', 'Money', 'Psychology', 'Career', 'Cosmetics', 'Family', 'Technology & AI'];
 $creator_topics = [];
 if (!empty($creator->video_topics)) {
@@ -90,7 +96,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
-                if (!empty($_POST['new_password']) || !empty($_POST['confirm_password'])) {
+                if (!empty($_POST['new_email'])) {
+                    $new_email = trim($_POST['new_email']);
+                    if (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+                        $error = 'Please enter a valid email address';
+                    } else {
+                        $db->query('SELECT id FROM users WHERE email = :email AND id != :user_id');
+                        $db->bind(':email', $new_email);
+                        $db->bind(':user_id', $_SESSION['user_id']);
+                        if ($db->single()) {
+                            $error = 'That email is already in use by another account';
+                        } else {
+                            $db->query('UPDATE users SET email = :email WHERE id = :user_id');
+                            $db->bind(':email', $new_email);
+                            $db->bind(':user_id', $_SESSION['user_id']);
+                            $db->execute();
+                        }
+                    }
+                }
+
+                if (!$error && (!empty($_POST['new_password']) || !empty($_POST['confirm_password']))) {
                     $new_password = $_POST['new_password'] ?? '';
                     $confirm_password = $_POST['confirm_password'] ?? '';
                     if (strlen($new_password) < 8) {
@@ -274,6 +299,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <small>You'll keep 90% of this amount.</small>
                 </div>
                 
+                <div class="password-section">
+                    <label class="password-section-label">Change Email (Optional)</label>
+                    <div class="form-group">
+                        <label for="new_email">New Email</label>
+                        <input type="email" id="new_email" name="new_email" placeholder="<?php echo htmlspecialchars($current_email); ?>">
+                        <small>Leave blank to keep your current email.</small>
+                    </div>
+                </div>
+
                 <div class="password-section">
                     <label class="password-section-label">Change Password (Optional)</label>
                     <div class="form-group">
