@@ -1446,11 +1446,6 @@ if ($queued_count > 0) {
                                 <label style="${LBL}">Description</label>
                                 <textarea id="topicDescription" placeholder="Describe what this content will be about..." required maxlength="500" rows="4" style="${INP}resize:vertical;" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'"></textarea>
                             </div>
-                            <div style="margin-bottom:24px;">
-                                <label style="${LBL}">Funding Goal</label>
-                                <input type="number" id="fundingGoal" placeholder="${minPrice}" min="${minPrice}" max="10000" step="1" value="${minPrice}" required style="${INP}" onfocus="this.style.borderColor='#E8305A';this.style.boxShadow='0 0 0 3px rgba(232,48,90,0.08)'" onblur="this.style.borderColor='#E5E5E5';this.style.boxShadow='none'">
-                                <div style="font-size:12px;color:#aaa;margin-top:6px;">Minimum: $${minPrice}</div>
-                            </div>
                             <button type="submit" id="createTopicButton" style="width:100%;background:#E8305A;color:#fff;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='#B01F3F'" onmouseout="this.style.background='#E8305A'">Create Topic</button>
                         </form>
                     </div>
@@ -1471,21 +1466,15 @@ if ($queued_count > 0) {
             
             const title = document.getElementById('topicTitle').value;
             const description = document.getElementById('topicDescription').value;
-            const fundingGoal = parseFloat(document.getElementById('fundingGoal').value);
+            const fundingGoal = minPrice;
             const errorDiv = document.getElementById('createTopicError');
             const button = document.getElementById('createTopicButton');
             
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
             
-            if (!title || !description || !fundingGoal) {
+            if (!title || !description) {
                 errorDiv.textContent = 'Please fill in all fields';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (fundingGoal < minPrice || fundingGoal > 10000) {
-                errorDiv.textContent = 'Funding goal must be between $' + minPrice + ' and $10,000';
                 errorDiv.style.display = 'block';
                 return;
             }
