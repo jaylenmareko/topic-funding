@@ -25,7 +25,7 @@ try {
     // 3. No content uploaded
     // 4. Not already processed (check auto_refund_processed table)
     $db->query("
-        SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
+        SELECT t.*, c.display_name as creator_name,
                u.email as creator_user_email
         FROM topics t
         JOIN creators c ON t.creator_id = c.id
@@ -311,7 +311,7 @@ TopicLaunch Team";
 
 function sendCreatorFailureNotification($topic, $refunds_count, $total_refunded) {
     // Get creator email
-    $creator_email = $topic->creator_user_email ?: $topic->creator_email;
+    $creator_email = $topic->creator_user_email;
     
     if ($creator_email) {
         $subject = "Topic Failed - Content Deadline Missed";
