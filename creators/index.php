@@ -4,15 +4,9 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 session_start();
 
-if (isset($_SESSION['user_id'])) {
-    require_once __DIR__ . '/../config/database.php';
-    try {
-        $db = new Database();
-        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
-        $db->bind(':user_id', $_SESSION['user_id']);
-        $is_creator = $db->single();
-        if ($is_creator) { header('Location: /creators/dashboard.php'); exit; }
-    } catch (Exception $e) { error_log("Creator redirect check error: " . $e->getMessage()); }
+if (isset($_SESSION['creator_id'])) {
+    header('Location: /creators/dashboard.php');
+    exit;
 }
 
 require_once __DIR__ . '/../config/database.php';

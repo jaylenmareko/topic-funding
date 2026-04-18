@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($creator) {
                 $_SESSION['username'] = $creator->display_name ?: $creator->username;
+                $_SESSION['creator_id'] = $creator->id;
                 header('Location: /creators/dashboard.php');
             } else {
                 header('Location: /creators/signup.php');
