@@ -977,10 +977,10 @@ if ($db_available) {
                 CREATORS KEEP 90%
             </div>
             <h1 style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500;">
-                Your fans <span class="pink">commission</span><br>your best work.
+                The world's first content<br><span class="pink">demand platform.</span>
             </h1>
             <p class="hero-subhead">
-                TopicLaunch connects creators with fans who want custom content — on their terms, at your price.
+                Fans fund the content they actually want. Creators make it. Everyone knows it works before a single second is filmed.
             </p>
             <div class="hero-cta-row">
                 <a href="creators/signup.php" class="hero-cta">Launch your page</a>
@@ -1151,7 +1151,7 @@ if ($db_available) {
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2025 TopicLaunch. Built for creators who know their worth.</p>
+        <p>&copy; 2025 TopicLaunch. The only platform that captures proven audience demand — before content exists.</p>
         <div class="footer-links">
             <a href="/terms.php">Terms</a>
             <a href="mailto:report@topiclaunch.com">Report</a>
