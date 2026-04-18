@@ -522,8 +522,16 @@ if ($queued_count > 0) {
             align-items: flex-start;
         }
 
-        .dash-btn {
+        .dash-btn-wrap {
             flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .dash-btn {
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -536,6 +544,7 @@ if ($queued_count > 0) {
             transition: all 0.18s;
             border: 1.5px solid transparent;
             letter-spacing: -0.1px;
+            white-space: nowrap;
         }
 
         .dash-btn-secondary {
@@ -1166,7 +1175,7 @@ if ($queued_count > 0) {
         </div>
 
         <div class="dashboard-action-btns">
-            <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+            <div class="dash-btn-wrap">
                 <button onclick="copyProfileLink()" class="dash-btn dash-btn-secondary" id="copyBtn">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -1176,14 +1185,16 @@ if ($queued_count > 0) {
                 </button>
                 <span style="font-size:11px;color:#999;text-align:center;letter-spacing:-0.1px;">Share this link with your fans</span>
             </div>
-            <button onclick="openCreateTopicModal()" class="dash-btn dash-btn-primary">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="16"/>
-                    <line x1="8" y1="12" x2="16" y2="12"/>
-                </svg>
-                New Topic
-            </button>
+            <div class="dash-btn-wrap">
+                <button onclick="openCreateTopicModal()" class="dash-btn dash-btn-primary">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    New Topic
+                </button>
+            </div>
         </div>
 
         <div class="earnings-section">
