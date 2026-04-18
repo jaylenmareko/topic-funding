@@ -71,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Username already taken. Please choose another.';
             } else {
                 $profile_image = $creator->profile_image;
+                $profile_image_data = $creator->profile_image_data ?? null;
                 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
                     $upload_dir = '../uploads/creators/';
                     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
@@ -85,7 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
                         $new_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
                         $upload_path = $upload_dir . $new_filename;
-                        if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $upload_path)) {
+                        $tmp_path = $_FILES['profile_image']['tmp_name'];
+                        $profile_image_data = 'data:' . $file_type . ';base64,' . base64_encode(file_get_contents($tmp_path));
+                        if (move_uploaded_file($tmp_path, $upload_path)) {
                             if ($creator->profile_image && file_exists($upload_dir . $creator->profile_image)) {
                                 @unlink($upload_dir . $creator->profile_image);
                             }
@@ -136,11 +139,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (!$error) {
                     try {
-                        $db->query('UPDATE creators SET display_name = :display_name, username = :username, bio = :bio, profile_image = :profile_image, minimum_topic_price = :minimum_topic_price, paypal_email = :paypal_email, venmo_handle = :venmo_handle, video_topics = :video_topics WHERE id = :id');
+                        $db->query('UPDATE creators SET display_name = :display_name, username = :username, bio = :bio, profile_image = :profile_image, profile_image_data = :profile_image_data, minimum_topic_price = :minimum_topic_price, paypal_email = :paypal_email, venmo_handle = :venmo_handle, video_topics = :video_topics WHERE id = :id');
                         $db->bind(':display_name', $username);
                         $db->bind(':username', $username);
                         $db->bind(':bio', $bio);
                         $db->bind(':profile_image', $profile_image);
+                        $db->bind(':profile_image_data', $profile_image_data);
                         $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
                         $db->bind(':paypal_email', $paypal_email);
                         $db->bind(':venmo_handle', $venmo_handle);
@@ -244,8 +248,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label>Profile Photo</label>
                     <div class="profile-photo-container">
                         <div class="profile-photo-preview" id="photoPreview">
-                            <?php if ($creator->profile_image): ?>
-                                <img src="../uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" alt="Profile">
+                            <?php $edit_img_src = $creator->profile_image_data ?: ($creator->profile_image ? '../uploads/creators/' . $creator->profile_image : ''); ?>
+                            <?php if ($edit_img_src): ?>
+                                <img src="<?php echo htmlspecialchars($edit_img_src); ?>" alt="Profile">
                             <?php else: ?>
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             <?php endif; ?>

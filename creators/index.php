@@ -657,12 +657,13 @@ try {
                     data-handle="<?php echo htmlspecialchars(strtolower($c->handle ?? $c->username ?? $c->display_name)); ?>"
                     data-name="<?php echo htmlspecialchars($c->display_name); ?>"
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
-                    data-image="<?php echo htmlspecialchars($c->profile_image ?? ''); ?>"
+                    data-image="<?php echo htmlspecialchars($c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : '')); ?>"
                 data-topics="<?php echo $c_topics_json; ?>"
                 data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
                     <div class="picker-avatar">
-                        <?php if ($c->profile_image): ?>
-                            <img src="/uploads/creators/<?php echo htmlspecialchars($c->profile_image); ?>" alt="">
+                        <?php $img_src = $c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : ''); ?>
+                        <?php if ($img_src): ?>
+                            <img src="<?php echo htmlspecialchars($img_src); ?>" alt="">
                         <?php else: ?>
                             <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
                         <?php endif; ?>
@@ -886,7 +887,7 @@ try {
 
             if (stripAvatar) {
                 if (selectedCreator.image) {
-                    stripAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+                    stripAvatar.innerHTML = `<img src="${selectedCreator.image}" alt="">`;
                 } else {
                     const initial = selectedCreator.name.charAt(0).toUpperCase();
                     stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
@@ -901,7 +902,7 @@ try {
 
             /* Populate + show creator card */
             if (selectedCreator.image) {
-                stripCreatorCardAvatar.innerHTML = `<img src="/uploads/creators/${selectedCreator.image}" alt="">`;
+                stripCreatorCardAvatar.innerHTML = `<img src="${selectedCreator.image}" alt="">`;
             } else {
                 stripCreatorCardAvatar.innerHTML = selectedCreator.name.charAt(0).toUpperCase();
             }
