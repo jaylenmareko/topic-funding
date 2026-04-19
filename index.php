@@ -130,6 +130,7 @@ if ($db_available) {
     <meta property="og:image" content="https://topiclaunch.com/og-image.png">
     
     <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- Google Fonts -->
