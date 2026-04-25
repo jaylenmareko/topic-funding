@@ -43,7 +43,7 @@ class NotificationSystem {
             
             // Get topic, creator, and proposer info
             $this->db->query("
-                SELECT t.*, c.display_name as creator_name, c.email as creator_email, 
+                SELECT t.*, c.display_name as creator_name,
                        u.email as creator_user_email, proposer.username as proposer_name,
                        proposer.email as proposer_email
                 FROM topics t 
@@ -63,7 +63,7 @@ class NotificationSystem {
             error_log("Found topic: " . $topic->title . " by creator: " . $topic->creator_name);
             
             // Notify creator that topic is live
-            $creator_email = $topic->creator_user_email ?: $topic->creator_email;
+            $creator_email = $topic->creator_user_email;
             if ($creator_email) {
                 error_log("Sending creator notification to: " . $creator_email);
                 $this->sendCreatorTopicLiveNotification($topic, $creator_email);
@@ -161,7 +161,7 @@ If the creator doesn't deliver, you'll receive a refund automatically.
             
             // Get topic and creator info BEFORE any updates
             $this->db->query("
-                SELECT t.*, c.display_name as creator_name, c.email as creator_email, u.email as creator_user_email
+                SELECT t.*, c.display_name as creator_name, u.email as creator_user_email
                 FROM topics t 
                 JOIN creators c ON t.creator_id = c.id 
                 LEFT JOIN users u ON c.applicant_user_id = u.id
@@ -279,7 +279,7 @@ If the creator doesn't deliver, you'll receive a refund automatically.
      * Send notification to creator when topic is funded
      */
     private function sendCreatorFundedNotification($topic, $fee_info) {
-        $creator_email = $topic->creator_user_email ?: $topic->creator_email;
+        $creator_email = $topic->creator_user_email;
         
         if (!$creator_email) {
             error_log("No email found for creator ID: " . $topic->creator_id);
@@ -710,7 +710,7 @@ If the creator doesn't deliver, you'll receive a refund automatically.
      */
     private function sendCreatorFailureNotification($topic, $refund_result) {
         $this->db->query("
-            SELECT c.email, u.email as user_email
+            SELECT u.email as user_email
             FROM creators c
             LEFT JOIN users u ON c.applicant_user_id = u.id
             WHERE c.id = :creator_id
@@ -718,7 +718,7 @@ If the creator doesn't deliver, you'll receive a refund automatically.
         $this->db->bind(':creator_id', $topic->creator_id);
         $creator = $this->db->single();
         
-        $creator_email = $creator->user_email ?: $creator->email;
+        $creator_email = $creator->user_email;
         
         if ($creator_email) {
             $subject = "Content Deadline Missed - " . $topic->title;
