@@ -1,7 +1,7 @@
 <?php
-// config/funding_processor.php - UPDATED FOR NEW FLOW
+// config/funding_processor.php - UPDATED FOR PAYPAL
 require_once 'database.php';
-require_once __DIR__ . '/stripe-keys.php';
+require_once __DIR__ . '/paypal-keys.php';
 require_once __DIR__ . '/notification_system.php';
 
 class FundingProcessor {
@@ -70,6 +70,131 @@ class FundingProcessor {
         }
     }
     
+    /**
+     * Handle a successful PayPal capture (called from api/paypal-capture.php)
+     * $order_id  - PayPal order ID (replaces Stripe payment_intent_id)
+     * $amount    - amount captured in USD
+     * $metadata  - array decoded from custom_id field
+     */
+    public function handlePayPalPaymentSuccess($order_id, $amount, $metadata) {
+        try {
+            error_log("=== PROCESSING PAYPAL PAYMENT SUCCESS ===");
+            error_log("Order ID: $order_id | Amount: $amount | Type: " . ($metadata['type'] ?? 'unknown'));
+
+            // Deduplicate: check if already processed
+            $this->db->query('SELECT id FROM contributions WHERE paypal_order_id = :order_id');
+            $this->db->bind(':order_id', $order_id);
+            if ($this->db->single()) {
+                error_log("PayPal order already processed: $order_id");
+                return ['success' => true, 'message' => 'Already processed'];
+            }
+
+            $type = $metadata['type'] ?? '';
+
+            if ($type === 'topic_creation') {
+                return $this->processTopicCreationPayPal($metadata, $order_id, $amount);
+            } elseif ($type === 'topic_funding' || $type === 'topic_contribution') {
+                return $this->processTopicFundingPayPal($metadata, $order_id, $amount);
+            }
+
+            return ['success' => false, 'error' => 'Unknown payment type: ' . $type];
+
+        } catch (Exception $e) {
+            error_log("PayPal payment processing error: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    private function processTopicCreationPayPal($metadata, $order_id, $amount) {
+        $creator_id        = $metadata['creator_id']        ?? null;
+        $title             = $metadata['title']             ?? '';
+        $description       = $metadata['description']       ?? '';
+        $funding_threshold = floatval($metadata['funding_threshold'] ?? 0);
+        $initiator_email   = $metadata['initiator_email']   ?? '';
+        $initiator_user_id = !empty($metadata['initiator_user_id']) ? $metadata['initiator_user_id'] : null;
+
+        if (!$creator_id || !$title) {
+            return ['success' => false, 'error' => 'Missing required metadata for topic creation'];
+        }
+
+        // Create the topic
+        $this->db->query("
+            INSERT INTO topics (creator_id, title, description, funding_threshold, current_funding, status, created_at)
+            VALUES (:creator_id, :title, :description, :funding_threshold, :initial_amount,
+                    CASE WHEN :initial_amount2 >= :funding_threshold2 THEN 'funded' ELSE 'funding' END,
+                    NOW())
+        ");
+        $this->db->bind(':creator_id',         $creator_id);
+        $this->db->bind(':title',              $title);
+        $this->db->bind(':description',        $description);
+        $this->db->bind(':funding_threshold',  $funding_threshold);
+        $this->db->bind(':initial_amount',     $amount);
+        $this->db->bind(':initial_amount2',    $amount);
+        $this->db->bind(':funding_threshold2', $funding_threshold);
+        $this->db->execute();
+        $topic_id = $this->db->lastInsertId();
+
+        // Record contribution
+        $this->db->query("
+            INSERT INTO contributions (topic_id, user_id, email, amount, paypal_order_id, created_at)
+            VALUES (:topic_id, :user_id, :email, :amount, :order_id, NOW())
+        ");
+        $this->db->bind(':topic_id', $topic_id);
+        $this->db->bind(':user_id',  $initiator_user_id);
+        $this->db->bind(':email',    $initiator_email);
+        $this->db->bind(':amount',   $amount);
+        $this->db->bind(':order_id', $order_id);
+        $this->db->execute();
+
+        error_log("Topic created via PayPal: topic_id=$topic_id order=$order_id amount=$amount");
+        return ['success' => true, 'topic_id' => $topic_id];
+    }
+
+    private function processTopicFundingPayPal($metadata, $order_id, $amount) {
+        $topic_id = $metadata['topic_id'] ?? null;
+        $user_id  = !empty($metadata['user_id']) ? $metadata['user_id'] : null;
+        $email    = $metadata['email'] ?? '';
+
+        if (!$topic_id) {
+            return ['success' => false, 'error' => 'Missing topic_id in metadata'];
+        }
+
+        $this->db->query('SELECT * FROM topics WHERE id = :topic_id');
+        $this->db->bind(':topic_id', $topic_id);
+        $topic = $this->db->single();
+
+        if (!$topic) {
+            return ['success' => false, 'error' => 'Topic not found'];
+        }
+
+        // Add contribution
+        $this->db->query("
+            INSERT INTO contributions (topic_id, user_id, email, amount, paypal_order_id, created_at)
+            VALUES (:topic_id, :user_id, :email, :amount, :order_id, NOW())
+        ");
+        $this->db->bind(':topic_id', $topic_id);
+        $this->db->bind(':user_id',  $user_id);
+        $this->db->bind(':email',    $email);
+        $this->db->bind(':amount',   $amount);
+        $this->db->bind(':order_id', $order_id);
+        $this->db->execute();
+
+        // Update topic funding
+        $new_total = floatval($topic->current_funding) + $amount;
+        $funded    = $new_total >= floatval($topic->funding_threshold);
+
+        $this->db->query("
+            UPDATE topics SET current_funding = :total, status = :status, updated_at = NOW() WHERE id = :id
+        ");
+        $this->db->bind(':total',  $new_total);
+        $this->db->bind(':status', $funded ? 'funded' : 'funding');
+        $this->db->bind(':id',     $topic_id);
+        $this->db->execute();
+
+        error_log("Topic funded via PayPal: topic_id=$topic_id order=$order_id amount=$amount total=$new_total funded=" . ($funded ? 'yes' : 'no'));
+        return ['success' => true, 'topic_id' => $topic_id, 'funded' => $funded];
+    }
+
     private function processTopicFunding($metadata, $payment_intent_id) {
         try {
             $topic_id = $metadata->topic_id;
