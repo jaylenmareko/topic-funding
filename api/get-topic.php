@@ -123,59 +123,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Load Stripe
-        if (!file_exists('../vendor/autoload.php')) {
-            echo json_encode(['error' => 'Stripe library not found']);
-            exit;
-        }
-        
-        require_once '../vendor/autoload.php';
-        require_once '../config/stripe-keys.php';
+        // Create PayPal order for funding existing topic
+        require_once __DIR__ . '/../config/paypal.php';
 
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+        $host       = $_SERVER['HTTP_HOST'] ?? 'topiclaunch.com';
+        $return_url = 'https://' . $host . '/api/paypal-capture.php';
+        $cancel_url = 'https://' . $host . '/' . ($topic->creator_name ?? '') . '?payment=cancelled';
 
-        // Create metadata for both logged-in and guest users
         $metadata = [
-            'type' => 'topic_contribution',
-            'topic_id' => (string)$topic_id,
-            'amount' => (string)$amount,
-            'user_id' => $is_logged_in ? (string)$_SESSION['user_id'] : '',
-            'contributor_email' => $email
+            'type'              => 'topic_funding',
+            'topic_id'          => (string)$topic_id,
+            'amount'            => (string)$amount,
+            'user_id'           => $is_logged_in ? (string)$_SESSION['user_id'] : '',
+            'email'             => $email,
+            'creator_handle'    => $topic->creator_name ?? '',
         ];
 
-        // Redirect to creator profile after payment
-        $success_url = 'https://' . $_SERVER['HTTP_HOST'] . '/' . ($topic->creator_name ?? '');
+        $order = paypal_create_order($amount, $metadata, $return_url, $cancel_url);
 
-        // Cancel URL - redirect back to creator profile using vanity URL
-        $cancel_url = 'https://' . $_SERVER['HTTP_HOST'] . '/' . ($topic->creator_name ?? '') . '?payment=cancelled';
+        echo json_encode(['checkout_url' => $order['approve_url'], 'order_id' => $order['id']]);
 
-        // Create Stripe Checkout Session
-        $session = \Stripe\Checkout\Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => [
-                        'name' => 'Fund Topic: ' . $topic->title,
-                        'description' => 'Contribution to fund this topic by ' . $topic->creator_name,
-                    ],
-                    'unit_amount' => intval($amount * 100), // Stripe expects cents
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => $success_url,
-            'cancel_url' => $cancel_url,
-            'metadata' => $metadata,
-            'customer_email' => $is_logged_in ? ($_SESSION['email'] ?? null) : ($email ?: null),
-        ]);
-
-        // Return the Stripe Checkout URL
-        echo json_encode(['checkout_url' => $session->url]);
-
-    } catch (\Stripe\Exception\ApiErrorException $e) {
-        error_log("Stripe error: " . $e->getMessage());
-        echo json_encode(['error' => 'Payment error: ' . $e->getMessage()]);
     } catch (Exception $e) {
         error_log("Funding error: " . $e->getMessage());
         echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
