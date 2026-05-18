@@ -65,24 +65,20 @@ if (isset($_GET['upload_success']) && isset($_GET['topic_id'])) {
     $upload_message = "✅ Content uploaded successfully!";
 }
 
-// Stripe Connect state
-$stripe_account_id     = $creator->stripe_account_id ?? null;
-$stripe_account_status = $creator->stripe_account_status ?? null;
+// PayPal Connect state
+$paypal_email         = $creator->paypal_email ?? null;
+$paypal_connect_state = !empty($paypal_email) ? 'active' : 'not_connected';
 
-if (!empty($stripe_account_id) && $stripe_account_status === 'active') {
-    $stripe_connect_state = 'active';
-} elseif (!empty($stripe_account_id)) {
-    $stripe_connect_state = 'pending';
-} else {
-    $stripe_connect_state = 'not_connected';
-}
-
-$stripe_return_message = '';
-if (isset($_GET['stripe_return'])) {
-    if ($stripe_connect_state === 'active') {
-        $stripe_return_message = 'success';
-    } else {
-        $stripe_return_message = 'pending';
+$paypal_return_message = '';
+if (isset($_GET['paypal_return'])) {
+    $paypal_return_message = $_GET['paypal_return']; // 'success', 'error', 'cancelled'
+    // Refresh creator to get latest paypal_email
+    $db->query('SELECT paypal_email FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+    $db->bind(':user_id', $_SESSION['user_id']);
+    $fresh = $db->single();
+    if (!empty($fresh->paypal_email)) {
+        $paypal_email         = $fresh->paypal_email;
+        $paypal_connect_state = 'active';
     }
 }
 
@@ -122,45 +118,24 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                         $db->bind(':topic_id', $topic_id);
                         $db->execute();
 
-                        // --- Stripe Connect auto-payout (90% to creator) ---
+                        // --- PayPal auto-payout (90% to creator) ---
                         try {
-                            $payout_already_exists = false;
                             $db->query("SELECT id FROM creator_payouts WHERE topic_id = :topic_id LIMIT 1");
                             $db->bind(':topic_id', $topic_id);
-                            if ($db->single()) {
-                                $payout_already_exists = true;
-                            }
-
-                            if (!$payout_already_exists) {
+                            if (!$db->single()) {
                                 $gross        = floatval($topic_check->current_funding);
                                 $platform_fee = round($gross * 0.10, 2);
                                 $payout_amt   = round($gross * 0.90, 2);
+                                $transfer_id  = null;
+                                $payout_status = 'pending';
 
-                                $transfer_id     = null;
-                                $payout_status   = 'pending';
-
-                                if (!empty($creator->stripe_account_id) && $creator->stripe_account_status === 'active') {
-                                    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
-                                        throw new Exception('Stripe library missing');
-                                    }
-                                    require_once __DIR__ . '/../vendor/autoload.php';
-                                    require_once __DIR__ . '/../config/stripe-keys.php';
-                                    \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
-
-                                    $transfer = \Stripe\Transfer::create([
-                                        'amount'      => (int)round($payout_amt * 100),
-                                        'currency'    => 'usd',
-                                        'destination' => $creator->stripe_account_id,
-                                        'description' => 'TopicLaunch payout — topic #' . $topic_id,
-                                        'metadata'    => [
-                                            'topic_id'   => $topic_id,
-                                            'creator_id' => $creator->id,
-                                        ],
-                                    ]);
-
-                                    $transfer_id   = $transfer->id;
+                                if (!empty($creator->paypal_email)) {
+                                    require_once __DIR__ . '/../config/paypal.php';
+                                    $note   = 'TopicLaunch payout — topic #' . $topic_id;
+                                    $result = paypal_send_payout($creator->paypal_email, $payout_amt, $note);
+                                    $transfer_id   = $result['payout_batch_id'];
                                     $payout_status = 'completed';
-                                    error_log("Stripe Transfer created: $transfer_id — \$$payout_amt to {$creator->stripe_account_id}");
+                                    error_log("PayPal payout sent: {$result['payout_batch_id']} — \$$payout_amt to {$creator->paypal_email}");
                                 }
 
                                 $db->query("INSERT INTO creator_payouts (creator_id, topic_id, amount, platform_fee, stripe_transfer_id, status, created_at, processed_at)
@@ -172,11 +147,9 @@ if ($_POST && isset($_POST['upload_content']) && isset($_POST['topic_id']) && is
                                 $db->bind(':transfer_id',  $transfer_id);
                                 $db->bind(':status',       $payout_status);
                                 $db->execute();
-
                             }
                         } catch (Exception $payout_ex) {
                             error_log("Auto-payout failed for topic $topic_id: " . $payout_ex->getMessage());
-                            // Record the failure so it can be retried manually
                             try {
                                 $gross        = floatval($topic_check->current_funding);
                                 $platform_fee = round($gross * 0.10, 2);
@@ -1213,7 +1186,7 @@ if ($queued_count > 0) {
                 
             </div>
 
-            <?php if ($stripe_connect_state === 'not_connected'): ?>
+            <?php if ($paypal_connect_state === 'not_connected'): ?>
             <div class="connect-alert" id="connectAlert">
                 <div class="connect-alert-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1222,26 +1195,12 @@ if ($queued_count > 0) {
                     </svg>
                 </div>
                 <div class="connect-alert-content">
-                    <div class="connect-alert-title">Connect your payout account</div>
-                    <div class="connect-alert-text">Set up Stripe to receive your earnings automatically when topics complete.</div>
+                    <div class="connect-alert-title">Connect your PayPal account</div>
+                    <div class="connect-alert-text">Connect PayPal to receive your earnings automatically when topics complete.</div>
                 </div>
-                <button class="connect-alert-btn" onclick="connectStripeAccount(this)">Connect Account</button>
+                <button class="connect-alert-btn" onclick="connectPayPalAccount(this)">Connect PayPal</button>
             </div>
-            <?php elseif ($stripe_connect_state === 'pending'): ?>
-            <div class="connect-alert connect-alert-pending" id="connectAlert">
-                <div class="connect-alert-icon" style="background:#3B82F6;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                </div>
-                <div class="connect-alert-content">
-                    <div class="connect-alert-title">Payout account verification in progress</div>
-                    <div class="connect-alert-text">Stripe is reviewing your information. This usually takes a few minutes. If you haven't finished onboarding, click to continue.</div>
-                </div>
-                <button class="connect-alert-btn" style="background:#3B82F6;" onclick="connectStripeAccount(this)">Continue Setup</button>
-            </div>
-            <?php elseif ($stripe_connect_state === 'active'): ?>
+            <?php elseif ($paypal_connect_state === 'active'): ?>
             <div class="connect-alert connect-alert-active" id="connectAlert">
                 <div class="connect-alert-icon" style="background:#22C55E;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1249,21 +1208,21 @@ if ($queued_count > 0) {
                     </svg>
                 </div>
                 <div class="connect-alert-content">
-                    <div class="connect-alert-title">Payout account connected</div>
-                    <div class="connect-alert-text">Your Stripe account is active. Earnings will transfer automatically when topics complete.</div>
+                    <div class="connect-alert-title">PayPal connected</div>
+                    <div class="connect-alert-text">Earnings go to <strong><?php echo htmlspecialchars($paypal_email); ?></strong> automatically when topics complete. <a href="#" onclick="connectPayPalAccount(this);return false;" style="color:inherit;font-size:12px;">Update</a></div>
                 </div>
             </div>
             <?php endif; ?>
 
-            <?php if ($stripe_return_message === 'pending'): ?>
-            <div id="stripeReturnBanner" style="margin-top:12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:14px 18px;font-size:13px;color:#1E40AF;display:flex;align-items:center;gap:10px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                <span>Thanks for completing onboarding! Stripe is finishing verification — we'll update your status automatically.</span>
-            </div>
-            <?php elseif ($stripe_return_message === 'success'): ?>
-            <div id="stripeReturnBanner" style="margin-top:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 18px;font-size:13px;color:#166534;display:flex;align-items:center;gap:10px;">
+            <?php if ($paypal_return_message === 'success'): ?>
+            <div style="margin-top:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 18px;font-size:13px;color:#166534;display:flex;align-items:center;gap:10px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Payout account connected successfully! You're all set to receive earnings.</span>
+                <span>PayPal connected! Your earnings will be sent automatically.</span>
+            </div>
+            <?php elseif ($paypal_return_message === 'error'): ?>
+            <div style="margin-top:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:14px 18px;font-size:13px;color:#991B1B;display:flex;align-items:center;gap:10px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line></svg>
+                <span>Something went wrong connecting PayPal. Please try again.</span>
             </div>
             <?php endif; ?>
         </div>
@@ -1608,29 +1567,29 @@ if ($queued_count > 0) {
             });
         }
         
-        function connectStripeAccount(btn) {
-            if (btn) {
+        function connectPayPalAccount(btn) {
+            if (btn && btn.tagName === 'BUTTON') {
                 btn.disabled = true;
-                btn.textContent = 'Loading…';
+                btn.textContent = 'Redirecting…';
             }
-            fetch('/api/stripe-connect-onboard.php', { method: 'POST' })
+            fetch('/api/paypal-connect.php', { method: 'GET' })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.url) {
                         window.location.href = data.url;
                     } else {
-                        alert('Could not start Stripe onboarding: ' + (data.error || 'Unknown error'));
-                        if (btn) {
+                        alert('Could not connect PayPal: ' + (data.error || 'Unknown error'));
+                        if (btn && btn.tagName === 'BUTTON') {
                             btn.disabled = false;
-                            btn.textContent = btn.dataset.label || 'Connect Account';
+                            btn.textContent = 'Connect PayPal';
                         }
                     }
                 })
                 .catch(() => {
                     alert('Network error — please try again.');
-                    if (btn) {
+                    if (btn && btn.tagName === 'BUTTON') {
                         btn.disabled = false;
-                        btn.textContent = btn.dataset.label || 'Connect Account';
+                        btn.textContent = 'Connect PayPal';
                     }
                 });
         }
