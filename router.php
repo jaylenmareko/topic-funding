@@ -31,6 +31,16 @@ if (file_exists(__DIR__ . $path) && pathinfo($path, PATHINFO_EXTENSION) === 'php
     return true;
 }
 
+// Explicit routes
+if ($path === '/api/paypal-capture.php' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    require __DIR__ . '/api/paypal-capture.php';
+    return true;
+}
+if ($path === '/webhooks/paypal.php' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require __DIR__ . '/webhooks/paypal.php';
+    return true;
+}
+
 // Handle vanity username/topic URLs — redirect to creators index
 $reserved = ['auth', 'creators', 'topics', 'admin', 'uploads', 'config', 'api', 'webhooks', 'cron'];
 $parts = explode('/', ltrim($path, '/'));
