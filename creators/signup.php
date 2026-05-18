@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // creators/signup.php - Updated with username field
 session_start();
 

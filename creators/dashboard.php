@@ -1194,11 +1194,15 @@ if ($queued_count > 0) {
                         <line x1="2" y1="10" x2="22" y2="10"></line>
                     </svg>
                 </div>
-                <div class="connect-alert-content">
-                    <div class="connect-alert-title">Connect your PayPal account</div>
-                    <div class="connect-alert-text">Connect PayPal to receive your earnings automatically when topics complete.</div>
+                <div class="connect-alert-content" style="flex:1;">
+                    <div class="connect-alert-title">Add your PayPal email to receive earnings</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                        <input type="email" id="paypalEmailInput" placeholder="your@paypal.com"
+                            style="flex:1;padding:8px 12px;border:1px solid #E5E5E5;border-radius:8px;font-size:13px;font-family:inherit;max-width:260px;">
+                        <button class="connect-alert-btn" onclick="savePayPalEmail(this)" style="white-space:nowrap;">Save Email</button>
+                    </div>
+                    <div id="paypalEmailMsg" style="font-size:12px;margin-top:6px;"></div>
                 </div>
-                <button class="connect-alert-btn" onclick="connectPayPalAccount(this)">Connect PayPal</button>
             </div>
             <?php elseif ($paypal_connect_state === 'active'): ?>
             <div class="connect-alert connect-alert-active" id="connectAlert">
@@ -1207,9 +1211,15 @@ if ($queued_count > 0) {
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </div>
-                <div class="connect-alert-content">
+                <div class="connect-alert-content" style="flex:1;">
                     <div class="connect-alert-title">PayPal connected</div>
-                    <div class="connect-alert-text">Earnings go to <strong><?php echo htmlspecialchars($paypal_email); ?></strong> automatically when topics complete. <a href="#" onclick="connectPayPalAccount(this);return false;" style="color:inherit;font-size:12px;">Update</a></div>
+                    <div class="connect-alert-text">Earnings go to <strong><?php echo htmlspecialchars($paypal_email); ?></strong> automatically when topics complete.</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                        <input type="email" id="paypalEmailInput" placeholder="<?php echo htmlspecialchars($paypal_email); ?>"
+                            style="flex:1;padding:8px 12px;border:1px solid #BBF7D0;border-radius:8px;font-size:13px;font-family:inherit;max-width:260px;">
+                        <button onclick="savePayPalEmail(this)" style="padding:8px 14px;background:#22C55E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Update</button>
+                    </div>
+                    <div id="paypalEmailMsg" style="font-size:12px;margin-top:6px;"></div>
                 </div>
             </div>
             <?php endif; ?>
@@ -1567,6 +1577,43 @@ if ($queued_count > 0) {
             });
         }
         
+        function savePayPalEmail(btn) {
+            const input = document.getElementById('paypalEmailInput');
+            const msg   = document.getElementById('paypalEmailMsg');
+            const email = input ? input.value.trim() : '';
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                msg.style.color = '#991B1B';
+                msg.textContent = 'Enter a valid PayPal email.';
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Saving…';
+            fetch('/api/save-paypal-email.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paypal_email: email })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    msg.style.color = '#166534';
+                    msg.textContent = 'Saved! Reloading…';
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    msg.style.color = '#991B1B';
+                    msg.textContent = data.error || 'Error saving. Try again.';
+                    btn.disabled = false;
+                    btn.textContent = 'Save Email';
+                }
+            })
+            .catch(() => {
+                msg.style.color = '#991B1B';
+                msg.textContent = 'Network error. Try again.';
+                btn.disabled = false;
+                btn.textContent = 'Save Email';
+            });
+        }
+
         function connectPayPalAccount(btn) {
             if (btn && btn.tagName === 'BUTTON') {
                 btn.disabled = true;
