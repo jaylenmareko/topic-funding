@@ -114,13 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     if ($user_id !== null && empty($error)) {
                         
-                        $upload_dir = __DIR__ . '/../uploads/creators/';
-                        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-                        $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
-                        $profile_filename = 'creator_' . $user_id . '_' . time() . '.' . $file_extension;
-                        $profile_path = $upload_dir . $profile_filename;
-                        
-                        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $profile_path)) {
+                        require_once __DIR__ . '/../config/cloudinary.php';
+                        $profile_filename = cloudinary_upload(
+                            $_FILES['profile_photo']['tmp_name'],
+                            'creator_' . $user_id . '_' . time()
+                        );
+
+                        if ($profile_filename) {
                             $video_topics_json = json_encode($video_topics);
                             $db->query('INSERT INTO creators (applicant_user_id, handle, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :handle, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
                             $db->bind(':user_id', $user_id);

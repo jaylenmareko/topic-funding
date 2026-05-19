@@ -10,6 +10,7 @@ if (isset($_SESSION['creator_id'])) {
 }
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/cloudinary.php';
 
 try {
     $db = new Database();
@@ -657,11 +658,11 @@ try {
                     data-handle="<?php echo htmlspecialchars(strtolower($c->handle ?? $c->username ?? $c->display_name)); ?>"
                     data-name="<?php echo htmlspecialchars($c->display_name); ?>"
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
-                    data-image="<?php echo htmlspecialchars($c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : '')); ?>"
+                    data-image="<?php echo htmlspecialchars(creator_photo_url($c->profile_image, $c->profile_image_data ?? null)); ?>"
                 data-topics="<?php echo $c_topics_json; ?>"
                 data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
                     <div class="picker-avatar">
-                        <?php $img_src = $c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : ''); ?>
+                        <?php $img_src = creator_photo_url($c->profile_image, $c->profile_image_data ?? null); ?>
                         <?php if ($img_src): ?>
                             <img src="<?php echo htmlspecialchars($img_src); ?>" alt="">
                         <?php else: ?>

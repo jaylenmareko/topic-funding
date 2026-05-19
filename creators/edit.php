@@ -73,8 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $profile_image = $creator->profile_image;
                 $profile_image_data = $creator->profile_image_data ?? null;
                 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-                    $upload_dir = '../uploads/creators/';
-                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                     $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
                     $file_type = $_FILES['profile_image']['type'];
                     $file_size = $_FILES['profile_image']['size'];
@@ -83,18 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } elseif ($file_size > 5 * 1024 * 1024) {
                         $error = 'Image must be under 5MB';
                     } else {
-                        $file_extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
-                        $new_filename = 'creator_' . $creator_id . '_' . time() . '.' . $file_extension;
-                        $upload_path = $upload_dir . $new_filename;
-                        $tmp_path = $_FILES['profile_image']['tmp_name'];
-                        $profile_image_data = 'data:' . $file_type . ';base64,' . base64_encode(file_get_contents($tmp_path));
-                        if (move_uploaded_file($tmp_path, $upload_path)) {
-                            if ($creator->profile_image && file_exists($upload_dir . $creator->profile_image)) {
-                                @unlink($upload_dir . $creator->profile_image);
-                            }
-                            $profile_image = $new_filename;
-                        } else {
-                            $error = 'Failed to upload image';
+                        try {
+                            require_once __DIR__ . '/../config/cloudinary.php';
+                            $tmp_path = $_FILES['profile_image']['tmp_name'];
+                            $cloudinary_url = cloudinary_upload($tmp_path, 'creator_' . $creator_id . '_' . time());
+                            $profile_image      = $cloudinary_url;
+                            $profile_image_data = null;
+                        } catch (Exception $e) {
+                            $error = 'Failed to upload image: ' . $e->getMessage();
                         }
                     }
                 }

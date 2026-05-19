@@ -141,8 +141,12 @@ try {
         <div class="profile-box">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    <?php if ($creator->profile_image && file_exists('uploads/creators/' . $creator->profile_image)): ?>
-                        <img src="/uploads/creators/<?php echo htmlspecialchars($creator->profile_image); ?>" alt="<?php echo htmlspecialchars($creator->display_name); ?>">
+                    <?php
+                        require_once __DIR__ . '/../config/cloudinary.php';
+                        $p_img = creator_photo_url($creator->profile_image, $creator->profile_image_data ?? null);
+                    ?>
+                    <?php if ($p_img): ?>
+                        <img src="<?php echo htmlspecialchars($p_img); ?>" alt="<?php echo htmlspecialchars($creator->display_name); ?>">
                     <?php else: echo strtoupper(substr($creator->display_name, 0, 1)); endif; ?>
                 </div>
                 <div class="profile-name"><?php echo htmlspecialchars($creator->display_name); ?></div>

@@ -6,6 +6,7 @@ session_start();
 
 // Try to load database config
 $db_available = false;
+require_once __DIR__ . '/config/cloudinary.php';
 if (file_exists('config/database.php')) {
     require_once 'config/database.php';
     $db_available = true;
@@ -1083,11 +1084,11 @@ if ($db_available) {
                     data-id="<?php echo (int)$c->id; ?>"
                     data-name="<?php echo htmlspecialchars($c->display_name); ?>"
                     data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
-                    data-image="<?php echo htmlspecialchars($c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : '')); ?>"
+                    data-image="<?php echo htmlspecialchars(creator_photo_url($c->profile_image, $c->profile_image_data ?? null)); ?>"
                     data-topics="<?php echo $c_topics_json; ?>"
                     data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
                     <div class="picker-avatar" style="background:linear-gradient(135deg,#E8305A,#B01F3F)">
-                        <?php $img_src = $c->profile_image_data ?: ($c->profile_image ? '/uploads/creators/' . $c->profile_image : ''); ?>
+                        <?php $img_src = creator_photo_url($c->profile_image, $c->profile_image_data ?? null); ?>
                         <?php if ($img_src): ?>
                             <img src="<?php echo htmlspecialchars($img_src); ?>" alt="">
                         <?php else: ?>
