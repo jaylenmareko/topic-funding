@@ -1,0 +1,10 @@
+.env
+.env.*
+*.pem
+*.key
+*.crt
+credentials*.md
+credentials*.json
+secrets*.md
+secrets*.json
+vendor/
