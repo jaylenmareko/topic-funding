@@ -14,7 +14,8 @@ try {
     $creator = $db->single();
     if (!$creator) die('Creator not found');
 
-    $db->query("SELECT id FROM users WHERE email = 'marekodavis@gmail.com'");
+    $db->query("SELECT id FROM users WHERE email = :seed_email");
+    $db->bind(':seed_email', getenv('SEED_USER_EMAIL') ?: '');
     $user = $db->single();
     if (!$user) die('User not found');
 
@@ -94,7 +95,7 @@ try {
 
         $db->bind(':cid',       $cid);
         $db->bind(':uid',       $uid);
-        $db->bind(':email',     'marekodavis@gmail.com');
+        $db->bind(':email',     getenv('SEED_USER_EMAIL') ?: '');
         $db->bind(':title',     $t['title']);
         $db->bind(':desc',      $t['description']);
         $db->bind(':threshold', $t['threshold']);

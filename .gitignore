@@ -8,3 +8,6 @@ credentials*.json
 secrets*.md
 secrets*.json
 vendor/
+logs/
+uploads/
+attached_assets/
