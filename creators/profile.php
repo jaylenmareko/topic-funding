@@ -1,0 +1,216 @@
+<?php
+// creators/profile.php - Creator profile page
+session_start();
+
+$username = isset($_GET['username']) ? trim($_GET['username']) : '';
+$topic_num = isset($_GET['topic_num']) ? intval($_GET['topic_num']) : 0;
+
+if (empty($username)) { header('Location: /'); exit; }
+
+if (file_exists('config/database.php')) { require_once 'config/database.php'; }
+elseif (file_exists(__DIR__ . '/config/database.php')) { require_once __DIR__ . '/config/database.php'; }
+else { header('Location: /'); exit; }
+
+if (isset($_SESSION['user_id'])) {
+    try {
+        $db = new Database();
+        $db->query('SELECT id FROM creators WHERE applicant_user_id = :user_id AND is_active = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $is_creator = $db->single();
+        if ($is_creator) { header('Location: /creators/dashboard.php'); exit; }
+    } catch (Exception $e) { error_log("Creator redirect check error: " . $e->getMessage()); }
+}
+
+try {
+    $db = new Database();
+    $db->query('SELECT * FROM creators WHERE display_name = :username AND is_active = 1');
+    $db->bind(':username', $username);
+    $creator = $db->single();
+    if (!$creator) { header('Location: /'); exit; }
+    $creator_id = $creator->id;
+    $db = new Database();
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'active' ORDER BY created_at DESC");
+    $db->bind(':creator_id', $creator_id);
+    $active_topics = $db->resultSet();
+    $auto_open_topic_id = 0;
+    if ($topic_num > 0 && $topic_num <= count($active_topics)) { $auto_open_topic_id = $active_topics[$topic_num - 1]->id; }
+    $db->query("SELECT t.*, EXTRACT(EPOCH FROM t.content_deadline) as deadline_timestamp FROM topics t WHERE t.creator_id = :creator_id AND t.status IN ('funded', 'queued') AND (t.content_url IS NULL OR t.content_url = '') AND (t.status = 'queued' OR (t.content_deadline IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - t.content_deadline))/3600 <= 2)) ORDER BY t.funded_at ASC");
+    $db->bind(':creator_id', $creator_id);
+    $waiting_upload_topics = $db->resultSet();
+    $db->query("SELECT * FROM topics WHERE creator_id = :creator_id AND status = 'completed' ORDER BY completed_at DESC");
+    $db->bind(':creator_id', $creator_id);
+    $completed_topics = $db->resultSet();
+
+    // Parse video topics
+    $video_topics = [];
+    if (!empty($creator->video_topics)) {
+        $decoded = json_decode($creator->video_topics, true);
+        if (is_array($decoded)) {
+            $video_topics = $decoded;
+        }
+    }
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title><?php echo htmlspecialchars($creator->display_name); ?> - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --hot-pink: #FF006B; --deep-pink: #E6005F; --black: #000000; --white: #FFFFFF; --gray-dark: #1A1A1A; --gray-med: #666666; --gray-light: #E5E5E5; --cream: #FAF8F6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--cream); }
+        .topiclaunch-nav { background: var(--white); padding: 16px 0; border-bottom: 1px solid var(--gray-light); position: sticky; top: 0; z-index: 1000; }
+        .nav-container { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
+        .nav-logo { font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 700; text-decoration: none; letter-spacing: -0.5px; }
+        .nav-logo .topic { color: var(--black); }
+        .nav-logo .launch { color: var(--hot-pink); }
+        .nav-center { display: flex; gap: 35px; align-items: center; }
+        .nav-link { color: var(--gray-dark); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--hot-pink); }
+        .nav-buttons { display: flex; gap: 20px; align-items: center; }
+        .nav-login-btn { color: var(--gray-dark); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-login-btn:hover { color: var(--hot-pink); }
+        .nav-getstarted-btn { background: var(--hot-pink); color: var(--white); text-decoration: none; font-size: 14px; font-weight: 700; padding: 10px 24px; border-radius: 50px; transition: all 0.2s; }
+        .nav-getstarted-btn:hover { background: var(--deep-pink); transform: translateY(-1px); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 50px 30px; display: grid; grid-template-columns: 380px 1fr; gap: 40px; align-items: start; }
+        .profile-box { background: var(--white); border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 40px; position: sticky; top: 90px; }
+        .profile-header { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--hot-pink) 0%, var(--deep-pink) 100%); display: flex; align-items: center; justify-content: center; color: var(--white); font-family: 'Inter', sans-serif; font-size: 48px; font-weight: 700; overflow: hidden; margin-bottom: 20px; }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-name { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 700; color: var(--black); margin-bottom: 8px; }
+        .profile-handle { font-size: 16px; color: var(--hot-pink); font-weight: 600; margin-bottom: 20px; }
+        .profile-price { display: inline-flex; flex-direction: column; align-items: center; background: var(--cream); padding: 16px 24px; border-radius: 12px; }
+        .profile-price-amount { font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; color: var(--black); }
+        .profile-price-label { font-size: 11px; color: var(--gray-med); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        .profile-bio { text-align: left; font-size: 15px; color: var(--gray-dark); line-height: 1.6; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--gray-light); }
+
+        /* Videos About */
+        .videos-about { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--gray-light); }
+        .videos-about-title { font-size: 13px; font-weight: 700; color: var(--black); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .topic-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .topic-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 0, 107, 0.07);
+            color: var(--hot-pink);
+            border: 1px solid rgba(255, 0, 107, 0.2);
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .request-topic-box { background: var(--white); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 32px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+        .request-content { flex: 1; }
+        .request-title { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 700; color: var(--black); margin-bottom: 8px; }
+        .request-text { font-size: 15px; color: var(--gray-med); line-height: 1.6; }
+        .request-text strong { color: var(--black); font-weight: 600; }
+        .request-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: var(--hot-pink); color: var(--white); padding: 14px 28px; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 700; transition: all 0.2s; box-shadow: 0 4px 12px rgba(255, 0, 107, 0.25); white-space: nowrap; flex-shrink: 0; }
+        .request-btn:hover { background: var(--deep-pink); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 0, 107, 0.35); }
+        .section { padding: 0; }
+        .section h2 { font-family: 'Inter', sans-serif; margin-top: 0; color: var(--black); font-size: 32px; font-weight: 700; margin-bottom: 24px; }
+        .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+        .topic-card { background: var(--white); border: 1px solid var(--gray-light); padding: 24px; border-radius: 16px; transition: all 0.2s; cursor: pointer; }
+        .topic-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(255, 0, 107, 0.12); border-color: var(--hot-pink); }
+        .topic-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 20px; margin-bottom: 12px; color: var(--black); }
+        .topic-description { color: var(--gray-med); line-height: 1.6; margin-bottom: 20px; font-size: 14px; }
+        .funding-bar { background: var(--gray-light); height: 8px; border-radius: 4px; margin: 20px 0; overflow: hidden; }
+        .funding-progress { background: linear-gradient(90deg, var(--hot-pink), var(--deep-pink)); height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .funding-info { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+        .funding-amount { font-weight: 700; color: var(--hot-pink); font-size: 16px; }
+        .empty-state { text-align: center; color: var(--gray-med); padding: 80px 30px; background: var(--white); border-radius: 16px; }
+        .empty-state h3 { font-family: 'Inter', sans-serif; color: var(--black); margin-bottom: 12px; font-size: 22px; font-weight: 700; }
+        .empty-state p { color: var(--gray-med); font-size: 15px; }
+        @media (max-width: 768px) { .nav-center { display: none; } .container { padding: 30px 20px; grid-template-columns: 1fr; gap: 30px; } .profile-box { padding: 30px; position: static; } .topic-grid { grid-template-columns: 1fr; } .request-topic-box-mobile { display: flex !important; flex-direction: column; align-items: flex-start; padding: 24px; margin-top: 30px; } .request-topic-box:not(.request-topic-box-mobile) { display: none !important; } .request-btn { width: 100%; justify-content: center; position: static !important; } }
+        @media (min-width: 769px) { .request-topic-box-mobile { display: none !important; } .request-topic-box:first-of-type:not(.request-topic-box-empty-state) { display: none !important; } .request-topic-box-desktop { display: flex !important; } }
+    </style>
+</head>
+<body>
+    <nav class="topiclaunch-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo"><span class="topic">Topic</span><span class="launch">Launch</span></a>
+            <div class="nav-center"><a href="/creators/" class="nav-link">Browse Creators</a><a href="/creators/signup.php" class="nav-link">For Creators</a></div>
+            <div class="nav-buttons"><a href="/auth/login.php" class="nav-login-btn">Log In</a><a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a></div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="profile-box">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <?php
+                        require_once __DIR__ . '/../config/cloudinary.php';
+                        $p_img = creator_photo_url($creator->profile_image, $creator->profile_image_data ?? null);
+                    ?>
+                    <?php if ($p_img): ?>
+                        <img src="<?php echo htmlspecialchars($p_img); ?>" alt="<?php echo htmlspecialchars($creator->display_name); ?>">
+                    <?php else: echo strtoupper(substr($creator->display_name, 0, 1)); endif; ?>
+                </div>
+                <div class="profile-name"><?php echo htmlspecialchars($creator->display_name); ?></div>
+                <div class="profile-handle">@<?php echo htmlspecialchars($creator->display_name); ?></div>
+                <div class="profile-price"><span class="profile-price-amount">$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></span><span class="profile-price-label">per request</span></div>
+            </div>
+
+            <?php if (!empty($creator->bio)): ?>
+                <div class="profile-bio"><?php echo nl2br(htmlspecialchars($creator->bio)); ?></div>
+            <?php endif; ?>
+
+            <?php if (!empty($video_topics)): ?>
+                <div class="videos-about">
+                    <div class="videos-about-title">Videos About</div>
+                    <div class="topic-tags">
+                        <?php foreach ($video_topics as $tag): ?>
+                            <span class="topic-tag"><?php echo htmlspecialchars($tag); ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="request-topic-box request-topic-box-mobile" style="display: none;">
+            <div class="request-content"><h3 class="request-title">Request Content</h3><p class="request-text">Get specific content from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></strong>.</p></div>
+            <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn">Create Topic <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>
+        </div>
+        <div>
+            <div class="section">
+                <h2>Active Topics</h2>
+                <?php if (empty($active_topics)): ?>
+                    <div class="request-topic-box request-topic-box-empty-state">
+                        <div class="request-content"><h3 class="request-title">Request Content</h3><p class="request-text">Get specific content from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></strong>.</p></div>
+                        <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn">Create Topic <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>
+                    </div>
+                    <div class="empty-state"><h3>No Topics Open for Funding</h3><p>This creator doesn't have any topics seeking funding right now. Be the first to create one!</p></div>
+                <?php else: ?>
+                    <div class="request-topic-box">
+                        <div class="request-content"><h3 class="request-title">Request Content</h3><p class="request-text">Get specific content from <strong><?php echo htmlspecialchars($creator->display_name); ?></strong> for just <strong>$<?php echo number_format($creator->minimum_topic_price ?? 100, 0); ?></strong>.</p></div>
+                        <a href="#" onclick="openCreateTopicModal(<?php echo $creator->id; ?>, <?php echo $creator->minimum_topic_price ?? 100; ?>); return false;" class="request-btn">Create Topic <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>
+                    </div>
+                    <div class="topic-grid">
+                        <?php foreach ($active_topics as $topic): $progress_percent = min(100, ($topic->current_funding / $topic->funding_threshold) * 100); ?>
+                        <div class="topic-card" onclick="openTopicModal(<?php echo $topic->id; ?>)">
+                            <h3 class="topic-title"><?php echo htmlspecialchars($topic->title); ?></h3>
+                            <p class="topic-description"><?php echo htmlspecialchars(substr($topic->description, 0, 150)) . (strlen($topic->description) > 150 ? '...' : ''); ?></p>
+                            <div class="funding-bar"><div class="funding-progress" style="width: <?php echo $progress_percent; ?>%"></div></div>
+                            <div class="funding-info"><div><span class="funding-amount">$<?php echo number_format($topic->current_funding, 0); ?></span><span style="color: var(--gray-med); font-size: 14px;"> of $<?php echo number_format($topic->funding_threshold, 0); ?></span></div></div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <script>
+    function openTopicModal(topicId) { fetch('/api/get-topic.php?id='+topicId).then(r=>r.json()).then(topic=>{ if(!topic||topic.error){alert('Topic not found');return;} const progress=Math.min(100,(topic.current_funding/topic.funding_threshold)*100); let actionHTML=''; if(topic.status==='active'){actionHTML='<div id="fundingFormContainer"><div id="errorMessage" style="display:none;color:#DC2626;background:#FEF2F2;border-left:4px solid #DC2626;padding:14px 18px;border-radius:12px;margin-bottom:20px;font-size:14px;font-weight:500;"></div><div style="margin-bottom:20px;"><label style="display:block;font-weight:600;margin-bottom:8px;color:#000;font-size:14px;">Amount</label><input type="number" id="fundingAmount" placeholder="10" min="1" max="1000" step="1" value="10" style="width:100%;padding:12px 16px;border:2px solid #E5E5E5;border-radius:12px;font-size:15px;outline:none;font-family:Inter,sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'" onblur="this.style.borderColor=\'#E5E5E5\'"></div><button id="fundButton" onclick="submitFunding('+topic.id+')" style="width:100%;background:#FF006B;color:white;padding:14px;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;">Fund This Topic</button></div>';} const modalHTML='<div id="topicModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeTopicModal(event)"><div style="background:white;border-radius:20px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:40px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()"><button onclick="closeTopicModal()" style="position:absolute;top:20px;right:20px;background:transparent;border:none;width:32px;height:32px;font-size:28px;cursor:pointer;color:#666;padding:0;line-height:1;font-weight:300;">×</button><h2 style="font-family:Inter,sans-serif;margin:0 0 12px 0;font-size:24px;color:#000;font-weight:700;line-height:1.3;padding-right:30px;">'+topic.title+'</h2><p style="color:#666;line-height:1.6;margin-bottom:24px;font-size:15px;">'+topic.description+'</p><div style="background:#FAF8F6;padding:20px;border-radius:16px;margin-bottom:28px;"><div style="display:flex;margin-bottom:10px;align-items:center;justify-content:space-between;"><span style="font-size:13px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Funding Progress</span></div><div style="height:8px;background:#E5E5E5;border-radius:4px;overflow:hidden;margin-bottom:14px;"><div style="height:100%;background:linear-gradient(90deg,#FF006B,#E6005F);width:'+progress+'%;transition:width 0.3s;border-radius:4px;"></div></div><div style="font-size:20px;font-weight:700;color:#000;font-family:Inter,sans-serif;">$'+parseFloat(topic.current_funding).toFixed(0)+' <span style="color:#666;font-size:15px;font-weight:500;">of $'+parseFloat(topic.funding_threshold).toFixed(0)+'</span></div></div>'+actionHTML+'</div></div>'; document.body.insertAdjacentHTML('beforeend',modalHTML); }).catch(error=>{console.error('Error loading topic:',error);alert('Failed to load topic details');}); }
+    function closeTopicModal(event) { if(event&&event.target.id!=='topicModal')return; const modal=document.getElementById('topicModal'); if(modal)modal.remove(); }
+    function submitFunding(topicId) { const amount=parseFloat(document.getElementById('fundingAmount').value); const errorDiv=document.getElementById('errorMessage'); const button=document.getElementById('fundButton'); errorDiv.style.display='none'; if(!amount||amount<1){errorDiv.textContent='Minimum contribution is $1';errorDiv.style.display='block';return;} if(amount>1000){errorDiv.textContent='Maximum contribution is $1,000';errorDiv.style.display='block';return;} button.disabled=true;button.innerHTML='Processing...';button.style.opacity='0.6'; fetch('/api/get-topic.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:topicId,amount:amount})}).then(r=>r.json()).then(data=>{if(data.error){errorDiv.textContent=data.error;errorDiv.style.display='block';button.disabled=false;button.innerHTML='Fund This Topic';button.style.opacity='1';}else if(data.checkout_url){window.location.href=data.checkout_url;}}).catch(error=>{console.error('Error:',error);errorDiv.textContent='An error occurred. Please try again.';errorDiv.style.display='block';button.disabled=false;button.innerHTML='Fund This Topic';button.style.opacity='1';}); }
+    function openCreateTopicModal(creatorId,minPrice) { const modalHTML='<div id="createTopicModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="closeCreateTopicModal(event)"><div style="background:white;border-radius:20px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:40px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,0.2);" onclick="event.stopPropagation()"><button onclick="closeCreateTopicModal()" style="position:absolute;top:20px;right:20px;background:transparent;border:none;width:32px;height:32px;font-size:28px;cursor:pointer;color:#666;padding:0;line-height:1;font-weight:300;">×</button><h2 style="font-family:Inter,sans-serif;margin:0 0 12px 0;font-size:24px;color:#000;font-weight:700;line-height:1.3;padding-right:30px;">Create a Topic</h2><p style="color:#666;line-height:1.6;margin-bottom:28px;font-size:15px;">Suggest a topic you\'d like to see covered.</p><div id="createTopicError" style="display:none;color:#DC2626;background:#FEF2F2;border-left:4px solid #DC2626;padding:14px 18px;border-radius:12px;margin-bottom:20px;font-size:14px;font-weight:500;"></div><form id="createTopicForm" onsubmit="submitCreateTopic(event,'+creatorId+','+minPrice+')"><div style="margin-bottom:20px;"><label style="display:block;font-weight:600;margin-bottom:8px;color:#000;font-size:14px;">Your Email</label><input type="email" id="requesterEmail" placeholder="you@example.com" required style="width:100%;padding:12px 16px;border:2px solid #E5E5E5;border-radius:12px;font-size:15px;outline:none;font-family:Inter,sans-serif;" onfocus="this.style.borderColor='#FF006B'" onblur="this.style.borderColor='#E5E5E5'"></div><div style="margin-bottom:20px;"><label style="display:block;font-weight:600;margin-bottom:8px;color:#000;font-size:14px;">Topic Title</label><input type="text" id="topicTitle" placeholder="e.g., How to Start a YouTube Channel" required maxlength="100" style="width:100%;padding:12px 16px;border:2px solid #E5E5E5;border-radius:12px;font-size:15px;outline:none;font-family:Inter,sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'" onblur="this.style.borderColor=\'#E5E5E5\'"></div><div style="margin-bottom:20px;"><label style="display:block;font-weight:600;margin-bottom:8px;color:#000;font-size:14px;">Description</label><textarea id="topicDescription" placeholder="Describe what you\'d like to see in this content..." required maxlength="500" rows="4" style="width:100%;padding:12px 16px;border:2px solid #E5E5E5;border-radius:12px;font-size:15px;outline:none;resize:vertical;font-family:Inter,sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'" onblur="this.style.borderColor=\'#E5E5E5\'"></textarea></div><input type="hidden" id="fundingGoal" value="'+minPrice+'"><div style="background:#E8305A;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:#fff;font-size:15px;">FUNDING GOAL</span><span id="goalDisplay" style="font-weight:800;color:#fff;font-size:22px;">$'+minPrice+'</span></div><div style="margin-bottom:24px;"><label style="display:block;font-weight:700;margin-bottom:8px;color:#000;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;">Your Offer Amount</label><input type="number" id="initialAmount" placeholder="10" min="1" max="1000" step="1" value="10" required style="width:100%;padding:12px 16px;border:2px solid #E5E5E5;border-radius:12px;font-size:15px;outline:none;font-family:Inter,sans-serif;" onfocus="this.style.borderColor=\'#FF006B\'" onblur="this.style.borderColor=\'#E5E5E5\'"><div style="font-size:13px;color:#666;margin-top:8px;">How much you\'re contributing toward the goal. Other fans can chip in the rest.</div></div><button type="submit" id="createTopicButton" style="width:100%;background:#FF006B;color:white;padding:14px;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;">Create Topic & Fund</button></form></div></div>'; document.body.insertAdjacentHTML('beforeend',modalHTML); }
+    function closeCreateTopicModal(event) { if(event&&event.target.id!=='createTopicModal')return; const modal=document.getElementById('createTopicModal'); if(modal)modal.remove(); }
+    function submitCreateTopic(event,creatorId,minPrice) { event.preventDefault(); const email=document.getElementById('requesterEmail').value; const title=document.getElementById('topicTitle').value; const description=document.getElementById('topicDescription').value; const fundingGoal=parseFloat(document.getElementById('fundingGoal').value); const amount=parseFloat(document.getElementById('initialAmount').value); const errorDiv=document.getElementById('createTopicError'); const button=document.getElementById('createTopicButton'); errorDiv.style.display='none'; if(!title||!description||!fundingGoal||!amount||!email){errorDiv.textContent='Please fill in all fields';errorDiv.style.display='block';return;} if(amount<1||amount>1000){errorDiv.textContent='Your funding amount must be between $1 and $1,000';errorDiv.style.display='block';return;} if(amount>fundingGoal){errorDiv.textContent='Your contribution cannot exceed the funding goal of $'+fundingGoal;errorDiv.style.display='block';return;} button.disabled=true;button.innerHTML='Processing...';button.style.opacity='0.6'; fetch('/api/create-topic.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creator_id:creatorId,email:email,title:title,description:description,funding_goal:fundingGoal,initial_amount:amount})}).then(r=>r.json()).then(data=>{if(data.error){errorDiv.textContent=data.error;errorDiv.style.display='block';button.disabled=false;button.innerHTML='Create Topic & Fund';button.style.opacity='1';}else if(data.checkout_url){window.location.href=data.checkout_url;}else{errorDiv.textContent='Unexpected response from server';errorDiv.style.display='block';button.disabled=false;button.innerHTML='Create Topic & Fund';button.style.opacity='1';}}).catch(error=>{console.error('Fetch error:',error);errorDiv.textContent='Network error. Please check your connection and try again.';errorDiv.style.display='block';button.disabled=false;button.innerHTML='Create Topic & Fund';button.style.opacity='1';}); }
+    window.addEventListener('load',function(){const autoOpenTopicId=<?php echo $auto_open_topic_id; ?>;if(autoOpenTopicId>0){setTimeout(function(){openTopicModal(autoOpenTopicId);},300);}});
+    </script>
+</body>
+</html>
+<?php exit; } catch (Exception $e) { error_log("Vanity URL error: " . $e->getMessage()); header('Location: /'); exit; }

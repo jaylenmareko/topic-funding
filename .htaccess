@@ -1,0 +1,30 @@
+# .htaccess
+RewriteEngine On
+
+# Additional security headers
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Vanity URL handler
+
+# Handle username/topic# URLs first
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_.-]+)/topic([0-9]+)$ username.php?username=$1&topic_num=$2 [L,QSA]
+
+# Handle regular username URLs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteCond %{REQUEST_URI} !^/auth/
+RewriteCond %{REQUEST_URI} !^/creators/
+RewriteCond %{REQUEST_URI} !^/topics/
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{REQUEST_URI} !^/uploads/
+RewriteCond %{REQUEST_URI} !^/config/
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !\.php$
+RewriteRule ^([a-zA-Z0-9_.-]+)$ username.php?username=$1 [L,QSA]

@@ -1,0 +1,389 @@
+<?php
+ob_start();
+// creators/signup.php - Updated with username field
+session_start();
+
+// Redirect if already logged in as verified creator
+if (isset($_SESSION['user_id'])) {
+    if (file_exists('../config/database.php')) {
+        require_once __DIR__ . '/../config/database.php';
+    } elseif (file_exists(__DIR__ . '/../config/database.php')) {
+        require_once __DIR__ . '/../config/database.php';
+    }
+    
+    try {
+        $db = new Database();
+        $db->query('SELECT c.id FROM creators c JOIN users u ON c.applicant_user_id = u.id WHERE c.applicant_user_id = :user_id AND c.is_active = 1 AND u.is_verified = 1');
+        $db->bind(':user_id', $_SESSION['user_id']);
+        $verified_creator = $db->single();
+        
+        if ($verified_creator) {
+            header('Location: dashboard.php');
+            exit;
+        }
+    } catch (Exception $e) {
+        // Continue to signup
+    }
+}
+
+$error = '';
+$success = '';
+
+// Handle signup form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (file_exists('../config/database.php')) {
+        require_once __DIR__ . '/../config/database.php';
+    } elseif (file_exists(__DIR__ . '/../config/database.php')) {
+        require_once __DIR__ . '/../config/database.php';
+    }
+    
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+    $bio = mb_substr(trim($_POST['bio'] ?? ''), 0, 100);
+    $minimum_topic_price = trim($_POST['minimum_topic_price'] ?? '');
+    $paypal_email = '';
+    $venmo_handle = '';
+    $agree_terms = isset($_POST['agree_terms']);
+    $video_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
+    
+    // Validation
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password) || empty($minimum_topic_price)) {
+        $error = 'All required fields must be filled';
+    } elseif (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] !== 0) {
+        $error = 'Profile photo is required';
+    } elseif (!$agree_terms) {
+        $error = 'You must agree to the terms of service';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Invalid email format';
+    } elseif ($password !== $confirm_password) {
+        $error = 'Passwords do not match';
+    } elseif (strlen($password) < 8) {
+        $error = 'Password must be at least 8 characters long';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
+        $error = 'Username must be 3-30 characters and contain only letters, numbers, and underscores';
+    } elseif (!is_numeric($minimum_topic_price) || $minimum_topic_price <= 0) {
+        $error = 'Please enter a valid price';
+    } else {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        $max_size = 10 * 1024 * 1024;
+        
+        if (!in_array($_FILES['profile_photo']['type'], $allowed_types)) {
+            $error = 'Profile photo must be JPG, PNG, or WebP format';
+        } elseif ($_FILES['profile_photo']['size'] > $max_size) {
+            $error = 'Profile photo must be less than 10MB';
+        } else {
+            try {
+                $db = new Database();
+                $db->query('SELECT id FROM creators WHERE handle = :username OR username = :username2');
+                $db->bind(':username', $username);
+                $db->bind(':username2', $username);
+                $existing_username = $db->single();
+                
+                if ($existing_username) {
+                    $error = 'Username already taken. Please choose another.';
+                } else {
+                    $db->query('SELECT u.id, u.password_hash FROM users u WHERE u.email = :email');
+                    $db->bind(':email', $email);
+                    $existing_email = $db->single();
+                    
+                    $user_id = null;
+                    if ($existing_email) {
+                        // Check if they already have a creator record
+                        $db->query('SELECT id FROM creators WHERE applicant_user_id = :uid');
+                        $db->bind(':uid', $existing_email->id);
+                        $existing_creator = $db->single();
+                        if ($existing_creator) {
+                            $error = 'Email already registered';
+                        } elseif (!password_verify($password, $existing_email->password_hash)) {
+                            $error = 'Email registered but password does not match. Please use your original password.';
+                        } else {
+                            // Orphaned user — let them finish creator signup
+                            $user_id = $existing_email->id;
+                        }
+                    } else {
+                        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                        $db->query('INSERT INTO users (username, email, password_hash, is_active, is_verified, verified_at, created_at) VALUES (:username, :email, :password_hash, 1, 1, NOW(), NOW()) RETURNING id');
+                        $db->bind(':username', $username);
+                        $db->bind(':email', $email);
+                        $db->bind(':password_hash', $password_hash);
+                        $new_user = $db->single();
+                        $user_id = $new_user ? $new_user->id : null;
+                    }
+                    
+                    if ($user_id !== null && empty($error)) {
+                        
+                        require_once __DIR__ . '/../config/cloudinary.php';
+                        $profile_filename = cloudinary_upload(
+                            $_FILES['profile_photo']['tmp_name'],
+                            'creator_' . $user_id . '_' . time()
+                        );
+
+                        if ($profile_filename) {
+                            $video_topics_json = json_encode($video_topics);
+                            $db->query('INSERT INTO creators (applicant_user_id, handle, username, display_name, profile_image, bio, minimum_topic_price, paypal_email, venmo_handle, video_topics, is_active, created_at) VALUES (:user_id, :handle, :username, :display_name, :profile_image, :bio, :minimum_topic_price, :paypal_email, :venmo_handle, :video_topics, 1, NOW())');
+                            $db->bind(':user_id', $user_id);
+                            $db->bind(':handle', $username);
+                            $db->bind(':username', $username);
+                            $db->bind(':display_name', $username);
+                            $db->bind(':profile_image', $profile_filename);
+                            $db->bind(':bio', $bio);
+                            $db->bind(':minimum_topic_price', floatval($minimum_topic_price));
+                            $db->bind(':paypal_email', $paypal_email);
+                            $db->bind(':venmo_handle', $venmo_handle);
+                            $db->bind(':video_topics', $video_topics_json);
+                            $db->execute();
+                            
+                            $_SESSION['user_id'] = $user_id;
+                            $_SESSION['email'] = $email;
+                            header('Location: dashboard.php');
+                            exit;
+                        } else {
+                            $error = 'Failed to upload profile photo. Please try again.';
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Signup error: " . $e->getMessage());
+                $error = 'An error occurred during signup. Please try again.';
+            }
+        }
+    }
+}
+
+$all_topics = ['Fitness', 'Health', 'Motivation', 'Therapy', 'Dating', 'Business', 'Money', 'Psychology', 'Career', 'Cosmetics', 'Family', 'Technology & AI'];
+$selected_topics = isset($_POST['video_topics']) ? $_POST['video_topics'] : [];
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Creator Signup - TopicLaunch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --tl-pink: #E8305A;
+            --tl-pink-dark: #B01F3F;
+            --tl-card: #1a1a1a;
+            --tl-border: #2a2a2a;
+            --tl-muted: #888888;
+            --white: #ffffff;
+            --cream: #FAF8F6;
+            --black: #111010;
+            --gray-dark: #1A1A1A;
+            --gray-med: #666666;
+            --hot-pink: #E8305A;
+            --deep-pink: #B01F3F;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Nav */
+        .nav { position: sticky; top: 0; background: var(--white); padding: 16px 0; border-bottom: 1px solid #E5E5E5; z-index: 100; }
+        .nav-container { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
+        .nav-logo { font-size: 20px; font-weight: 500; text-decoration: none; letter-spacing: -0.3px; }
+        .nav-logo .topic { color: var(--black); }
+        .nav-logo .launch { color: var(--tl-pink); }
+        .nav-center { display: flex; gap: 24px; align-items: center; }
+        .nav-link { color: var(--gray-dark); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--tl-pink); }
+        .nav-buttons { display: flex; gap: 12px; align-items: center; }
+        .nav-login-btn { color: var(--gray-dark); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .nav-login-btn:hover { color: var(--tl-pink); }
+        .nav-cta-btn { background: var(--tl-pink); color: var(--white); text-decoration: none; font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 8px; transition: background 0.2s; }
+        .nav-cta-btn:hover { background: var(--tl-pink-dark); }
+
+        /* Page layout */
+        .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 72px 30px 80px; min-height: calc(100vh - 57px); }
+        .page-header { text-align: center; margin-bottom: 40px; max-width: 700px; }
+        .page-title { font-size: 40px; font-weight: 500; color: var(--black); margin-bottom: 12px; line-height: 1.15; letter-spacing: -0.6px; }
+        .page-subtitle { font-size: 15px; color: var(--gray-med); line-height: 1.6; }
+
+        /* Card */
+        .signup-container { background: var(--white); border: 1px solid #E5E5E5; border-radius: 16px; padding: 36px; width: 100%; max-width: 380px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+        /* Form fields */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 7px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 11px 14px; border: 1px solid #E5E5E5; border-radius: 8px;
+            font-size: 14px; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+            background: var(--white); color: var(--black);
+        }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--tl-pink); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: #bbb; }
+        .form-group textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+        .form-group small { display: block; margin-top: 6px; color: var(--gray-med); font-size: 12px; }
+
+        /* Username */
+        .username-group { margin-bottom: 20px; }
+        .username-input-wrapper { position: relative; }
+        .username-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray-med); font-size: 15px; font-weight: 500; pointer-events: none; }
+        .username-input { padding-left: 30px !important; font-size: 14px; font-weight: 500; }
+        .username-url-preview { margin-top: 8px; color: var(--gray-med); font-size: 12px; }
+        .username-url-preview .url-domain { color: var(--gray-dark); }
+        .username-url-preview .url-username { color: var(--tl-pink); font-weight: 500; }
+
+        /* Profile photo */
+        .profile-photo-container { display: flex; gap: 16px; align-items: center; }
+        .profile-photo-preview { width: 80px; height: 80px; border: 1px solid #E5E5E5; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--cream); flex-shrink: 0; overflow: hidden; }
+        .profile-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-photo-upload { flex: 1; }
+        .upload-button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; background: var(--white); border: 1px solid #E5E5E5; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--gray-dark); cursor: pointer; transition: all 0.2s; }
+        .upload-button:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+
+        /* Payout */
+        .payout-section-label { display: block; margin-bottom: 10px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .label-note { color: var(--gray-med); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; }
+        .payout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .payout-field-wrapper label { font-size: 11px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--gray-med); text-transform: uppercase; letter-spacing: 0.4px; }
+        .input-with-prefix { position: relative; }
+        .input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray-med); font-size: 14px; font-weight: 500; pointer-events: none; }
+        .input-with-prefix-field { padding-left: 30px !important; }
+
+        /* Topics */
+        .videos-about-section { margin-bottom: 20px; }
+        .videos-about-label { display: block; margin-bottom: 4px; color: var(--gray-med); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .videos-about-sublabel { display: block; margin-bottom: 12px; color: var(--gray-med); font-size: 12px; }
+        .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .topic-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .topic-checkbox-item input[type="checkbox"] {
+            width: 16px; height: 16px;
+            border: 1px solid #E5E5E5; border-radius: 50%;
+            appearance: none; -webkit-appearance: none;
+            cursor: pointer; flex-shrink: 0; position: relative;
+            transition: all 0.2s; background: var(--white); accent-color: unset;
+        }
+        .topic-checkbox-item input[type="checkbox"]:checked { background: var(--tl-pink); border-color: var(--tl-pink); }
+        .topic-checkbox-item input[type="checkbox"]:checked::after {
+            content: ''; position: absolute; left: 3px; top: 1px;
+            width: 4px; height: 8px; border: 2px solid white;
+            border-top: none; border-left: none; transform: rotate(45deg);
+        }
+        .topic-checkbox-item span { font-size: 13px; color: var(--gray-dark); font-weight: 400; }
+
+        /* Terms checkbox */
+        .checkbox-group { margin-bottom: 20px; }
+        .checkbox-label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+        .checkbox-label > input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--tl-pink); flex-shrink: 0; }
+        .checkbox-label span { flex: 1; font-size: 13px; color: var(--gray-dark); line-height: 1.5; }
+        .checkbox-label a { color: var(--tl-pink); text-decoration: none; font-weight: 500; }
+        .checkbox-label a:hover { text-decoration: underline; }
+
+        /* Error & submit */
+        .error-message { background: #FEF2F2; color: #DC2626; padding: 12px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 3px solid #DC2626; }
+        .submit-btn { width: 100%; padding: 13px; background: var(--tl-pink); color: var(--white); border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; font-family: 'Inter', sans-serif; }
+        .submit-btn:hover { background: var(--tl-pink-dark); }
+
+        @media (max-width: 768px) {
+            .nav-center { display: none; }
+            .signup-container { padding: 28px 22px; }
+            .page-title { font-size: 30px; }
+            .page-wrapper { padding: 56px 20px 60px; }
+            .payout-fields { grid-template-columns: 1fr; }
+            .profile-photo-container { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo"><span class="topic">Topic</span><span class="launch">Launch</span></a>
+            <div class="nav-center">
+                <a href="/creators/" class="nav-link">Browse Creators</a>
+                <a href="/creators/signup.php" class="nav-link">For Creators</a>
+            </div>
+            <div class="nav-buttons">
+                <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                <a href="/creators/signup.php" class="nav-cta-btn">Get Started</a>
+            </div>
+        </div>
+    </nav>
+    <div class="page-wrapper">
+        <div class="page-header">
+            <h1 class="page-title">Start Earning Today</h1>
+        </div>
+        <div class="signup-container">
+            <?php if ($error): ?><div class="error-message"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+            <form method="POST" enctype="multipart/form-data" id="signupForm">
+                <div class="form-group username-group">
+                    <label for="username">Username</label>
+                    <div class="username-input-wrapper">
+                        <span class="username-prefix">@</span>
+                        <input type="text" id="username" name="username" class="username-input" placeholder="username" pattern="[a-zA-Z0-9_]{3,30}" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required oninput="this.value=this.value.replace(/\s/g,'')">
+                    </div>
+                    <div class="username-url-preview">Your profile: <span class="url-domain">topiclaunch.com/</span><span class="url-username" id="usernamePreview">username</span></div>
+                </div>
+                <div class="form-group">
+                    <label for="profile_photo">Profile Photo</label>
+                    <div class="profile-photo-container">
+                        <div class="profile-photo-preview" id="photoPreview">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div class="profile-photo-upload">
+                            <label for="profile_photo" class="upload-button">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Upload Photo
+                            </label>
+                            <input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png,image/jpg,image/webp" style="display: none;">
+                            <small>JPG, PNG or WebP. Max 10MB.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" style="position:relative;">
+                    <label for="bio">Bio <span style="font-weight:400;color:#aaa;">(Optional)</span></label>
+                    <textarea id="bio" name="bio" maxlength="100" placeholder="Tell your audience what you're all about..." style="padding-bottom:22px;"><?php echo htmlspecialchars($_POST['bio'] ?? ''); ?></textarea>
+                    <span id="bioCount" style="position:absolute;bottom:8px;right:10px;font-size:10px;color:#aaa;pointer-events:none;z-index:2;background:rgba(255,255,255,0.9);padding:1px 3px;border-radius:3px;">0/100</span>
+                </div>
+                <div class="form-group"><label for="email">Email</label><input type="email" id="email" name="email" placeholder="your@email.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required></div>
+                <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" placeholder="Create a secure password" required><small>Minimum 8 characters</small></div>
+                <div class="form-group"><label for="confirm_password">Confirm Password</label><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required></div>
+                <div class="form-group"><label for="minimum_topic_price">Price per Request ($)</label><input type="number" id="minimum_topic_price" name="minimum_topic_price" placeholder="100" step="1" min="1" value="<?php echo htmlspecialchars($_POST['minimum_topic_price'] ?? ''); ?>" required><small>You keep 90% of every request. Set what you're worth.</small></div>
+
+                <!-- Videos About -->
+                <div class="videos-about-section">
+                    <label class="videos-about-label">Videos About</label>
+                    <span class="videos-about-sublabel">Select all topics you do videos on.</span>
+                    <div class="topics-grid">
+                        <?php foreach ($all_topics as $topic): ?>
+                            <label class="topic-checkbox-item">
+                                <input type="checkbox" name="video_topics[]" value="<?php echo htmlspecialchars($topic); ?>"
+                                    <?php echo in_array($topic, $selected_topics) ? 'checked' : ''; ?>>
+                                <span><?php echo htmlspecialchars($topic); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="agree_terms" required><span>I agree to the <a href="/terms.php" target="_blank">Terms of Service</a></span></label></div>
+                <button type="submit" class="submit-btn">Create Account</button>
+            </form>
+        </div>
+    </div>
+    <script>
+    document.getElementById('username').addEventListener('input', function() { document.getElementById('usernamePreview').textContent = this.value.trim() || 'username'; });
+    const bio = document.getElementById('bio');
+    const bioCount = document.getElementById('bioCount');
+    function updateBioCount() { bioCount.textContent = bio.value.length + '/100'; }
+    bio.addEventListener('input', updateBioCount);
+    updateBioCount();
+    document.getElementById('profile_photo').addEventListener('change', function(e) { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(e) { document.getElementById('photoPreview').innerHTML = '<img src="' + e.target.result + '" alt="Preview">'; }; reader.readAsDataURL(file); } });
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        if (password !== confirmPassword) { e.preventDefault(); alert('Passwords do not match!'); return false; }
+        if (password.length < 8) { e.preventDefault(); alert('Password must be at least 8 characters long!'); return false; }
+    });
+    </script>
+</body>
+</html>

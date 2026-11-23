@@ -1,0 +1,1118 @@
+<?php
+// creators/index.php - Browse Creators page
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
+session_start();
+
+if (isset($_SESSION['creator_id'])) {
+    header('Location: /creators/dashboard.php');
+    exit;
+}
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/cloudinary.php';
+
+try {
+    $db = new Database();
+    $db->query('SELECT * FROM creators WHERE is_active = 1 ORDER BY created_at DESC');
+    $creators = $db->resultSet();
+} catch (Exception $e) {
+    $creators = [];
+}
+
+// Fetch active topics for all creators, grouped by creator_id
+$creator_topics_map = [];
+try {
+    $db2 = new Database();
+    $db2->query("SELECT id, creator_id, title, description, funding_threshold, current_funding FROM topics WHERE status = 'active' ORDER BY created_at DESC");
+    $all_active_topics = $db2->resultSet();
+    foreach ($all_active_topics as $t) {
+        $creator_topics_map[$t->creator_id][] = [
+            'id'                => $t->id,
+            'title'             => $t->title,
+            'description'       => $t->description,
+            'funding_threshold' => (float)$t->funding_threshold,
+            'current_funding'   => (float)$t->current_funding,
+        ];
+    }
+} catch (Exception $e) {
+    $creator_topics_map = [];
+}
+
+// Fetch funded (waiting for upload) topics for all creators, grouped by creator_id
+$creator_funded_map = [];
+try {
+    $db3 = new Database();
+    $db3->query("SELECT id, creator_id, title, current_funding, funding_threshold, status, hold_reason, funded_at FROM topics WHERE status IN ('funded','on_hold','queued') ORDER BY COALESCE(funded_at, held_at) DESC NULLS LAST");
+    $all_funded_topics = $db3->resultSet();
+    foreach ($all_funded_topics as $t) {
+        $creator_funded_map[$t->creator_id][] = [
+            'id'                => $t->id,
+            'title'             => $t->title,
+            'current_funding'   => (float)$t->current_funding,
+            'funding_threshold' => (float)$t->funding_threshold,
+            'status'            => $t->status,
+            'hold_reason'       => $t->hold_reason ?? '',
+            'funded_at'         => $t->funded_at ?? null,
+        ];
+    }
+} catch (Exception $e) {
+    $creator_funded_map = [];
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Creators - TopicLaunch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --tl-pink: #E8305A;
+            --tl-pink-dark: #B01F3F;
+            --tl-bg: #FAF8F6;
+            --tl-card: #FFFFFF;
+            --tl-off: #F0F0F0;
+            --tl-border: #E5E5E5;
+            --tl-muted: #888888;
+            --text-dark: #111010;
+            --white: #FFFFFF;
+        }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--tl-bg); color: var(--text-dark); }
+
+        /* Nav */
+        .topiclaunch-nav { background: var(--white); padding: 16px 0; border-bottom: 1px solid var(--tl-border); position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
+        .nav-logo { font-size: 20px; font-weight: 500; color: var(--text-dark); text-decoration: none; letter-spacing: -0.3px; }
+        .nav-logo span { color: var(--tl-pink); }
+        .nav-center { display: flex; gap: 30px; align-items: center; }
+        .nav-link { color: var(--text-dark); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover, .nav-link.active { color: var(--tl-pink); }
+        .nav-buttons { display: flex; gap: 15px; align-items: center; }
+        .nav-login-btn { color: var(--text-dark); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .nav-login-btn:hover { color: var(--tl-pink); }
+        .nav-getstarted-btn { background: var(--tl-pink); color: var(--white); text-decoration: none; font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: 8px; transition: background 0.2s; }
+        .nav-getstarted-btn:hover { background: var(--tl-pink-dark); }
+
+        /* Hero section */
+        .hero-section {
+            text-align: center;
+            padding: 80px 30px 56px;
+        }
+        .hero-eyebrow {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--tl-muted);
+            margin-bottom: 14px;
+        }
+        .hero-title {
+            font-size: 42px;
+            font-weight: 500;
+            color: var(--text-dark);
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 14px;
+        }
+        .hero-title em {
+            color: var(--tl-pink);
+            font-style: normal;
+        }
+        .hero-title span { color: var(--tl-pink); }
+        .hero-subtitle {
+            font-size: 16px;
+            color: var(--tl-muted);
+            font-weight: 400;
+            line-height: 1.6;
+            max-width: 440px;
+            margin: 0 auto;
+        }
+
+        /* Strip section */
+        .strip-section {
+            background: var(--tl-off);
+            border-top: 1px solid var(--tl-border);
+            border-bottom: 1px solid var(--tl-border);
+            padding: 18px 0 40px;
+            overflow: visible;
+        }
+
+        .creator-strip {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            width: 100%;
+        }
+
+
+
+        /* hint label above avatar */
+        .strip-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .select-creator-hint {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .select-creator-hint span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--tl-pink);
+            letter-spacing: 0.3px;
+        }
+        .hint-arrow { display: block; }
+        .select-creator-hint.hidden { display: none; }
+
+        .strip-avatar {
+            height: 40px;
+            border-radius: 50px;
+            padding: 0 18px 0 14px;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--white);
+            flex-shrink: 0;
+            border: none;
+            overflow: hidden;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .strip-avatar.avatar-selected {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            padding: 0;
+            gap: 0;
+        }
+        .strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .strip-avatar-initials { font-size: 16px; font-weight: 600; color: var(--white); }
+        .strip-avatar-label { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.1px; }
+
+        .strip-input-field {
+            flex: 1;
+            background: var(--white);
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid var(--tl-border);
+            font-size: 14px;
+            color: var(--text-dark);
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, opacity 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            resize: none;
+            height: 96px;
+            line-height: 1.5;
+            word-break: break-word;
+            overflow-y: auto;
+        }
+        .strip-input-field::placeholder { color: #bbb; }
+        .strip-input-field:focus { border-color: rgba(232,48,90,0.4); box-shadow: 0 0 0 3px rgba(232,48,90,0.08); }
+        .strip-input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .strip-send {
+            width: 44px; height: 44px;
+            background: var(--tl-pink);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .strip-send:hover:not(:disabled) { background: var(--tl-pink-dark); }
+        .strip-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* Selected creator card */
+        .strip-creator-card {
+            display: none;
+            margin: 12px auto 0;
+            max-width: calc(100% - 60px);
+            background: #fff;
+            border: 1px solid #E5E5E5;
+            border-radius: 12px;
+            padding: 12px 16px;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            animation: fadeSlideIn 0.2s ease;
+        }
+        .strip-creator-card.visible { display: flex; }
+        @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .strip-creator-card-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--tl-pink); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px; color: #fff; overflow: hidden;
+        }
+        .strip-creator-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .strip-creator-card-info { flex: 1; min-width: 0; }
+        .strip-creator-card-name { font-weight: 600; font-size: 13px; color: #111; }
+        .strip-creator-card-bio { font-size: 11px; color: #777; margin-top: 1px; line-height: 1.35; }
+        .strip-creator-card-price { background: #FFF0F3; color: var(--tl-pink); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+        .strip-creator-card-x { background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; flex-shrink: 0; transition: color 0.15s; }
+        .strip-creator-card-x:hover { color: var(--tl-pink); }
+
+        /* Active topics section */
+        .strip-active-topics {
+            display: none;
+            margin: 10px auto 0;
+            max-width: calc(100% - 60px);
+        }
+        .strip-active-topics.visible { display: block; }
+        .strip-topics-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: #E8305A;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(232,48,90,0.25);
+        }
+        .strip-topic-item {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .strip-topic-item:last-child { margin-bottom: 0; }
+        .strip-topic-item:hover { border-color: var(--tl-pink); }
+        .strip-topic-item-title { font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+        .strip-topic-progress-bar { background: #F0F0F0; border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 4px; }
+        .strip-topic-progress-fill { height: 100%; background: var(--tl-pink); border-radius: 4px; transition: width 0.3s; }
+        .strip-topic-meta { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--tl-muted); margin-top: 6px; }
+        .strip-topic-pct { color: var(--tl-pink); font-weight: 600; }
+        .strip-topic-fund-btn { font-size: 10px; font-weight: 600; color: var(--white); background: var(--tl-pink); border: none; border-radius: 20px; padding: 3px 10px; cursor: pointer; pointer-events: none; }
+
+        /* Funded / waiting for upload section */
+        .strip-funded-topics {
+            display: none;
+            margin: 10px auto 0;
+            max-width: calc(100% - 60px);
+        }
+        .strip-funded-topics.visible { display: block; }
+        .strip-funded-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: #F59E0B;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(245,158,11,0.25);
+        }
+        .strip-funded-item {
+            background: #FFFBF0;
+            border: 1px solid #FDE68A;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .strip-funded-item:last-child { margin-bottom: 0; }
+        .strip-funded-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #F59E0B; flex-shrink: 0;
+        }
+        .strip-funded-title { font-size: 12px; font-weight: 600; color: var(--text-dark); flex: 1; }
+        .strip-funded-badge {
+            font-size: 10px; font-weight: 600;
+            color: #B45309; background: #FEF3C7;
+            padding: 2px 8px; border-radius: 20px; flex-shrink: 0;
+        }
+        .strip-onhold-badge { color: #6B7280; background: #F3F4F6; }
+        .strip-queued-badge { color: #1D4ED8; background: #DBEAFE; }
+
+        /* Step hint below strip */
+        .strip-hint-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0;
+            padding: 0 30px;
+        }
+        .strip-hint-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--tl-muted);
+            font-weight: 400;
+            justify-content: flex-start;
+            width: 220px;
+        }
+        .strip-hint-step strong {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px; height: 18px;
+            background: var(--tl-pink);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* Modals */
+        .tl-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .tl-overlay.open { display: flex; }
+
+        .tl-modal {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+            animation: modalIn 0.18s ease-out both;
+        }
+        .tl-modal-sm { max-width: 440px; }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .tl-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+        }
+        .tl-modal-title { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+        .tl-modal-sub { font-size: 12px; color: var(--tl-muted); margin-top: 2px; }
+        .tl-modal-close {
+            background: none; border: none; color: #aaa; font-size: 20px;
+            cursor: pointer; line-height: 1; padding: 0 2px; transition: color 0.15s;
+        }
+        .tl-modal-close:hover { color: var(--text-dark); }
+
+        .tl-modal-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+            color: #bbb;
+        }
+        .tl-modal-search input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 13px; color: var(--text-dark); font-family: inherit;
+        }
+        .tl-modal-search input::placeholder { color: #bbb; }
+
+        .picker-chips-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--tl-border);
+            flex-shrink: 0;
+        }
+        .picker-chip {
+            font-size: 11px;
+            padding: 4px 11px;
+            border-radius: 20px;
+            border: 1px solid #E5E5E5;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .picker-chip:hover { border-color: var(--tl-pink); color: var(--tl-pink); }
+        .picker-chip.active { background: var(--tl-pink); border-color: var(--tl-pink); color: #fff; }
+
+        .creator-picker-grid {
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 16px;
+        }
+        .creator-picker-item {
+            background: var(--tl-off);
+            border: 1px solid var(--tl-border);
+            border-radius: 12px;
+            padding: 16px 12px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            text-align: center;
+        }
+        .creator-picker-item:hover { border-color: var(--tl-pink); background: rgba(232,48,90,0.04); }
+        .creator-picker-item.selected { border-color: var(--tl-pink); background: rgba(232,48,90,0.08); }
+        .creator-picker-item.hidden { display: none; }
+
+        .picker-avatar {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--tl-pink), var(--tl-pink-dark));
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .picker-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .picker-avatar span { font-size: 20px; font-weight: 600; color: var(--white); }
+        .picker-name { font-size: 12px; font-weight: 500; color: var(--text-dark); line-height: 1.3; }
+        .picker-price { font-size: 10px; color: var(--tl-muted); }
+
+        /* Topic details modal body */
+        .tl-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .tl-field { display: flex; flex-direction: column; gap: 6px; }
+        .tl-label { font-size: 11px; font-weight: 500; color: var(--tl-muted); letter-spacing: 0.4px; text-transform: uppercase; }
+        .tl-optional { color: var(--tl-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+        .tl-topic-preview {
+            background: var(--tl-off);
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-dark);
+            min-height: 38px;
+        }
+
+        .tl-input-prefix-wrap { display: flex; align-items: center; background: var(--white); border: 1px solid var(--tl-border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+        .tl-input-prefix-wrap:focus-within { border-color: rgba(232,48,90,0.4); }
+        .tl-prefix { padding: 0 10px; font-size: 14px; color: var(--tl-muted); font-weight: 500; border-right: 1px solid var(--tl-border); height: 38px; display: flex; align-items: center; }
+        .tl-input { flex: 1; background: none; border: none; outline: none; padding: 0 12px; font-size: 14px; color: var(--text-dark); font-family: inherit; height: 38px; }
+        .tl-input::placeholder { color: #bbb; }
+
+        .tl-hint { font-size: 11px; color: var(--tl-muted); }
+        .tl-char-count {
+            font-size: 11px;
+            color: var(--tl-muted);
+            text-align: right;
+            margin-top: -6px;
+        }
+
+        .tl-textarea {
+            background: var(--white);
+            border: 1px solid var(--tl-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-dark);
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .tl-textarea:focus { border-color: rgba(232,48,90,0.4); }
+        .tl-textarea::placeholder { color: #bbb; }
+
+        .tl-submit-btn {
+            background: var(--tl-pink);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .tl-submit-btn:hover { background: var(--tl-pink-dark); }
+
+        @media (max-width: 768px) {
+            .nav-center { display: none; }
+            .hero-section { padding: 56px 20px 40px; }
+            .hero-title { font-size: 30px; }
+            .strip-section { padding: 28px 0 32px; }
+
+            .strip-hint-row { gap: 16px; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="topiclaunch-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">Topic<span>Launch</span></a>
+            <div class="nav-center">
+                <a href="/creators/" class="nav-link active">Browse Creators</a>
+                <a href="/creators/signup.php" class="nav-link">For Creators</a>
+            </div>
+            <div class="nav-buttons">
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a href="/auth/logout.php" class="nav-login-btn">Log Out</a>
+                <?php else: ?>
+                    <a href="/auth/login.php" class="nav-login-btn">Log In</a>
+                    <a href="/creators/signup.php" class="nav-getstarted-btn">Get Started</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero-section">
+        <button id="browseCreatorsBtn" style="height:36px;border-radius:50px;padding:0 16px 0 12px;gap:7px;background:linear-gradient(135deg,#E8305A,#B01F3F);display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;border:none;cursor:pointer;transition:opacity 0.2s,transform 0.15s;font-family:inherit;white-space:nowrap;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0;flex-shrink:0;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span style="font-size:13px;font-weight:600;letter-spacing:0.1px;">Select a Creator</span></button>
+        <?php $all_topics = ['Fitness','Health','Motivation','Therapy','Dating','Business','Money','Psychology','Career','Cosmetics','Family','Technology & AI']; ?>
+    </div>
+
+    <!-- Creator strip -->
+    <div class="strip-section" id="stripSection" style="display:none;">
+        <!-- Creator card (shown after selection) -->
+        <div class="strip-creator-card" id="stripCreatorCard">
+            <div class="strip-creator-card-avatar" id="stripCreatorCardAvatar"></div>
+            <div class="strip-creator-card-info">
+                <div class="strip-creator-card-name" id="stripCreatorCardName"></div>
+                <div class="strip-creator-card-bio" id="stripCreatorCardBio"></div>
+            </div>
+            <div class="strip-creator-card-price" id="stripCreatorCardPrice"></div>
+            <button class="strip-creator-card-x" id="stripCreatorCardX" title="Remove creator">&times;</button>
+        </div>
+
+        <!-- Commission input (shown below creator card after selection) -->
+        <div style="display:flex; align-items:flex-end; gap:14px; padding:0 30px; box-sizing:border-box; width:100%;">
+            <div id="stripInputWrapper" style="position:relative; flex:1; display:none;">
+                <textarea class="strip-input-field" id="topicInput" placeholder="Type your video idea here" maxlength="100" rows="1" style="width:100%; box-sizing:border-box; padding-bottom:20px;"></textarea>
+                <span id="topicInputCount" style="position:absolute; bottom:7px; right:8px; font-size:10px; color:#999; pointer-events:none; z-index:2; background:rgba(255,255,255,0.9); padding:1px 3px; border-radius:3px;"></span>
+            </div>
+            <button class="strip-send" id="stripSend" disabled style="display:none; margin-bottom:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 2l2 6-2 6 12-6z" fill="#fff"/></svg>
+            </button>
+        </div>
+
+        <!-- Active topics for selected creator -->
+        <div class="strip-active-topics" id="stripActiveTopics">
+            <div class="strip-topics-label">Active Topics</div>
+            <div id="stripTopicsList"></div>
+        </div>
+
+        <!-- Funded (waiting for upload) topics -->
+        <div class="strip-funded-topics" id="stripFundedTopics">
+            <div class="strip-funded-label">Waiting for Upload</div>
+            <div id="stripFundedList"></div>
+        </div>
+    </div>
+
+    <!-- Creator Picker Modal -->
+    <div class="tl-overlay" id="creatorPickerOverlay">
+        <div class="tl-modal" id="creatorPickerModal">
+            <div class="tl-modal-header">
+                <div class="tl-modal-title">Choose a creator</div>
+                <button class="tl-modal-close" id="closeCreatorPicker">&times;</button>
+            </div>
+            <div class="tl-modal-search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="creatorSearch" placeholder="Search creators…">
+            </div>
+            <div class="picker-chips-row" id="pickerChipsRow">
+                <?php foreach ($all_topics as $t): ?>
+                <button class="picker-chip" data-topic="<?php echo htmlspecialchars($t); ?>"><?php echo htmlspecialchars($t); ?></button>
+                <?php endforeach; ?>
+            </div>
+            <div class="creator-picker-grid" id="creatorPickerGrid">
+                <?php foreach ($creators as $c):
+                    $c_topics = [];
+                    if (!empty($c->video_topics)) {
+                        $decoded = json_decode($c->video_topics, true);
+                        if (is_array($decoded)) $c_topics = array_map('strtolower', $decoded);
+                    }
+                    $c_topics_json = htmlspecialchars(json_encode($c_topics), ENT_QUOTES);
+                ?>
+                <button class="creator-picker-item"
+                    data-id="<?php echo (int)$c->id; ?>"
+                    data-handle="<?php echo htmlspecialchars(strtolower($c->handle ?? $c->username ?? $c->display_name)); ?>"
+                    data-name="<?php echo htmlspecialchars($c->display_name); ?>"
+                    data-price="<?php echo (int)($c->minimum_topic_price ?? 100); ?>"
+                    data-image="<?php echo htmlspecialchars(creator_photo_url($c->profile_image, $c->profile_image_data ?? null)); ?>"
+                data-topics="<?php echo $c_topics_json; ?>"
+                data-bio="<?php echo htmlspecialchars($c->bio ?? ''); ?>">
+                    <div class="picker-avatar">
+                        <?php $img_src = creator_photo_url($c->profile_image, $c->profile_image_data ?? null); ?>
+                        <?php if ($img_src): ?>
+                            <img src="<?php echo htmlspecialchars($img_src); ?>" alt="">
+                        <?php else: ?>
+                            <span><?php echo strtoupper(substr($c->display_name, 0, 1)); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="picker-name"><?php echo htmlspecialchars($c->display_name); ?></div>
+                    <div class="picker-price">from $<?php echo (int)($c->minimum_topic_price ?? 100); ?></div>
+                </button>
+                <?php endforeach; ?>
+                <?php if (empty($creators)): ?>
+                <div style="grid-column:1/-1;text-align:center;color:#555;padding:40px 20px;font-size:13px;">No creators yet — <a href="/creators/signup.php" style="color:#E8305A;">be the first</a></div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Details Modal -->
+    <div class="tl-overlay" id="topicModalOverlay">
+        <div class="tl-modal tl-modal-sm" id="topicModal">
+            <div class="tl-modal-header">
+                <div>
+                    <div class="tl-modal-title" id="topicModalTitle">Send your request</div>
+                    <div class="tl-modal-sub" id="topicModalCreator"></div>
+                </div>
+                <button class="tl-modal-close" id="closeTopicModal">&times;</button>
+            </div>
+            <div class="tl-modal-body">
+                <div class="tl-field">
+                    <label class="tl-label">Your topic idea</label>
+                    <div class="tl-topic-preview" id="topicPreview"></div>
+                </div>
+                <div class="tl-field" id="topicDescField">
+                    <label class="tl-label">Additional details <span class="tl-optional">(optional)</span></label>
+                    <textarea id="topicDesc" class="tl-textarea" placeholder="Any context or specifics for the creator…" rows="3" maxlength="350"></textarea>
+                    <div class="tl-char-count" id="topicDescCount">0/350</div>
+                </div>
+                <div class="tl-field">
+                    <div id="goalBanner" style="display:none;background:#E8305A;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:none;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:600;color:#fff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Funding Goal</span>
+                        <span id="goalBannerAmount" style="font-weight:800;color:#fff;font-size:20px;"></span>
+                    </div>
+                    <label class="tl-label" id="topicAmountLabel">Your offer amount</label>
+                    <div class="tl-input-prefix-wrap">
+                        <span class="tl-prefix">$</span>
+                        <input type="number" id="topicAmount" class="tl-input" placeholder="0" min="1">
+                    </div>
+                    <div id="topicFundingInfo" style="display:none; margin-top:6px; background:#FFF0F3; border-radius:8px; padding:8px 12px; font-size:12px; color:#555; line-height:1.5;"></div>
+                    <div class="tl-hint" id="minPriceHint"></div>
+                </div>
+                <div class="tl-field" id="topicEmailField">
+                    <label class="tl-label">Your email</label>
+                    <div class="tl-input-prefix-wrap">
+                        <input type="email" id="topicEmail" class="tl-input" placeholder="you@example.com">
+                    </div>
+                </div>
+                <button class="tl-submit-btn" id="topicSubmit">Continue to payment →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const CREATOR_TOPICS  = <?php echo json_encode($creator_topics_map,  JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const CREATOR_FUNDED  = <?php echo json_encode($creator_funded_map,  JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    </script>
+    <script>
+    (function () {
+        const stripAvatar        = document.getElementById('stripAvatar');
+        const stripSection       = document.getElementById('stripSection');
+        const topicInput         = document.getElementById('topicInput');
+        const stripSend          = document.getElementById('stripSend');
+        const stripInputWrapper  = document.getElementById('stripInputWrapper');
+        const stripActiveTopics = document.getElementById('stripActiveTopics');
+        const stripTopicsList   = document.getElementById('stripTopicsList');
+        const stripFundedTopics = document.getElementById('stripFundedTopics');
+        const stripFundedList   = document.getElementById('stripFundedList');
+
+        const pickerOverlay = document.getElementById('creatorPickerOverlay');
+        const closePickerBtn= document.getElementById('closeCreatorPicker');
+        const creatorSearch = document.getElementById('creatorSearch');
+        const pickerGrid    = document.getElementById('creatorPickerGrid');
+
+        const topicOverlay  = document.getElementById('topicModalOverlay');
+        const closeTopicBtn = document.getElementById('closeTopicModal');
+        const topicPreview  = document.getElementById('topicPreview');
+        const topicModalSub = document.getElementById('topicModalCreator');
+        const topicAmount   = document.getElementById('topicAmount');
+        const minPriceHint  = document.getElementById('minPriceHint');
+        const topicDesc     = document.getElementById('topicDesc');
+        const topicSubmit   = document.getElementById('topicSubmit');
+        const topicDescCount  = document.getElementById('topicDescCount');
+        const topicInputCount = document.getElementById('topicInputCount');
+        const stripCreatorCard       = document.getElementById('stripCreatorCard');
+        const stripCreatorCardAvatar = document.getElementById('stripCreatorCardAvatar');
+        const stripCreatorCardName   = document.getElementById('stripCreatorCardName');
+        const stripCreatorCardBio    = document.getElementById('stripCreatorCardBio');
+        const stripCreatorCardPrice  = document.getElementById('stripCreatorCardPrice');
+        const stripCreatorCardX      = document.getElementById('stripCreatorCardX');
+
+        const topicDescField   = document.getElementById('topicDescField');
+        const topicFundingInfo = document.getElementById('topicFundingInfo');
+        const topicModalTitle  = document.getElementById('topicModalTitle');
+        const topicAmountLabel = document.getElementById('topicAmountLabel');
+        const goalBanner       = document.getElementById('goalBanner');
+        const goalBannerAmount = document.getElementById('goalBannerAmount');
+
+        let selectedCreator  = null;
+        let pickerTopics     = new Set(); // selected filter chips (modal)
+        let activeTopic      = null;      // clicked existing topic {id, title, description}
+
+        /* ── Picker modal topic chips ── */
+        document.querySelectorAll('.picker-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const t = chip.dataset.topic.toLowerCase();
+                if (pickerTopics.has(t)) {
+                    pickerTopics.delete(t);
+                    chip.classList.remove('active');
+                } else {
+                    pickerTopics.add(t);
+                    chip.classList.add('active');
+                }
+                applyPickerFilter(creatorSearch.value.trim().toLowerCase());
+            });
+        });
+
+        /* Open / close creator picker */
+        function openPicker() {
+            pickerOverlay.classList.add('open');
+            applyPickerFilter('');
+            creatorSearch.value = '';
+            creatorSearch.focus();
+        }
+        document.getElementById('browseCreatorsBtn').addEventListener('click', openPicker);
+        closePickerBtn.addEventListener('click', closePicker);
+        pickerOverlay.addEventListener('click', e => { if (e.target === pickerOverlay) closePicker(); });
+        function closePicker() {
+            pickerOverlay.classList.remove('open');
+            creatorSearch.value = '';
+            pickerTopics.clear();
+            document.querySelectorAll('.picker-chip').forEach(c => c.classList.remove('active'));
+            applyPickerFilter('');
+        }
+
+        /* Creator search inside picker */
+        creatorSearch.addEventListener('input', () => applyPickerFilter(creatorSearch.value.trim().toLowerCase()));
+
+        function applyPickerFilter(q) {
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(btn => {
+                const name   = btn.dataset.name.toLowerCase();
+                let   topics = [];
+                try { topics = JSON.parse(btn.dataset.topics || '[]'); } catch(e) {}
+
+                const matchesSearch  = !q || name.includes(q);
+                const matchesPicker  = pickerTopics.size === 0 || [...pickerTopics].some(t => topics.includes(t));
+
+                btn.classList.toggle('hidden', !matchesSearch || !matchesPicker);
+            });
+        }
+
+        function renderCreatorTopics(creatorId) {
+            const topics = CREATOR_TOPICS[creatorId] || [];
+            if (topics.length === 0) {
+                stripActiveTopics.classList.remove('visible');
+                return;
+            }
+            stripTopicsList.innerHTML = topics.map(t => {
+                const pct = Math.min(100, Math.round((t.current_funding / t.funding_threshold) * 100));
+                const descAttr = t.description ? t.description.replace(/"/g, '&quot;') : '';
+                const titleAttr = t.title.replace(/"/g, '&quot;');
+                return `<div class="strip-topic-item" data-topic-id="${t.id}" data-topic-title="${titleAttr}" data-topic-desc="${descAttr}" data-current-funding="${t.current_funding}" data-funding-threshold="${t.funding_threshold}">
+                    <div class="strip-topic-item-title">${t.title}</div>
+                    <div class="strip-topic-progress-bar"><div class="strip-topic-progress-fill" style="width:${pct}%"></div></div>
+                    <div class="strip-topic-meta">
+                        <span>$${Math.round(t.current_funding)} raised of $${Math.round(t.funding_threshold)} &bull; <span class="strip-topic-pct">${pct}%</span></span>
+                        <button class="strip-topic-fund-btn">Contribute →</button>
+                    </div>
+                </div>`;
+            }).join('');
+            stripActiveTopics.classList.add('visible');
+        }
+
+        function renderFundedTopics(creatorId) {
+            const topics = CREATOR_FUNDED[creatorId] || [];
+            if (topics.length === 0) { stripFundedTopics.classList.remove('visible'); return; }
+            const funded = topics.filter(t => t.status === 'funded');
+            const queued = topics.filter(t => t.status === 'queued').sort((a, b) => new Date(a.funded_at || 0) - new Date(b.funded_at || 0));
+            const onHold = topics.filter(t => t.status === 'on_hold');
+            const ordered = [...funded, ...queued, ...onHold];
+            let queueNum = 0;
+            stripFundedList.innerHTML = ordered.map(t => {
+                let dotColor = '';
+                let badge = '';
+                if (t.status === 'funded') {
+                    badge = `<div class="strip-funded-badge">Waiting Upload</div>`;
+                } else if (t.status === 'queued') {
+                    queueNum++;
+                    dotColor = 'background:#3B82F6;';
+                    badge = `<div class="strip-funded-badge strip-queued-badge">#${queueNum} In Queue</div>`;
+                } else {
+                    dotColor = 'background:#9CA3AF;';
+                    badge = `<div class="strip-funded-badge strip-onhold-badge">On Hold</div>`;
+                }
+                return `<div class="strip-funded-item">
+                    <div class="strip-funded-dot" style="${dotColor}"></div>
+                    <div class="strip-funded-title">${t.title}</div>
+                    ${badge}
+                </div>`;
+            }).join('');
+            stripFundedTopics.classList.add('visible');
+        }
+
+        /* Select a creator */
+        pickerGrid.addEventListener('click', e => {
+            const item = e.target.closest('.creator-picker-item');
+            if (!item) return;
+            selectedCreator = {
+                id:     parseInt(item.dataset.id, 10) || 0,
+                name:   item.dataset.name,
+                price:  parseInt(item.dataset.price, 10) || 0,
+                image:  item.dataset.image,
+                bio: item.dataset.bio || ''
+            };
+
+            if (stripAvatar) {
+                if (selectedCreator.image) {
+                    stripAvatar.innerHTML = `<img src="${selectedCreator.image}" alt="">`;
+                } else {
+                    const initial = selectedCreator.name.charAt(0).toUpperCase();
+                    stripAvatar.innerHTML = `<span class="strip-avatar-initials">${initial}</span>`;
+                }
+            }
+            stripSection.style.display = '';
+            stripInputWrapper.style.display = '';
+            stripSend.style.display = '';
+            topicInput.placeholder = 'Type your video idea here';
+            topicInput.focus();
+            stripSend.disabled = !topicInput.value.trim();
+
+            /* Populate + show creator card */
+            if (selectedCreator.image) {
+                stripCreatorCardAvatar.innerHTML = `<img src="${selectedCreator.image}" alt="">`;
+            } else {
+                stripCreatorCardAvatar.innerHTML = selectedCreator.name.charAt(0).toUpperCase();
+            }
+            stripCreatorCardName.textContent  = selectedCreator.name;
+            stripCreatorCardBio.textContent = selectedCreator.bio;
+            stripCreatorCardPrice.textContent  = selectedCreator.price ? `from $${selectedCreator.price}` : 'Free';
+            stripCreatorCard.classList.add('visible');
+            renderCreatorTopics(selectedCreator.id);
+            renderFundedTopics(selectedCreator.id);
+
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
+            item.classList.add('selected');
+            closePicker();
+        });
+
+
+        /* X button — remove selected creator */
+        stripCreatorCardX.addEventListener('click', () => {
+            stripCreatorCard.classList.remove('visible');
+            stripActiveTopics.classList.remove('visible');
+            stripFundedTopics.classList.remove('visible');
+            selectedCreator = null;
+            pickerGrid.querySelectorAll('.creator-picker-item').forEach(b => b.classList.remove('selected'));
+            stripSection.style.display = 'none';
+            stripInputWrapper.style.display = 'none';
+            stripSend.style.display = 'none';
+            topicInput.placeholder = 'Type your video idea here';
+            topicInput.value = '';
+            stripSend.disabled = true;
+        });
+
+        /* Enable send only when input has text + live counter */
+        topicInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); if (selectedCreator && topicInput.value.trim()) stripSend.click(); }
+        });
+        topicInput.addEventListener('input', () => {
+            topicInput.value = topicInput.value.replace(/\n/g, '');
+            stripSend.disabled = !topicInput.value.trim() || !selectedCreator;
+            const len = topicInput.value.length;
+            topicInputCount.textContent = `${len}/100`;
+        });
+
+        topicDesc.addEventListener('input', () => {
+            topicDescCount.textContent = `${topicDesc.value.length}/350`;
+        });
+
+        /* Click on an active topic card */
+        stripTopicsList.addEventListener('click', e => {
+            const item = e.target.closest('.strip-topic-item');
+            if (!item || !selectedCreator) return;
+            const topicId          = item.dataset.topicId;
+            const topicTitle       = item.dataset.topicTitle;
+            const topicDescription = item.dataset.topicDesc || '';
+            const currentFunding   = parseFloat(item.dataset.currentFunding) || 0;
+            const fundingThreshold = parseFloat(item.dataset.fundingThreshold) || 0;
+            const pct = fundingThreshold > 0 ? Math.min(100, Math.round((currentFunding / fundingThreshold) * 100)) : 0;
+            const remaining = Math.max(0, fundingThreshold - currentFunding);
+            activeTopic = { id: topicId, title: topicTitle, description: topicDescription };
+
+            topicModalTitle.textContent = 'Fund this topic';
+            topicAmountLabel.textContent = 'Your contribution';
+            topicPreview.textContent   = topicTitle;
+            topicModalSub.textContent  = `For: ${selectedCreator.name}`;
+            minPriceHint.textContent   = '';
+            topicAmount.min            = 1;
+            topicAmount.max            = remaining > 0 ? remaining : '';
+            topicAmount.placeholder    = remaining > 0 ? Math.round(remaining) : '0';
+            topicAmount.value          = '';
+            topicEmail.value           = '';
+            topicDesc.value            = topicDescription;
+            topicDescCount.textContent = `${topicDescription.length}/350`;
+            topicDesc.setAttribute('readonly', true);
+            topicDesc.style.background = '#F5F5F5';
+            topicDesc.style.color      = '#888';
+            topicDescField.style.display = '';
+            topicFundingInfo.style.display = 'block';
+            topicFundingInfo.innerHTML = `<strong style="color:#E8305A;">$${Math.round(currentFunding)}</strong> raised &mdash; <strong style="color:#E8305A;">${pct}%</strong> of the $${Math.round(fundingThreshold)} goal &bull; <strong style="color:#333;">$${Math.round(remaining)}</strong> still needed`;
+            goalBanner.style.display   = 'none';
+            topicOverlay.classList.add('open');
+            topicAmount.focus();
+        });
+
+        /* Open topic details modal */
+        stripSend.addEventListener('click', () => {
+            if (!selectedCreator || !topicInput.value.trim()) return;
+            activeTopic = null;
+            topicModalTitle.textContent = 'Send your request';
+            topicAmountLabel.textContent = 'Your offer amount';
+            topicPreview.textContent = topicInput.value.trim();
+            topicModalSub.textContent = `To: ${selectedCreator.name}`;
+            minPriceHint.textContent = '';
+            if (selectedCreator.price > 0) {
+                topicAmount.max         = selectedCreator.price;
+                topicAmount.placeholder = selectedCreator.price;
+                goalBannerAmount.textContent = `$${selectedCreator.price}`;
+                goalBanner.style.display = 'flex';
+            } else {
+                topicAmount.removeAttribute('max');
+                goalBanner.style.display = 'none';
+            }
+            topicAmount.value = '';
+            topicDesc.value = '';
+            topicDescCount.textContent = '0/350';
+            topicEmail.value = '';
+            topicDesc.removeAttribute('readonly');
+            topicDesc.style.background = '';
+            topicDesc.style.color = '';
+            topicDescField.style.display = '';
+            topicFundingInfo.style.display = 'none';
+            topicOverlay.classList.add('open');
+            topicDesc.focus();
+        });
+
+        closeTopicBtn.addEventListener('click', closeTopic);
+        topicOverlay.addEventListener('click', e => { if (e.target === topicOverlay) closeTopic(); });
+        function closeTopic() { topicOverlay.classList.remove('open'); }
+
+        const topicEmail = document.getElementById('topicEmail');
+
+        /* Submit: call Stripe API directly */
+        topicSubmit.addEventListener('click', () => {
+            const amount = parseFloat(topicAmount.value);
+            const topic  = activeTopic ? activeTopic.title : topicInput.value.trim();
+            const desc   = topicDesc.value.trim();
+            const email  = topicEmail.value.trim();
+
+            if (!amount || amount < 1) {
+                topicAmount.style.borderColor = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => topicAmount.style.borderColor = '', 1500);
+                return;
+            }
+            if (topicAmount.max && amount > parseFloat(topicAmount.max)) {
+                minPriceHint.textContent = activeTopic
+                    ? `Maximum contribution is $${Math.round(topicAmount.max)} (remaining needed)`
+                    : `Maximum contribution is $${Math.round(topicAmount.max)} (funding goal)`;
+                minPriceHint.style.color = '#E8305A';
+                topicAmount.focus();
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+                return;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                topicEmail.style.borderColor = '#E8305A';
+                topicEmail.focus();
+                minPriceHint.textContent = 'Please enter a valid email address.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { topicEmail.style.borderColor = ''; minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 3000);
+                return;
+            }
+
+            topicSubmit.disabled = true;
+            topicSubmit.textContent = 'Processing…';
+
+            let endpoint, payload;
+            if (activeTopic) {
+                endpoint = '/api/get-topic.php';
+                payload  = { topic_id: parseInt(activeTopic.id, 10), amount, email };
+            } else {
+                endpoint = '/api/create-topic.php';
+                payload  = {
+                    creator_id:    selectedCreator.id,
+                    email:         email,
+                    title:         topic,
+                    description:   desc || topic,
+                    funding_goal:  selectedCreator.price,
+                    initial_amount: amount
+                };
+            }
+
+            fetch(endpoint, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    topicSubmit.disabled = false;
+                    topicSubmit.textContent = 'Continue to payment →';
+                    const errMsg = data.error || 'Something went wrong. Please try again.';
+                    minPriceHint.textContent = errMsg;
+                    minPriceHint.style.color = '#E8305A';
+                    setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+                }
+            })
+            .catch(() => {
+                topicSubmit.disabled = false;
+                topicSubmit.textContent = 'Continue to payment →';
+                minPriceHint.textContent = 'Network error. Please try again.';
+                minPriceHint.style.color = '#E8305A';
+                setTimeout(() => { minPriceHint.textContent = ''; minPriceHint.style.color = ''; }, 4000);
+            });
+        });
+        /* Init character counter */
+        topicInputCount.textContent = '0/100';
+
+        /* Auto-select creator from /creators/{handle} path */
+        const _pathParts = window.location.pathname.split('/').filter(Boolean);
+        const autoSelectHandle = (_pathParts.length === 2 && _pathParts[0] === 'creators')
+            ? _pathParts[1].toLowerCase() : null;
+        if (autoSelectHandle) {
+            const match = pickerGrid.querySelector(
+                `.creator-picker-item[data-handle="${CSS.escape(autoSelectHandle.toLowerCase())}"]`
+            );
+            if (match) match.click();
+        }
+    })();
+    </script>
+</body>
+</html>
